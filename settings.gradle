@@ -1,0 +1,6 @@
+rootProject.name = 'nva-publication-api'
+include 'publication-commons'
+include 'fetch-publication'
+include 'modify-publication'
+include 'publications-by-owner'
+
