@@ -6,7 +6,7 @@ Description: >
 Metadata:
   AWS::ServerlessRepo::Application:
     Name: NvaDownloadPublicationFileApi
-    Description: NVA Download File API
+    Description: NVA Download Publication File API
     Author: Unit
     SpdxLicenseId: MIT
     LicenseUrl: LICENSE
@@ -31,9 +31,10 @@ Parameters:
   CustomDomainBasePath:
     Type: String
     Description: Base path mapping in CustomDomain
-  PublicationsTableName:
+  S3Bucket:
     Type: String
-    Description: Reference to table containing publications
+    Description: S3 Bucket to access objects
+
 
 Resources:
   NvaDownloadPublicationFileApi:
@@ -47,9 +48,9 @@ Resources:
           title: NVA Download Publication File API
           version: '1.0'
         paths:
-          /files/{publicationIdentifier}/file/{fileIdentifier}/download:
+          /download/{identifier}/files/{fileIdentifier}/generate:
             post:
-              summary: Returns an S3 presigned download URL
+              summary: Returns an S3 presigned download URL to a publication file
               consumes:
                 - application/json
               produces:
@@ -58,7 +59,7 @@ Resources:
                 - CognitoUserPool: []
               parameters:
                 - in: path
-                  name: publicationIdentifier
+                  name: identifier
                   type: string
                   format: uuid
                   required: true
@@ -68,7 +69,7 @@ Resources:
                   type: string
                   format: uuid
                   required: true
-                  description: UUID identifier of the Publication File to fetch.
+                  description: UUID identifier of the Publication File.
               x-amazon-apigateway-integration:
                 uri:
                   Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${NvaDownloadPublicationFileFunction.Arn}/invocations
@@ -76,12 +77,20 @@ Resources:
                 httpMethod: POST
                 type: AWS_PROXY
               responses:
-                '200':
-                  description: OK
+                '201':
+                  description: CREATED
+                  schema:
+                    type: object
+                '400':
+                  description: BAD REQUEST
                   schema:
                     type: object
                 '401':
                   description: UNAUTHORIZED
+                  schema:
+                    type: object
+                '500':
+                  description: INTERNAL SERVER ERROR
                   schema:
                     type: object
         securityDefinitions:
@@ -97,8 +106,8 @@ Resources:
   NvaDownloadPublicationFileFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: fetch-publication
-      Handler: no.unit.nva.download.file.MainHandler::handleRequest
+      CodeUri: create-presigned-download-url
+      Handler: no.unit.nva.download.publication.file.CreatePresignedDownloadUrlHandler::handleRequest
       Runtime: java11
       MemorySize: 1400
       Environment:
@@ -106,11 +115,13 @@ Resources:
           ALLOWED_ORIGIN: '*'
           API_SCHEME: https
           API_HOST: !Ref CustomDomain
+          BUCKET_NAME: !Ref S3Bucket
+      Role: !GetAtt UploadExecutionRole.Arn
       Events:
         PostEvent:
           Type: Api
           Properties:
-            Path: /files/{publicationIdentifier}/{fileIdentifier}/download
+            Path: /download/{identifier}/files/{fileIdentifier}/generate
             Method: post
             RestApiId: !Ref NvaDownloadPublicationFileApi
 
@@ -121,3 +132,28 @@ Resources:
       DomainName: !Ref CustomDomain
       RestApiId: !Ref NvaDownloadPublicationFileApi
       Stage: !Ref NvaDownloadPublicationFileApi.Stage
+
+  UploadExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: [lambda.amazonaws.com]
+            Action: ['sts:AssumeRole']
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: manage-uploads
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:GetObject
+                Resource:
+                  - !Sub 'arn:aws:s3:::${S3Bucket}'
+                  - !Sub 'arn:aws:s3:::${S3Bucket}/*'
