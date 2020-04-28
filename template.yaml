@@ -93,6 +93,10 @@ Resources:
                   description: INTERNAL SERVER ERROR
                   schema:
                     type: object
+                '503':
+                  description: SERVICE UNAVAILABLE
+                  schema:
+                    type: object
         securityDefinitions:
           CognitoUserPool:
             type: apiKey
