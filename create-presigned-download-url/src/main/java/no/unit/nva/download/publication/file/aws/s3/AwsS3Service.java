@@ -61,7 +61,7 @@ public class AwsS3Service {
 
             return s3Client.generatePresignedUrl(generatePresignedUrlRequest).toExternalForm();
         } catch (Exception e) {
-            throw new S3ServiceException("asdasd" + e.getMessage(), e);
+            throw new S3ServiceException(e.getMessage(), e);
         }
     }
 

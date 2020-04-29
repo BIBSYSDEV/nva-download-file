@@ -283,13 +283,8 @@ public class CreatePresignedDownloadUrlHandlerTest {
     private Publication createPublicationWithoutFileSetFile(String identifier) {
         return new Publication.Builder()
                 .withIdentifier(UUID.fromString(identifier))
-                .withCreatedDate(Instant.now())
                 .withModifiedDate(Instant.now())
                 .withOwner(OWNER_USER_ID)
-                .withPublisher(new Organization.Builder()
-                        .withId(URI.create("http://example.org/publisher/1"))
-                        .build()
-                )
                 .withFileSet(new FileSet.Builder().build())
                 .withStatus(PublicationStatus.PUBLISHED)
                 .build();
@@ -307,13 +302,8 @@ public class CreatePresignedDownloadUrlHandlerTest {
 
         return new Publication.Builder()
                 .withIdentifier(UUID.fromString(identifier))
-                .withCreatedDate(Instant.now())
                 .withModifiedDate(Instant.now())
                 .withOwner(OWNER_USER_ID)
-                .withPublisher(new Organization.Builder()
-                        .withId(URI.create("http://example.org/publisher/1"))
-                        .build()
-                )
                 .withStatus(PublicationStatus.NEW)
                 .withFileSet(fileSet).build();
     }

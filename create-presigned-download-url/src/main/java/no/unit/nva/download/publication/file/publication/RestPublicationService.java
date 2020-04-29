@@ -37,14 +37,14 @@ public class RestPublicationService {
     /**
      * Constructor for RestPublicationService.
      *
-     * @param objectMapper objectMapper
      * @param client       client
+     * @param objectMapper objectMapper
      * @param apiScheme    apiScheme
      * @param apiHost      apiHost
      */
     public RestPublicationService(HttpClient client, ObjectMapper objectMapper, String apiScheme, String apiHost) {
-        this.objectMapper = objectMapper;
         this.client = client;
+        this.objectMapper = objectMapper;
         this.apiScheme = apiScheme;
         this.apiHost = apiHost;
     }
@@ -64,7 +64,7 @@ public class RestPublicationService {
      *
      * @param identifier    identifier
      * @param authorization authorization
-     * @return A presigned download URL
+     * @return A publication
      * @throws ApiGatewayException exception thrown if value is missing
      */
     public Publication getPublication(UUID identifier, String authorization) throws ApiGatewayException {
