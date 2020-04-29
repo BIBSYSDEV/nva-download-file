@@ -9,7 +9,7 @@ import org.apache.http.HttpHeaders;
 import java.util.Objects;
 import java.util.UUID;
 
-public class RequestUtil {
+public final class RequestUtil {
 
     public static final String IDENTIFIER = "identifier";
     public static final String FILE_IDENTIFIER = "fileIdentifier";
@@ -19,6 +19,9 @@ public class RequestUtil {
     public static final String CUSTOM_FEIDE_ID = "custom:feideId";
     public static final String MISSING_CLAIM_IN_REQUEST_CONTEXT =
             "Missing claim in requestContext: ";
+
+    private RequestUtil() {
+    }
 
     /**
      * Get Authorization header from request.
