@@ -19,6 +19,7 @@ import java.util.UUID;
 
 import static nva.commons.utils.JsonUtils.objectMapper;
 
+import static org.apache.http.HttpStatus.SC_NOT_FOUND;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -27,12 +28,11 @@ import static org.mockito.Mockito.when;
 
 public class RestPublicationServiceTest {
 
-    public static final String RESOURCE_RESPONSE = "src/test/resources/resource_response.json";
+    public static final String PUBLICATION_RESPONSE = "src/test/resources/publication_response.json";
 
     public static final String SOME_API_KEY = "some api key";
     public static final String API_HOST = "example.org";
     public static final String API_SCHEME = "http";
-    public static final String NO_ITEMS = "{ \"Items\": [] }";
 
     private HttpClient client;
     private HttpResponse<String> response;
@@ -48,17 +48,9 @@ public class RestPublicationServiceTest {
         environment = mock(Environment.class);
     }
 
-    @Test
-    @DisplayName("calling Constructor With All Env")
-    public void callingConstructorWithAllEnv() {
-        Environment environment = mock(Environment.class);
-        when(environment.readEnv(RestPublicationService.API_SCHEME_ENV)).thenReturn(API_SCHEME);
-        when(environment.readEnv(RestPublicationService.API_HOST_ENV)).thenReturn(API_HOST);
-        new RestPublicationService(environment);
-    }
 
     @Test
-    @DisplayName("when client get an error the error is propagated to the response")
+    @DisplayName("getPublication throws NoResponseException when publication could not be retrieved")
     public void getPublicationClientError() throws IOException, InterruptedException {
         when(client.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class))).thenThrow(IOException.class);
 
@@ -72,10 +64,10 @@ public class RestPublicationServiceTest {
     }
 
     @Test
-    @DisplayName("when client receives a non empty json object it sends it to the response body")
+    @DisplayName("getPublication returns a nonEmpty publication when it receives a non empty json object")
     public void getPublicationReturnsJsonObject() throws IOException, InterruptedException, ApiGatewayException {
         when(client.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class))).thenReturn(response);
-        when((response.body())).thenReturn(getResponse(RESOURCE_RESPONSE));
+        when((response.body())).thenReturn(getResponse(PUBLICATION_RESPONSE));
 
         RestPublicationService publicationService = new RestPublicationService(client, objectMapper, API_SCHEME,
                 API_HOST);
@@ -89,10 +81,10 @@ public class RestPublicationServiceTest {
     }
 
     @Test
-    @DisplayName("when publication has no items it returns an empty response")
-    public void getPublicationNoItems() throws IOException, InterruptedException, ApiGatewayException {
+    @DisplayName("getPublication throws NoResponseException when publication is not found")
+    public void getPublicationNotFound() throws IOException, InterruptedException {
         when(client.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class))).thenReturn(response);
-        when((response.body())).thenReturn(NO_ITEMS);
+        when((response.statusCode())).thenReturn(SC_NOT_FOUND);
 
         RestPublicationService publicationService = new RestPublicationService(client, objectMapper, API_SCHEME,
                 API_HOST);

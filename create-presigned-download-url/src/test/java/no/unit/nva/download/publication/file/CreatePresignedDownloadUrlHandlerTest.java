@@ -17,7 +17,6 @@ import no.unit.nva.testutils.TestContext;
 import nva.commons.exceptions.ApiGatewayException;
 import nva.commons.handlers.GatewayResponse;
 import nva.commons.utils.Environment;
-import org.apache.http.entity.ContentType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -36,7 +35,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import static no.unit.nva.download.publication.file.aws.s3.AwsS3ServiceTest.MIME_TYPE_APPLICATION_PDF;
 import static no.unit.nva.download.publication.file.aws.s3.AwsS3ServiceTest.PRESIGNED_DOWNLOAD_URL;
-import static no.unit.nva.download.publication.file.publication.RestPublicationService.AUTHORIZATION;
 import static no.unit.nva.download.publication.file.publication.RestPublicationService.ERROR_COMMUNICATING_WITH_REMOTE_SERVICE;
 import static no.unit.nva.download.publication.file.publication.RestPublicationService.ERROR_PUBLICATION_NOT_FOUND_FOR_IDENTIFIER;
 import static nva.commons.handlers.ApiGatewayHandler.ACCESS_CONTROL_ALLOW_ORIGIN;
@@ -46,10 +44,12 @@ import static nva.commons.utils.MockClaims.AUTHORIZER_NODE;
 import static nva.commons.utils.MockClaims.CLAIMS_NODE;
 import static nva.commons.utils.MockClaims.CUSTOM_FEIDE_ID;
 import static nva.commons.utils.MockClaims.REQUEST_CONTEXT_NODE;
+import static org.apache.http.HttpHeaders.AUTHORIZATION;
 import static org.apache.http.HttpHeaders.CONTENT_TYPE;
+import static org.apache.http.HttpHeaders.LOCATION;
 import static org.apache.http.HttpStatus.SC_BAD_REQUEST;
-import static org.apache.http.HttpStatus.SC_CREATED;
 import static org.apache.http.HttpStatus.SC_INTERNAL_SERVER_ERROR;
+import static org.apache.http.HttpStatus.SC_MOVED_TEMPORARILY;
 import static org.apache.http.HttpStatus.SC_NOT_FOUND;
 import static org.apache.http.HttpStatus.SC_SERVICE_UNAVAILABLE;
 import static org.apache.http.HttpStatus.SC_UNAUTHORIZED;
@@ -98,14 +98,14 @@ public class CreatePresignedDownloadUrlHandlerTest {
     }
 
     @Test
-    @DisplayName("default Constructor Throws Exception When Envs Are Not Set")
+    @DisplayName("handler Default Constructor Throws Exception When Envs Are Not Set")
     public void defaultConstructorThrowsExceptionWhenEnvsAreNotSet() {
         assertThrows(IllegalStateException.class, CreatePresignedDownloadUrlHandler::new);
     }
 
     @Test
-    @DisplayName("handler Returns Created Response On Valid Input (Published Publication)")
-    public void handlerReturnsCreatedResponseOnValidInputPublishedPublication() throws IOException,
+    @DisplayName("handler Returns Found Response On Valid Input (Published Publication)")
+    public void handlerReturnsFoundResponseOnValidInputPublishedPublication() throws IOException,
             ApiGatewayException {
 
         Publication publication = createPublishedPublication(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE);
@@ -118,14 +118,14 @@ public class CreatePresignedDownloadUrlHandlerTest {
                 context);
 
         GatewayResponse gatewayResponse = objectMapper.readValue(output.toString(), GatewayResponse.class);
-        assertEquals(SC_CREATED, gatewayResponse.getStatusCode());
-        assertTrue(gatewayResponse.getHeaders().keySet().contains(CONTENT_TYPE));
+        assertEquals(SC_MOVED_TEMPORARILY, gatewayResponse.getStatusCode());
+        assertTrue(gatewayResponse.getHeaders().keySet().contains(LOCATION));
         assertTrue(gatewayResponse.getHeaders().keySet().contains(ACCESS_CONTROL_ALLOW_ORIGIN));
     }
 
     @Test
-    @DisplayName("handler Returns Created Response On Valid Input (Unpublished Publication)")
-    public void handlerReturnsCreatedResponseOnValidInputUnpublishedPublication() throws IOException,
+    @DisplayName("handler Returns Found Response On Valid Input (Unpublished Publication)")
+    public void handlerReturnsFoundResponseOnValidInputUnpublishedPublication() throws IOException,
             ApiGatewayException {
 
         Publication publication = createUnpublishedPublication(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE);
@@ -138,8 +138,8 @@ public class CreatePresignedDownloadUrlHandlerTest {
                 OWNER_USER_ID), output, context);
 
         GatewayResponse gatewayResponse = objectMapper.readValue(output.toString(), GatewayResponse.class);
-        assertEquals(SC_CREATED, gatewayResponse.getStatusCode());
-        assertTrue(gatewayResponse.getHeaders().keySet().contains(CONTENT_TYPE));
+        assertEquals(SC_MOVED_TEMPORARILY, gatewayResponse.getStatusCode());
+        assertTrue(gatewayResponse.getHeaders().keySet().contains(LOCATION));
         assertTrue(gatewayResponse.getHeaders().keySet().contains(ACCESS_CONTROL_ALLOW_ORIGIN));
     }
 
@@ -205,6 +205,23 @@ public class CreatePresignedDownloadUrlHandlerTest {
     }
 
     @Test
+    @DisplayName("handler Returns Internal Server Error Response On Duplicate File Identifier In Publication")
+    public void handlerReturnsInternalServerErrorResponseOnDuplicateFileIdentifierInPublication()
+            throws ApiGatewayException, IOException {
+        Publication publication = createPublishedPublicationDuplicateFile(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE);
+        when(publicationService.getPublication(any(UUID.class), anyString()))
+                .thenReturn(publication);
+
+        createPresignedDownloadUrlHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE), output,
+                context);
+
+        GatewayResponse gatewayResponse = objectMapper.readValue(output.toString(), GatewayResponse.class);
+        assertEquals(SC_INTERNAL_SERVER_ERROR, gatewayResponse.getStatusCode());
+        assertTrue(gatewayResponse.getHeaders().keySet().contains(CONTENT_TYPE));
+        assertTrue(gatewayResponse.getHeaders().keySet().contains(ACCESS_CONTROL_ALLOW_ORIGIN));
+    }
+
+    @Test
     @DisplayName("handler Returns Bad Request Response On Publication Without Files")
     public void handlerReturnsBadRequestResponseOnPublicationWithoutFile() throws IOException,
             ApiGatewayException {
@@ -222,7 +239,7 @@ public class CreatePresignedDownloadUrlHandlerTest {
     }
 
     @Test
-    @DisplayName("handler Returns Bad Request When Missing Claims on Unpublished Publication")
+    @DisplayName("handler Returns Bad Request Response When Missing Claims on Unpublished Publication")
     public void handlerReturnsBadRequestResponseWhenMissingClaimsUnpublishedPublication() throws IOException,
             ApiGatewayException {
 
@@ -241,7 +258,7 @@ public class CreatePresignedDownloadUrlHandlerTest {
     }
 
     @Test
-    @DisplayName("handler Returns Unauthorized When Unpublished Publication And User Is Not Owner")
+    @DisplayName("handler Returns Unauthorized Response When Unpublished Publication And User Is Not Owner")
     public void handlerReturnsUnauthorizedResponseWhenUnpublishedPublicationAndNotOwner() throws IOException,
             ApiGatewayException {
 
@@ -260,8 +277,8 @@ public class CreatePresignedDownloadUrlHandlerTest {
     }
 
     @Test
-    @DisplayName("handler Returns Internal Server Error on S3 Exception")
-    public void handlerReturnsInternalServerErrorResponseOnS3ServiceException() throws IOException,
+    @DisplayName("handler Returns Service Unavailable Response on S3 Exception")
+    public void handlerReturnsServiceUnavailableResponseOnS3ServiceException() throws IOException,
             ApiGatewayException {
         Publication publication = createPublishedPublication(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE);
         when(publicationService.getPublication(any(UUID.class), anyString()))
@@ -273,7 +290,7 @@ public class CreatePresignedDownloadUrlHandlerTest {
                 context);
 
         GatewayResponse gatewayResponse = objectMapper.readValue(output.toString(), GatewayResponse.class);
-        assertEquals(SC_INTERNAL_SERVER_ERROR, gatewayResponse.getStatusCode());
+        assertEquals(SC_SERVICE_UNAVAILABLE, gatewayResponse.getStatusCode());
         assertTrue(gatewayResponse.getHeaders().keySet().contains(CONTENT_TYPE));
         assertTrue(gatewayResponse.getHeaders().keySet().contains(ACCESS_CONTROL_ALLOW_ORIGIN));
     }
@@ -331,11 +348,33 @@ public class CreatePresignedDownloadUrlHandlerTest {
                 .withFileSet(fileSet).build();
     }
 
+    private Publication createPublishedPublicationDuplicateFile(String identifier, String fileIdentifier) {
+        FileSet fileSet = new FileSet.Builder()
+                .withFiles(Collections.nCopies(2,
+                        new File.Builder()
+                                .withIdentifier(UUID.fromString(fileIdentifier))
+                                .withMimeType(MIME_TYPE_APPLICATION_PDF)
+                                .withLicense(new License.Builder().build())
+                                .build())
+                ).build();
+
+        return new Publication.Builder()
+                .withIdentifier(UUID.fromString(identifier))
+                .withCreatedDate(Instant.now())
+                .withModifiedDate(Instant.now())
+                .withOwner(OWNER_USER_ID)
+                .withPublisher(new Organization.Builder()
+                        .withId(URI.create("http://example.org/publisher/1"))
+                        .build()
+                )
+                .withStatus(PublicationStatus.PUBLISHED)
+                .withFileSet(fileSet).build();
+    }
+
     private InputStream inputStream(String identifier, String identifierFile) throws IOException {
         Map<String, Object> event = new ConcurrentHashMap<>();
         Map<String, String> headers = new ConcurrentHashMap<>();
         headers.put(AUTHORIZATION, SOME_API_KEY);
-        headers.put(CONTENT_TYPE, ContentType.APPLICATION_JSON.getMimeType());
         event.put(HEADERS, headers);
         Map<String, String> pathParameters = new ConcurrentHashMap<>();
         pathParameters.put(IDENTIFIER, identifier);
@@ -348,7 +387,6 @@ public class CreatePresignedDownloadUrlHandlerTest {
         Map<String, Object> event = new ConcurrentHashMap<>();
         Map<String, String> headers = new ConcurrentHashMap<>();
         headers.put(AUTHORIZATION, SOME_API_KEY);
-        headers.put(CONTENT_TYPE, ContentType.APPLICATION_JSON.getMimeType());
         event.put(HEADERS, headers);
         Map<String, String> pathParameters = new ConcurrentHashMap<>();
         pathParameters.put(IDENTIFIER, identifier);

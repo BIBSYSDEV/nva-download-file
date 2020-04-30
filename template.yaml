@@ -10,7 +10,7 @@ Metadata:
     Author: Unit
     SpdxLicenseId: MIT
     LicenseUrl: LICENSE
-    Labels: ['${CODEBUILD_RESOLVED_SOURCE_VERSION}', '${GIT_REPO}']
+    Labels: ['${GIT_REPO}', '${CODEBUILD_RESOLVED_SOURCE_VERSION}', '@${BUILD_TIMESTAMP}']
 
 Globals:
   Function:
@@ -48,9 +48,9 @@ Resources:
           title: NVA Download Publication File API
           version: '1.0'
         paths:
-          /download/{identifier}/files/{fileIdentifier}/generate:
-            post:
-              summary: Returns an S3 presigned download URL to a publication file
+          /{identifier}/files/{fileIdentifier}/generate:
+            get:
+              summary: Returns an S3 presigned download URL to a publication file (Location header)
               consumes:
                 - application/json
               produces:
@@ -77,26 +77,34 @@ Resources:
                 httpMethod: POST
                 type: AWS_PROXY
               responses:
-                '201':
-                  description: CREATED
-                  schema:
-                    type: object
+                '302':
+                  description: FOUND
                 '400':
                   description: BAD REQUEST
                   schema:
-                    type: object
+                    $ref: '#/definitions/Problem'
                 '401':
                   description: UNAUTHORIZED
                   schema:
-                    type: object
+                    $ref: '#/definitions/Problem'
                 '500':
                   description: INTERNAL SERVER ERROR
                   schema:
-                    type: object
+                    $ref: '#/definitions/Problem'
                 '503':
                   description: SERVICE UNAVAILABLE
                   schema:
-                    type: object
+                    $ref: '#/definitions/Problem'
+        definitions:
+          Problem:
+            type: object
+            properties:
+              title:
+                type: string
+              status:
+                type: integer
+              detail:
+                type: string
         securityDefinitions:
           CognitoUserPool:
             type: apiKey

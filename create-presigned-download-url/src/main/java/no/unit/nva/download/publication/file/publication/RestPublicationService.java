@@ -9,7 +9,9 @@ import no.unit.nva.model.Publication;
 
 import nva.commons.exceptions.ApiGatewayException;
 import nva.commons.utils.Environment;
+import nva.commons.utils.JacocoGenerated;
 import nva.commons.utils.JsonUtils;
+import org.apache.http.HttpHeaders;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -17,15 +19,14 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.UUID;
 
+import static org.apache.http.HttpStatus.SC_NOT_FOUND;
+
 public class RestPublicationService {
 
-    public static final String PATH = "/resource/";
-    public static final String ACCEPT = "Accept";
+    public static final String PATH = "/publication/";
     public static final String APPLICATION_JSON = "application/json";
-    public static final String AUTHORIZATION = "Authorization";
     public static final String API_HOST_ENV = "API_HOST";
     public static final String API_SCHEME_ENV = "API_SCHEME";
-    public static final String ITEMS_0 = "/Items/0";
     public static final String ERROR_COMMUNICATING_WITH_REMOTE_SERVICE = "Error communicating with remote service: ";
     public static final String ERROR_PUBLICATION_NOT_FOUND_FOR_IDENTIFIER = "Publication not found for identifier: ";
 
@@ -54,6 +55,7 @@ public class RestPublicationService {
      *
      * @param environment environment
      */
+    @JacocoGenerated
     public RestPublicationService(Environment environment) {
         this(HttpClient.newHttpClient(), JsonUtils.objectMapper, environment.readEnv(API_SCHEME_ENV),
                 environment.readEnv(API_HOST_ENV));
@@ -76,21 +78,21 @@ public class RestPublicationService {
 
         HttpRequest httpRequest = HttpRequest.newBuilder()
                 .uri(uri)
-                .header(ACCEPT, APPLICATION_JSON)
-                .header(AUTHORIZATION, authorization)
+                .header(HttpHeaders.ACCEPT, APPLICATION_JSON)
+                .header(HttpHeaders.AUTHORIZATION, authorization)
                 .GET()
                 .build();
 
         try {
             HttpResponse<String> httpResponse = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
 
-            JsonNode jsonNode = objectMapper.readTree(httpResponse.body());
-            JsonNode item0 = jsonNode.at(ITEMS_0);
-            if (item0.isMissingNode()) {
+            if (httpResponse.statusCode() == SC_NOT_FOUND) {
                 throw new NotFoundException(ERROR_PUBLICATION_NOT_FOUND_FOR_IDENTIFIER + identifier);
             }
 
-            return objectMapper.readValue(objectMapper.writeValueAsString(item0), Publication.class);
+            JsonNode jsonNode = objectMapper.readTree(httpResponse.body());
+            return objectMapper.convertValue(jsonNode, Publication.class);
+
         } catch (Exception e) {
             throw new NoResponseException(ERROR_COMMUNICATING_WITH_REMOTE_SERVICE + uri.toString(), e);
         }

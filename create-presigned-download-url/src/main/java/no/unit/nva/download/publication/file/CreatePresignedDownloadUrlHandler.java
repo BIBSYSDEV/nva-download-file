@@ -13,23 +13,26 @@ import nva.commons.handlers.ApiGatewayHandler;
 import nva.commons.handlers.RequestInfo;
 import nva.commons.utils.Environment;
 import nva.commons.utils.JacocoGenerated;
+import org.apache.http.HttpHeaders;
 import org.apache.http.HttpStatus;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, CreatePresignedDownloadUrlResponse> {
+public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, Void> {
 
     public static final String ERROR_MISSING_FILE_IN_PUBLICATION_FILE_SET = "File not found in publication file set";
+    public static final String ERROR_DUPLICATE_FILES_IN_PUBLICATION = "Publication contains duplicate files";
     public static final String ERROR_MISSING_FILES_IN_PUBLICATION = "Publication does not have any associated files";
-    public static final String ERROR_UNAUTHORIZED = "";
+    public static final String ERROR_UNAUTHORIZED = "Unauthorized";
 
     private final RestPublicationService publicationService;
     private final AwsS3Service awsS3Service;
 
     /**
-     * Constructor for MainHandler.
+     * Constructor for CreatePresignedDownloadUrlHandler.
      *
      * @param publicationService publicationService
      * @param environment        environment
@@ -43,7 +46,7 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, C
     }
 
     /**
-     * Default constructor for MainHandler.
+     * Default constructor for CreatePresignedDownloadUrlHandler.
      */
     @JacocoGenerated
     public CreatePresignedDownloadUrlHandler() {
@@ -51,36 +54,42 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, C
     }
 
     @Override
-    protected CreatePresignedDownloadUrlResponse processInput(Void input, RequestInfo requestInfo, Context context)
+    protected Void processInput(Void input, RequestInfo requestInfo, Context context)
             throws ApiGatewayException {
         Publication publication = publicationService.getPublication(
                 RequestUtil.getIdentifier(requestInfo),
                 RequestUtil.getAuthorization(requestInfo));
 
+        UUID fileIdentifier = RequestUtil.getFileIdentifier(requestInfo);
+
         checkAuthorization(requestInfo, publication);
 
-        File file = validateFile(requestInfo, publication);
+        File file = validateFile(fileIdentifier, publication);
 
         String presignedDownloadUrl = awsS3Service.createPresignedDownloadUrl(file.getIdentifier().toString(),
                 file.getMimeType());
 
-        return new CreatePresignedDownloadUrlResponse(presignedDownloadUrl);
+        setAdditionalHeadersSupplier(() -> Map.of(HttpHeaders.LOCATION, presignedDownloadUrl));
 
+        return input;
     }
 
-    private File validateFile(RequestInfo requestInfo, Publication publication) throws ApiGatewayException {
-        UUID fileIdentifier = RequestUtil.getFileIdentifier(requestInfo);
+
+    private File validateFile(UUID fileIdentifier, Publication publication) throws ApiGatewayException {
 
         Optional<List<File>> files = Optional.ofNullable(publication.getFileSet().getFiles());
 
         if (files.isPresent()) {
             return files.get().stream()
                     .filter(f -> f.getIdentifier().equals(fileIdentifier))
-                    .findAny()
+                    .reduce((a, b) -> {
+                        throw new IllegalStateException(ERROR_DUPLICATE_FILES_IN_PUBLICATION);
+                    })
                     .orElseThrow(() -> new FileNotFoundException(ERROR_MISSING_FILE_IN_PUBLICATION_FILE_SET));
         }
         throw new FileNotFoundException(ERROR_MISSING_FILES_IN_PUBLICATION);
     }
+
 
     protected void checkAuthorization(RequestInfo requestInfo, Publication publication) throws ApiGatewayException {
         if (publication.getStatus().equals(PublicationStatus.PUBLISHED)) {
@@ -92,8 +101,8 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, C
     }
 
     @Override
-    protected Integer getSuccessStatusCode(Void input, CreatePresignedDownloadUrlResponse output) {
-        return HttpStatus.SC_CREATED;
+    protected Integer getSuccessStatusCode(Void input, Void output) {
+        return HttpStatus.SC_MOVED_TEMPORARILY;
     }
 
 }

@@ -1,12 +1,8 @@
 package no.unit.nva.download.publication.file.aws.s3;
 
-import com.amazonaws.HttpMethod;
 import com.amazonaws.SdkClientException;
 import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import no.unit.nva.download.publication.file.aws.s3.exception.S3ServiceException;
-import no.unit.nva.download.publication.file.publication.RestPublicationService;
-import no.unit.nva.download.publication.file.publication.exception.NoResponseException;
 import nva.commons.exceptions.ApiGatewayException;
 import nva.commons.utils.Environment;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,17 +38,9 @@ public class AwsS3ServiceTest {
         environment = mock(Environment.class);
     }
 
-    @Test
-    @DisplayName("calling Constructor With All Env")
-    public void callingConstructorWithAllEnv() {
-        Environment environment = mock(Environment.class);
-        when(environment.readEnv(AwsS3Service.AWS_REGION_ENV)).thenReturn(REGION);
-        when(environment.readEnv(AwsS3Service.BUCKET_NAME_ENV)).thenReturn(BUCKET_NAME);
-        new AwsS3Service(environment);
-    }
 
     @Test
-    @DisplayName("when client get an error the error is propagated to the response")
+    @DisplayName("createPresignedDownloadUrl throws S3ServiceException when creating download URL fails")
     public void getAwsS3ClientError() {
         when(s3Client.generatePresignedUrl(any())).thenThrow(SdkClientException.class);
 
@@ -63,7 +51,8 @@ public class AwsS3ServiceTest {
     }
 
     @Test
-    @DisplayName("client receives a presigned download url given mime type")
+    @DisplayName("createPresignedDownloadUrl returns a non null Url when input is a non null object key and mime "
+            + "type is application/pdf")
     public void getS3PresignedDownloadUrlWithMimeType() throws MalformedURLException, ApiGatewayException {
 
         when(s3Client.generatePresignedUrl(any())).thenReturn(new URL(PRESIGNED_DOWNLOAD_URL));
@@ -77,7 +66,8 @@ public class AwsS3ServiceTest {
     }
 
     @Test
-    @DisplayName("client receives a presigned download url")
+    @DisplayName("createPresignedDownloadUrl returns a non null Url when input is a non null object key and mime "
+            + "type is null")
     public void getS3PresignedDownloadUrl() throws MalformedURLException, ApiGatewayException {
 
         when(s3Client.generatePresignedUrl(any())).thenReturn(new URL(PRESIGNED_DOWNLOAD_URL));

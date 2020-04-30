@@ -7,6 +7,8 @@ import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import no.unit.nva.download.publication.file.aws.s3.exception.S3ServiceException;
 import nva.commons.exceptions.ApiGatewayException;
 import nva.commons.utils.Environment;
+import nva.commons.utils.JacocoGenerated;
+import org.apache.http.HttpHeaders;
 
 import java.util.Date;
 
@@ -14,8 +16,6 @@ import static java.util.Objects.isNull;
 
 
 public class AwsS3Service {
-
-    public static final String CONTENT_TYPE = "Content-Type";
 
     public static final int DEFAULT_EXPIRATION_SECONDS = 10;
 
@@ -42,6 +42,7 @@ public class AwsS3Service {
      *
      * @param environment environment
      */
+    @JacocoGenerated
     public AwsS3Service(Environment environment) {
         this(AmazonS3ClientBuilder.standard().withRegion(environment.readEnv(AWS_REGION_ENV)).build(),
                 environment.readEnv(BUCKET_NAME_ENV));
@@ -71,7 +72,7 @@ public class AwsS3Service {
         generatePresignedUrlRequest.setExpiration(defaultExpiration());
 
         if (!isNull(mimeType)) {
-            generatePresignedUrlRequest.addRequestParameter(CONTENT_TYPE, mimeType);
+            generatePresignedUrlRequest.addRequestParameter(HttpHeaders.CONTENT_TYPE, mimeType);
         }
         return generatePresignedUrlRequest;
     }
