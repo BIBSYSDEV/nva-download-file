@@ -6,6 +6,7 @@ import no.unit.nva.download.publication.file.exception.UnauthorizedException;
 import no.unit.nva.download.publication.file.publication.RestPublicationService;
 import no.unit.nva.download.publication.file.publication.exception.FileNotFoundException;
 import no.unit.nva.model.File;
+import no.unit.nva.model.FileSet;
 import no.unit.nva.model.Publication;
 import no.unit.nva.model.PublicationStatus;
 import nva.commons.exceptions.ApiGatewayException;
@@ -64,7 +65,7 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, V
 
         checkAuthorization(requestInfo, publication);
 
-        File file = validateFile(fileIdentifier, publication);
+        File file = validateFile(fileIdentifier, publication.getFileSet());
 
         String presignedDownloadUrl = awsS3Service.createPresignedDownloadUrl(file.getIdentifier().toString(),
                 file.getMimeType());
@@ -75,9 +76,9 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, V
     }
 
 
-    private File validateFile(UUID fileIdentifier, Publication publication) throws ApiGatewayException {
+    private File validateFile(UUID fileIdentifier, FileSet fileSet) throws ApiGatewayException {
 
-        Optional<List<File>> files = Optional.ofNullable(publication.getFileSet().getFiles());
+        Optional<List<File>> files = Optional.ofNullable(fileSet.getFiles());
 
         if (files.isPresent()) {
             return files.get().stream()
