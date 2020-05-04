@@ -26,3 +26,47 @@ Feature: Retrieve download URL for a Publication File
     And they see that the response body is a problem.json object
     And they see the response body has a field "title" with the value "Unauthorized"
     And they see the response body has a field "status" with the value "401"
+
+  Scenario: An User tries to retrieve a download URL of a non existent Publication File
+    Given A User wants to retrieve a Publication File
+    But the Publication Identifier does not exist
+    When they set the Authentication header to a Bearer token with their credentials
+    And they request GET /download/{identifier}/files/{fileIdentifier}/generate
+    Then they receive a response with status code 404
+    And they see that the response Content-Type header is "application/problem+json"
+    And they see that the response body is a problem.json object
+    And they see the response body has a field "title" with the value "Not Found"
+    And they see the response body has a field "status" with the value "404"
+
+  Scenario: An User tries to retrieve a download URL of Publication File
+    Given A User wants to retrieve a Publication File
+    But An error occurs in communication with S3
+    When they set the Authentication header to a Bearer token with their credentials
+    And they request GET /download/{identifier}/files/{fileIdentifier}/generate
+    Then they receive a response with status code 503
+    And they see that the response Content-Type header is "application/problem+json"
+    And they see that the response body is a problem.json object
+    And they see the response body has a field "title" with the value "Service Unavailable"
+    And they see the response body has a field "status" with the value "503"
+
+  Scenario: An User tries to retrieve a download URL of Publication File
+    Given A User wants to retrieve a Publication File
+    But The User provides malformed identifier
+    When they set the Authentication header to a Bearer token with their credentials
+    And they request GET /download/{identifier}/files/{fileIdentifier}/generate
+    Then they receive a response with status code 400
+    And they see that the response Content-Type header is "application/problem+json"
+    And they see that the response body is a problem.json object
+    And they see the response body has a field "title" with the value "Bad Request"
+    And they see the response body has a field "status" with the value "400"
+
+  Scenario: An User tries to retrieve a download URL of Publication File
+    Given A User wants to retrieve a Publication File
+    But The User provides a non existing fileIdentifier
+    When they set the Authentication header to a Bearer token with their credentials
+    And they request GET /download/{identifier}/files/{fileIdentifier}/generate
+    Then they receive a response with status code 400
+    And they see that the response Content-Type header is "application/problem+json"
+    And they see that the response body is a problem.json object
+    And they see the response body has a field "title" with the value "Bad Request"
+    And they see the response body has a field "status" with the value "400"
