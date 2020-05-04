@@ -17,7 +17,7 @@ Globals:
     Timeout: 20
   Api:
     Cors:
-      AllowMethods: "'POST,OPTIONS'"
+      AllowMethods: "'GET,OPTIONS'"
       AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
       AllowOrigin: "'*'"
 
@@ -134,7 +134,7 @@ Resources:
           Type: Api
           Properties:
             Path: /download/{identifier}/files/{fileIdentifier}/generate
-            Method: post
+            Method: get
             RestApiId: !Ref NvaDownloadPublicationFileApi
 
   NvaDownloadPublicationFileBasePathMapping:

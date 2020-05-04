@@ -18,16 +18,11 @@ Input path parameters are `identifier` (publication id) and `fileIdentifier` (fi
 Usage:
 
 ```
-POST /download/{identifier}/files/{fileIdentifier}/generate
+GET /download/{identifier}/files/{fileIdentifier}/generate
 ```
 
 #####Successful response:
 
-Status: 201 Created
+Status: 302 Found
 
-Content-type: application/json
-```
-{
-    "presignedDownloadUrl": "https://example.com/download?id=1234"
-}
-```
+Location: https://apresigneddownloadurlexample.com/download?id=1234
