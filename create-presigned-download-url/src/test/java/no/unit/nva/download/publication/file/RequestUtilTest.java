@@ -25,7 +25,7 @@ public class RequestUtilTest {
 
 
     @Test
-    public void canGetIdentifierFromRequest() throws ApiGatewayException {
+    public void getIdentifierReturnsIdentifierFromRequestWhenPresent() throws ApiGatewayException {
         UUID uuid = UUID.randomUUID();
         RequestInfo requestInfo = new RequestInfo();
         requestInfo.setPathParameters(Map.of(RequestUtil.IDENTIFIER, uuid.toString()));
@@ -36,19 +36,19 @@ public class RequestUtilTest {
     }
 
     @Test
-    public void getIdentifierOnInvalidRequestThrowsException() {
+    public void getIdentifierThrowsExceptionWhenIdentifierNotPresent() {
         RequestInfo requestInfo = new RequestInfo();
         assertThrows(InputException.class, () -> RequestUtil.getIdentifier(requestInfo));
     }
 
     @Test
-    public void getFileIdentifierOnInvalidRequestThrowsException() {
+    public void getFileIdentifierThrowsExceptionWhenFileIdentifierNotPresent() {
         RequestInfo requestInfo = new RequestInfo();
         assertThrows(InputException.class, () -> RequestUtil.getFileIdentifier(requestInfo));
     }
 
     @Test
-    public void canGetAuthorizationFromRequest() throws ApiGatewayException {
+    public void getAuthorizationReturnsTheValueOfAuthorizationHeader() throws ApiGatewayException {
         RequestInfo requestInfo = new RequestInfo();
         requestInfo.setHeaders(Map.of(HttpHeaders.AUTHORIZATION, VALUE));
 
@@ -58,14 +58,14 @@ public class RequestUtilTest {
     }
 
     @Test
-    public void getAuthorizationOnInvalidRequestThrowsException() {
+    public void getAuthorizationThrowsExceptionWhenAuthorizationNotPresent() {
         RequestInfo requestInfo = new RequestInfo();
         assertThrows(InputException.class, () -> RequestUtil.getAuthorization(requestInfo));
     }
 
 
     @Test
-    public void canGetOwnerFromRequest() throws Exception {
+    public void getOwnerReturnsOwnerFromRequestWhenPresent() throws Exception {
         RequestInfo requestInfo = new RequestInfo();
         requestInfo.setRequestContext(getRequestContextForClaim(RequestUtil.CUSTOM_FEIDE_ID, VALUE));
 
@@ -75,7 +75,7 @@ public class RequestUtilTest {
     }
 
     @Test
-    public void getOwnerOnMissingNodeRequestThrowsException() throws Exception {
+    public void getOwnerThrowsExceptionWhenMissingClaimsNode() throws Exception {
         RequestInfo requestInfo = new RequestInfo();
         requestInfo.setRequestContext(getRequestContextWithMissingNode());
 
@@ -83,7 +83,7 @@ public class RequestUtilTest {
     }
 
     @Test
-    public void getOwnerOnInvalidRequestThrowsException() {
+    public void getOwnerThrowsExceptionWhenOwnerNotPresent() {
         RequestInfo requestInfo = new RequestInfo();
         assertThrows(InputException.class, () -> RequestUtil.getOwner(requestInfo));
     }
