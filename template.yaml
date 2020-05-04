@@ -133,7 +133,7 @@ Resources:
         PostEvent:
           Type: Api
           Properties:
-            Path: /download/{identifier}/files/{fileIdentifier}/generate
+            Path: /{identifier}/files/{fileIdentifier}/generate
             Method: get
             RestApiId: !Ref NvaDownloadPublicationFileApi
 
