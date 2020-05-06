@@ -130,7 +130,7 @@ Resources:
           BUCKET_NAME: !Ref S3Bucket
       Role: !GetAtt UploadExecutionRole.Arn
       Events:
-        PostEvent:
+        GetEvent:
           Type: Api
           Properties:
             Path: /{identifier}/files/{fileIdentifier}/generate
