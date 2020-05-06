@@ -1,0 +1,171 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  AWS
+  Sample SAM Template for AWS
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: NvaDownloadPublicationFileApi
+    Description: NVA Download Publication File API
+    Author: Unit
+    SpdxLicenseId: MIT
+    LicenseUrl: LICENSE
+    Labels: ['${GIT_REPO}', '${CODEBUILD_RESOLVED_SOURCE_VERSION}', '@${BUILD_TIMESTAMP}']
+
+Globals:
+  Function:
+    Timeout: 20
+  Api:
+    Cors:
+      AllowMethods: "'GET,OPTIONS'"
+      AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+      AllowOrigin: "'*'"
+
+Parameters:
+  CognitoAuthorizerArn:
+    Type: String
+    Description: Reference to Cognito UserPool for the stage
+  CustomDomain:
+    Type: String
+    Description: Custom API to connect this lambda to
+  CustomDomainBasePath:
+    Type: String
+    Description: Base path mapping in CustomDomain
+  S3Bucket:
+    Type: String
+    Description: S3 Bucket to access objects
+
+
+Resources:
+  NvaDownloadPublicationFileApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: Prod
+      EndpointConfiguration: REGIONAL
+      DefinitionBody:
+        swagger: '2.0'
+        info:
+          title: NVA Download Publication File API
+          version: '1.0'
+        paths:
+          /{identifier}/files/{fileIdentifier}/generate:
+            get:
+              summary: Returns an S3 presigned download URL to a publication file (Location header)
+              consumes:
+                - application/json
+              produces:
+                - application/json
+              security:
+                - CognitoUserPool: []
+              parameters:
+                - in: path
+                  name: identifier
+                  type: string
+                  format: uuid
+                  required: true
+                  description: UUID identifier of the Publication.
+                - in: path
+                  name: fileIdentifier
+                  type: string
+                  format: uuid
+                  required: true
+                  description: UUID identifier of the Publication File.
+              x-amazon-apigateway-integration:
+                uri:
+                  Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${NvaDownloadPublicationFileFunction.Arn}/invocations
+                responses: {}
+                httpMethod: POST
+                type: AWS_PROXY
+              responses:
+                '302':
+                  description: FOUND
+                '400':
+                  description: BAD REQUEST
+                  schema:
+                    $ref: '#/definitions/Problem'
+                '401':
+                  description: UNAUTHORIZED
+                  schema:
+                    $ref: '#/definitions/Problem'
+                '500':
+                  description: INTERNAL SERVER ERROR
+                  schema:
+                    $ref: '#/definitions/Problem'
+                '503':
+                  description: SERVICE UNAVAILABLE
+                  schema:
+                    $ref: '#/definitions/Problem'
+        definitions:
+          Problem:
+            type: object
+            properties:
+              title:
+                type: string
+              status:
+                type: integer
+              detail:
+                type: string
+        securityDefinitions:
+          CognitoUserPool:
+            type: apiKey
+            name: Authorization
+            in: header
+            x-amazon-apigateway-authtype: cognito_user_pools
+            x-amazon-apigateway-authorizer:
+              type: cognito_user_pools
+              providerARNs:
+                - !Ref CognitoAuthorizerArn
+  NvaDownloadPublicationFileFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: create-presigned-download-url
+      Handler: no.unit.nva.download.publication.file.CreatePresignedDownloadUrlHandler::handleRequest
+      Runtime: java11
+      MemorySize: 1408
+      Environment:
+        Variables:
+          ALLOWED_ORIGIN: '*'
+          API_SCHEME: https
+          API_HOST: !Ref CustomDomain
+          BUCKET_NAME: !Ref S3Bucket
+      Role: !GetAtt UploadExecutionRole.Arn
+      Events:
+        GetEvent:
+          Type: Api
+          Properties:
+            Path: /{identifier}/files/{fileIdentifier}/generate
+            Method: get
+            RestApiId: !Ref NvaDownloadPublicationFileApi
+
+  NvaDownloadPublicationFileBasePathMapping:
+    Type: AWS::ApiGateway::BasePathMapping
+    Properties:
+      BasePath: !Ref CustomDomainBasePath
+      DomainName: !Ref CustomDomain
+      RestApiId: !Ref NvaDownloadPublicationFileApi
+      Stage: !Ref NvaDownloadPublicationFileApi.Stage
+
+  UploadExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: [lambda.amazonaws.com]
+            Action: ['sts:AssumeRole']
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: manage-uploads
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:GetObject
+                Resource:
+                  - !Sub 'arn:aws:s3:::${S3Bucket}'
+                  - !Sub 'arn:aws:s3:::${S3Bucket}/*'
