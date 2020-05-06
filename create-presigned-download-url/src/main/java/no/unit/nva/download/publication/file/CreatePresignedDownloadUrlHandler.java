@@ -63,9 +63,9 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, V
 
         UUID fileIdentifier = RequestUtil.getFileIdentifier(requestInfo);
 
-        checkAuthorization(requestInfo, publication);
+        authorize(requestInfo, publication);
 
-        File file = validateFile(fileIdentifier, publication.getFileSet());
+        File file = getValidFile(fileIdentifier, publication.getFileSet());
 
         String presignedDownloadUrl = awsS3Service.createPresignedDownloadUrl(file.getIdentifier().toString(),
                 file.getMimeType());
@@ -76,7 +76,7 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, V
     }
 
 
-    private File validateFile(UUID fileIdentifier, FileSet fileSet) throws ApiGatewayException {
+    private File getValidFile(UUID fileIdentifier, FileSet fileSet) throws ApiGatewayException {
 
         Optional<List<File>> files = Optional.ofNullable(fileSet.getFiles());
 
@@ -91,8 +91,15 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, V
         throw new FileNotFoundException(ERROR_MISSING_FILES_IN_PUBLICATION);
     }
 
-
-    protected void checkAuthorization(RequestInfo requestInfo, Publication publication) throws ApiGatewayException {
+    /**
+     * Authorize request if publication is published or user is publication owner.
+     *
+     * @param requestInfo requestInfo
+     * @param publication publication
+     * @return void
+     * @throws ApiGatewayException when authorization fails.
+     */
+    protected void authorize(RequestInfo requestInfo, Publication publication) throws ApiGatewayException {
         if (publication.getStatus().equals(PublicationStatus.PUBLISHED)) {
             return;
         } else if (RequestUtil.getOwner(requestInfo).equalsIgnoreCase(publication.getOwner())) {

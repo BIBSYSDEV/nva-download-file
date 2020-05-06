@@ -189,7 +189,7 @@ public class CreatePresignedDownloadUrlHandlerTest {
     }
 
     @Test
-    @DisplayName("handler Returns Bad Request Response On Unknown File Identifier")
+    @DisplayName("handler Returns Not Found Response On Unknown File Identifier")
     public void handlerReturnsBadRequestResponseOnUnknownFileIdentifier() throws ApiGatewayException, IOException {
         Publication publication = createPublishedPublication(IDENTIFIER_VALUE, IDENTIFIER_VALUE);
         when(publicationService.getPublication(any(UUID.class), anyString()))
@@ -199,7 +199,7 @@ public class CreatePresignedDownloadUrlHandlerTest {
                 context);
 
         GatewayResponse gatewayResponse = objectMapper.readValue(output.toString(), GatewayResponse.class);
-        assertEquals(SC_BAD_REQUEST, gatewayResponse.getStatusCode());
+        assertEquals(SC_NOT_FOUND, gatewayResponse.getStatusCode());
         assertTrue(gatewayResponse.getHeaders().keySet().contains(CONTENT_TYPE));
         assertTrue(gatewayResponse.getHeaders().keySet().contains(ACCESS_CONTROL_ALLOW_ORIGIN));
     }
@@ -222,7 +222,7 @@ public class CreatePresignedDownloadUrlHandlerTest {
     }
 
     @Test
-    @DisplayName("handler Returns Bad Request Response On Publication Without Files")
+    @DisplayName("handler Returns Not Found Response On Publication Without Files")
     public void handlerReturnsBadRequestResponseOnPublicationWithoutFile() throws IOException,
             ApiGatewayException {
         Publication publication = createPublicationWithoutFileSetFile(IDENTIFIER_VALUE);
@@ -233,7 +233,7 @@ public class CreatePresignedDownloadUrlHandlerTest {
                 context);
 
         GatewayResponse gatewayResponse = objectMapper.readValue(output.toString(), GatewayResponse.class);
-        assertEquals(SC_BAD_REQUEST, gatewayResponse.getStatusCode());
+        assertEquals(SC_NOT_FOUND, gatewayResponse.getStatusCode());
         assertTrue(gatewayResponse.getHeaders().keySet().contains(CONTENT_TYPE));
         assertTrue(gatewayResponse.getHeaders().keySet().contains(ACCESS_CONTROL_ALLOW_ORIGIN));
     }

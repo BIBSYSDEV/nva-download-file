@@ -29,7 +29,7 @@ subprojects {
 
     def junit5Version = '5.6.0'
     def jacksonVersion = '2.10.2'
-    def awsSdkVersion = '1.11.714'
+    def awsSdkVersion = '1.11.766'
     def zalandoVersion = '0.23.0'
 
     dependencies {

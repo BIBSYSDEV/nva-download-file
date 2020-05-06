@@ -11,6 +11,6 @@ public class FileNotFoundException extends ApiGatewayException {
 
     @Override
     protected Integer statusCode() {
-        return HttpStatus.SC_BAD_REQUEST;
+        return HttpStatus.SC_NOT_FOUND;
     }
 }
