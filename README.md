@@ -1,19 +1,19 @@
 # nva-download-file
 
-#####Description
+##### Description
 
 Lambda for generating presigned download URLs for publication files stored in Amazon S3 bucket.
 
-Credentials are required. Users are only authorized to receive a download URL when:
+Credentials are required. Users are authorized to receive a download URL when one of the conditions below are met:
  
- 1. The user is the owner of the publication
- 2. The publication is published.
+ * When the publication is unpublished, the user must be the owner of the publication
+ * When the publication is published
  
-#####Envs
+##### Envs
 
 See template.yaml for more details
 
-#####Input
+##### Input
 Input path parameters are `identifier` (publication id) and `fileIdentifier` (file id)
 Usage:
 
@@ -21,8 +21,10 @@ Usage:
 GET /download/{identifier}/files/{fileIdentifier}/generate
 ```
 
-#####Successful response:
+##### Successful response:
 
 Status: 302 Found
 
 Location: https://apresigneddownloadurlexample.com/download?id=1234
+
+(The response from the redirect url should provide Content-Disposition, Content-Type, etc.)
