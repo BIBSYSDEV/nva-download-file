@@ -15,6 +15,7 @@ See template.yaml for more details
 
 ##### Input
 Input path parameters are `identifier` (publication id) and `fileIdentifier` (file id)
+
 Usage:
 
 ```
