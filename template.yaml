@@ -182,7 +182,7 @@ Resources:
         GetEvent:
           Type: Api
           Properties:
-            Path: /{identifier}/files/{fileIdentifier}
+            Path: /{identifier}/files/{fileIdentifier}/redirect
             Method: get
             RestApiId: !Ref NvaDownloadPublicationFileApi
   NvaDownloadPublicationFileJsonFunction:
