@@ -48,7 +48,7 @@ Resources:
           title: NVA Download Publication File API
           version: '1.0'
         paths:
-          /{identifier}/files/{fileIdentifier}/generate:
+          /{identifier}/files/{fileIdentifier}/redirect:
             get:
               summary: Returns an S3 presigned download URL to a publication file (Location header)
               consumes:
@@ -72,13 +72,62 @@ Resources:
                   description: UUID identifier of the Publication File.
               x-amazon-apigateway-integration:
                 uri:
-                  Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${NvaDownloadPublicationFileFunction.Arn}/invocations
+                  Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${NvaDownloadPublicationFileRedirectFunction.Arn}/invocations
                 responses: {}
                 httpMethod: POST
                 type: AWS_PROXY
               responses:
                 '302':
                   description: FOUND
+                '400':
+                  description: BAD REQUEST
+                  schema:
+                    $ref: '#/definitions/Problem'
+                '401':
+                  description: UNAUTHORIZED
+                  schema:
+                    $ref: '#/definitions/Problem'
+                '500':
+                  description: INTERNAL SERVER ERROR
+                  schema:
+                    $ref: '#/definitions/Problem'
+                '503':
+                  description: SERVICE UNAVAILABLE
+                  schema:
+                    $ref: '#/definitions/Problem'
+          /{identifier}/files/{fileIdentifier}/json:
+            get:
+              summary: Returns an S3 presigned download URL to a publication file (with json response body)
+              consumes:
+                - application/json
+              produces:
+                - application/json
+              security:
+                - CognitoUserPool: []
+              parameters:
+                - in: path
+                  name: identifier
+                  type: string
+                  format: uuid
+                  required: true
+                  description: UUID identifier of the Publication.
+                - in: path
+                  name: fileIdentifier
+                  type: string
+                  format: uuid
+                  required: true
+                  description: UUID identifier of the Publication File.
+              x-amazon-apigateway-integration:
+                uri:
+                  Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${NvaDownloadPublicationFileJsonFunction.Arn}/invocations
+                responses: {}
+                httpMethod: POST
+                type: AWS_PROXY
+              responses:
+                '200':
+                  description: OK
+                  schema:
+                    type: object
                 '400':
                   description: BAD REQUEST
                   schema:
@@ -115,11 +164,11 @@ Resources:
               type: cognito_user_pools
               providerARNs:
                 - !Ref CognitoAuthorizerArn
-  NvaDownloadPublicationFileFunction:
+  NvaDownloadPublicationFileRedirectFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: create-presigned-download-url
-      Handler: no.unit.nva.download.publication.file.CreatePresignedDownloadUrlHandler::handleRequest
+      Handler: no.unit.nva.download.publication.file.CreatePresignedDownloadUrlRedirectHandler::handleRequest
       Runtime: java11
       MemorySize: 1408
       Environment:
@@ -133,7 +182,28 @@ Resources:
         GetEvent:
           Type: Api
           Properties:
-            Path: /{identifier}/files/{fileIdentifier}/generate
+            Path: /{identifier}/files/{fileIdentifier}
+            Method: get
+            RestApiId: !Ref NvaDownloadPublicationFileApi
+  NvaDownloadPublicationFileJsonFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: create-presigned-download-url
+      Handler: no.unit.nva.download.publication.file.CreatePresignedDownloadUrlJsonHandler::handleRequest
+      Runtime: java11
+      MemorySize: 1408
+      Environment:
+        Variables:
+          ALLOWED_ORIGIN: '*'
+          API_SCHEME: https
+          API_HOST: !Ref CustomDomain
+          BUCKET_NAME: !Ref S3Bucket
+      Role: !GetAtt UploadExecutionRole.Arn
+      Events:
+        GetEvent:
+          Type: Api
+          Properties:
+            Path: /{identifier}/files/{fileIdentifier}/json
             Method: get
             RestApiId: !Ref NvaDownloadPublicationFileApi
 
