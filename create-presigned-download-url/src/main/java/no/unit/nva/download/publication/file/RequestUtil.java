@@ -76,13 +76,13 @@ public final class RequestUtil {
 
 
     /**
-     * Get owner from requestContext authorizer claims.
+     * Get userId from requestContext authorizer claims.
      *
      * @param requestInfo requestInfo.
-     * @return the owner
+     * @return the userId
      * @throws ApiGatewayException exception thrown if value is missing
      */
-    public static String getOwner(RequestInfo requestInfo) throws ApiGatewayException {
+    public static String getUserId(RequestInfo requestInfo) throws ApiGatewayException {
         JsonNode jsonNode = requestInfo.getRequestContext().at(AUTHORIZER_CLAIMS + CUSTOM_FEIDE_ID);
         if (!jsonNode.isMissingNode()) {
             return jsonNode.textValue();

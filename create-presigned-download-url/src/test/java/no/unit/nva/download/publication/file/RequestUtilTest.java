@@ -65,27 +65,27 @@ public class RequestUtilTest {
 
 
     @Test
-    public void getOwnerReturnsOwnerFromRequestWhenPresent() throws Exception {
+    public void getUserIdReturnsOwnerFromRequestWhenPresent() throws Exception {
         RequestInfo requestInfo = new RequestInfo();
         requestInfo.setRequestContext(getRequestContextForClaim(RequestUtil.CUSTOM_FEIDE_ID, VALUE));
 
-        String owner = RequestUtil.getOwner(requestInfo);
+        String owner = RequestUtil.getUserId(requestInfo);
 
         assertEquals(VALUE, owner);
     }
 
     @Test
-    public void getOwnerThrowsExceptionWhenMissingClaimsNode() throws Exception {
+    public void getUserIdThrowsExceptionWhenMissingClaimsNode() throws Exception {
         RequestInfo requestInfo = new RequestInfo();
         requestInfo.setRequestContext(getRequestContextWithMissingNode());
 
-        assertThrows(InputException.class, () -> RequestUtil.getOwner(requestInfo));
+        assertThrows(InputException.class, () -> RequestUtil.getUserId(requestInfo));
     }
 
     @Test
-    public void getOwnerThrowsExceptionWhenOwnerNotPresent() {
+    public void getUserIdThrowsExceptionWhenUserIdNotPresent() {
         RequestInfo requestInfo = new RequestInfo();
-        assertThrows(InputException.class, () -> RequestUtil.getOwner(requestInfo));
+        assertThrows(InputException.class, () -> RequestUtil.getUserId(requestInfo));
     }
 
     private JsonNode getRequestContextWithMissingNode() throws JsonProcessingException {

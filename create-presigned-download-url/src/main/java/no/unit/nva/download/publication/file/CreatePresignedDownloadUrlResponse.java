@@ -1,10 +1,10 @@
 package no.unit.nva.download.publication.file;
 
-public class CreatePresignedDownloadUrlJsonResponse {
+public class CreatePresignedDownloadUrlResponse {
 
     private final String presignedDownloadUrl;
 
-    public CreatePresignedDownloadUrlJsonResponse(String presignedDownloadUrl) {
+    public CreatePresignedDownloadUrlResponse(String presignedDownloadUrl) {
         this.presignedDownloadUrl = presignedDownloadUrl;
     }
 

@@ -60,7 +60,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class CreatePresignedDownloadUrlJsonHandlerTest {
+public class CreatePresignedDownloadUrlHandlerTest {
 
     public static final String SOME_API_KEY = "some api key";
     public static final String PATH_PARAMETERS = "pathParameters";
@@ -78,7 +78,7 @@ public class CreatePresignedDownloadUrlJsonHandlerTest {
     private Context context;
     private OutputStream output;
 
-    private CreatePresignedDownloadUrlJsonHandler createPresignedDownloadUrlJsonHandler;
+    private CreatePresignedDownloadUrlHandler createPresignedDownloadUrlHandler;
 
     /**
      * Set up environment.
@@ -92,14 +92,14 @@ public class CreatePresignedDownloadUrlJsonHandlerTest {
         awsS3Service = mock(AwsS3Service.class);
         context = new TestContext();
         output = new ByteArrayOutputStream();
-        createPresignedDownloadUrlJsonHandler =
-                new CreatePresignedDownloadUrlJsonHandler(publicationService, awsS3Service, environment);
+        createPresignedDownloadUrlHandler =
+                new CreatePresignedDownloadUrlHandler(publicationService, awsS3Service, environment);
     }
 
     @Test
     @DisplayName("handler Default Constructor Throws Exception When Envs Are Not Set")
     public void defaultConstructorThrowsExceptionWhenEnvsAreNotSet() {
-        assertThrows(IllegalStateException.class, CreatePresignedDownloadUrlRedirectHandler::new);
+        assertThrows(IllegalStateException.class, CreatePresignedDownloadUrlHandler::new);
     }
 
     @Test
@@ -113,7 +113,7 @@ public class CreatePresignedDownloadUrlJsonHandlerTest {
         when(awsS3Service.createPresignedDownloadUrl(IDENTIFIER_FILE_VALUE, MIME_TYPE_APPLICATION_PDF))
                 .thenReturn(PRESIGNED_DOWNLOAD_URL);
 
-        createPresignedDownloadUrlJsonHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE),
+        createPresignedDownloadUrlHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE),
                 output, context);
 
         GatewayResponse gatewayResponse = objectMapper.readValue(output.toString(), GatewayResponse.class);
@@ -133,7 +133,7 @@ public class CreatePresignedDownloadUrlJsonHandlerTest {
         when(awsS3Service.createPresignedDownloadUrl(IDENTIFIER_FILE_VALUE, MIME_TYPE_APPLICATION_PDF))
                 .thenReturn(PRESIGNED_DOWNLOAD_URL);
 
-        createPresignedDownloadUrlJsonHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE,
+        createPresignedDownloadUrlHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE,
                 OWNER_USER_ID), output, context);
 
         GatewayResponse gatewayResponse = objectMapper.readValue(output.toString(), GatewayResponse.class);
@@ -148,7 +148,7 @@ public class CreatePresignedDownloadUrlJsonHandlerTest {
         when(publicationService.getPublication(any(UUID.class), anyString()))
                 .thenThrow(new NotFoundException(ERROR_PUBLICATION_NOT_FOUND_FOR_IDENTIFIER + IDENTIFIER_VALUE));
 
-        createPresignedDownloadUrlJsonHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE),
+        createPresignedDownloadUrlHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE),
                 output, context);
 
         GatewayResponse gatewayResponse = objectMapper.readValue(output.toString(), GatewayResponse.class);
@@ -161,7 +161,7 @@ public class CreatePresignedDownloadUrlJsonHandlerTest {
     @DisplayName("handler Returns Bad Request Response On Malformed Identifier")
     public void handlerReturnsBadRequestResponseOnMalformedIdentifier() throws IOException {
 
-        createPresignedDownloadUrlJsonHandler.handleRequest(inputStream(IDENTIFIER, IDENTIFIER_FILE_VALUE), output,
+        createPresignedDownloadUrlHandler.handleRequest(inputStream(IDENTIFIER, IDENTIFIER_FILE_VALUE), output,
                 context);
 
         GatewayResponse gatewayResponse = objectMapper.readValue(output.toString(), GatewayResponse.class);
@@ -178,7 +178,7 @@ public class CreatePresignedDownloadUrlJsonHandlerTest {
         when(publicationService.getPublication(any(UUID.class), anyString()))
                 .thenThrow(new NoResponseException(ERROR_COMMUNICATING_WITH_REMOTE_SERVICE,
                         new Exception()));
-        createPresignedDownloadUrlJsonHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE),
+        createPresignedDownloadUrlHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE),
                 output, context);
 
         GatewayResponse gatewayResponse = objectMapper.readValue(output.toString(), GatewayResponse.class);
@@ -194,7 +194,7 @@ public class CreatePresignedDownloadUrlJsonHandlerTest {
         when(publicationService.getPublication(any(UUID.class), anyString()))
                 .thenReturn(publication);
 
-        createPresignedDownloadUrlJsonHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE),
+        createPresignedDownloadUrlHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE),
                 output, context);
 
         GatewayResponse gatewayResponse = objectMapper.readValue(output.toString(), GatewayResponse.class);
@@ -211,7 +211,7 @@ public class CreatePresignedDownloadUrlJsonHandlerTest {
         when(publicationService.getPublication(any(UUID.class), anyString()))
                 .thenReturn(publication);
 
-        createPresignedDownloadUrlJsonHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE),
+        createPresignedDownloadUrlHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE),
                 output, context);
 
         GatewayResponse gatewayResponse = objectMapper.readValue(output.toString(), GatewayResponse.class);
@@ -228,7 +228,7 @@ public class CreatePresignedDownloadUrlJsonHandlerTest {
         when(publicationService.getPublication(any(UUID.class), anyString()))
                 .thenReturn(publication);
 
-        createPresignedDownloadUrlJsonHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE),
+        createPresignedDownloadUrlHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE),
                 output, context);
 
         GatewayResponse gatewayResponse = objectMapper.readValue(output.toString(), GatewayResponse.class);
@@ -247,7 +247,7 @@ public class CreatePresignedDownloadUrlJsonHandlerTest {
         when(publicationService.getPublication(any(UUID.class), anyString()))
                 .thenReturn(publication);
 
-        createPresignedDownloadUrlJsonHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE),
+        createPresignedDownloadUrlHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE),
                 output, context);
 
         GatewayResponse gatewayResponse = objectMapper.readValue(output.toString(), GatewayResponse.class);
@@ -266,7 +266,7 @@ public class CreatePresignedDownloadUrlJsonHandlerTest {
         when(publicationService.getPublication(any(UUID.class), anyString()))
                 .thenReturn(publication);
 
-        createPresignedDownloadUrlJsonHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE,
+        createPresignedDownloadUrlHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE,
                 NOT_OWNER_USER_ID), output, context);
 
         GatewayResponse gatewayResponse = objectMapper.readValue(output.toString(), GatewayResponse.class);
@@ -285,7 +285,7 @@ public class CreatePresignedDownloadUrlJsonHandlerTest {
         when(awsS3Service.createPresignedDownloadUrl(IDENTIFIER_FILE_VALUE, MIME_TYPE_APPLICATION_PDF))
                 .thenThrow(new S3ServiceException("message", new SdkClientException("message")));
 
-        createPresignedDownloadUrlJsonHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE),
+        createPresignedDownloadUrlHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE),
                 output, context);
 
         GatewayResponse gatewayResponse = objectMapper.readValue(output.toString(), GatewayResponse.class);
