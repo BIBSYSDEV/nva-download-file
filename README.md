@@ -19,13 +19,18 @@ Input path parameters are `identifier` (publication id) and `fileIdentifier` (fi
 Usage:
 
 ```
-GET /download/{identifier}/files/{fileIdentifier}/generate
+GET /download/{identifier}/files/{fileIdentifier}
 ```
 
 ##### Successful response:
 
-Status: 302 Found
+Status: 200 OK 
 
-Location: https://apresigneddownloadurlexample.com/download?id=1234
+Body:
+```
+{
+    "presignedDownloadUrl": "https://apresigneddownloadurlexample.com/download?id=1234" 
+}
+```
 
-(The response from the redirect url should provide Content-Disposition, Content-Type, etc.)
+(The response from the presigned download url should provide Content-Disposition, Content-Type, etc.)

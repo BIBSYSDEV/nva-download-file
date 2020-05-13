@@ -14,15 +14,14 @@ import nva.commons.handlers.ApiGatewayHandler;
 import nva.commons.handlers.RequestInfo;
 import nva.commons.utils.Environment;
 import nva.commons.utils.JacocoGenerated;
-import org.apache.http.HttpHeaders;
 import org.apache.http.HttpStatus;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, Void> {
+public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void,
+        CreatePresignedDownloadUrlResponse> {
 
     public static final String ERROR_MISSING_FILE_IN_PUBLICATION_FILE_SET = "File not found in publication file set";
     public static final String ERROR_DUPLICATE_FILES_IN_PUBLICATION = "Publication contains duplicate files";
@@ -55,7 +54,7 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, V
     }
 
     @Override
-    protected Void processInput(Void input, RequestInfo requestInfo, Context context)
+    protected CreatePresignedDownloadUrlResponse processInput(Void input, RequestInfo requestInfo, Context context)
             throws ApiGatewayException {
         Publication publication = publicationService.getPublication(
                 RequestUtil.getIdentifier(requestInfo),
@@ -70,12 +69,22 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, V
         String presignedDownloadUrl = awsS3Service.createPresignedDownloadUrl(file.getIdentifier().toString(),
                 file.getMimeType());
 
-        setAdditionalHeadersSupplier(() -> Map.of(HttpHeaders.LOCATION, presignedDownloadUrl));
-
-        return input;
+        return new CreatePresignedDownloadUrlResponse(presignedDownloadUrl);
     }
 
+    @Override
+    protected Integer getSuccessStatusCode(Void input, CreatePresignedDownloadUrlResponse output) {
+        return HttpStatus.SC_OK;
+    }
 
+    /**
+     * Get valid file from publication.
+     *
+     * @param fileIdentifier fileIdentifier
+     * @param fileSet fileSet
+     * @return valid file
+     * @throws ApiGatewayException exception thrown if valid file not present
+     */
     private File getValidFile(UUID fileIdentifier, FileSet fileSet) throws ApiGatewayException {
 
         Optional<List<File>> files = Optional.ofNullable(fileSet.getFiles());
@@ -96,21 +105,15 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, V
      *
      * @param requestInfo requestInfo
      * @param publication publication
-     * @return void
      * @throws ApiGatewayException when authorization fails.
      */
-    protected void authorize(RequestInfo requestInfo, Publication publication) throws ApiGatewayException {
+    private void authorize(RequestInfo requestInfo, Publication publication) throws ApiGatewayException {
         if (publication.getStatus().equals(PublicationStatus.PUBLISHED)) {
             return;
-        } else if (RequestUtil.getOwner(requestInfo).equalsIgnoreCase(publication.getOwner())) {
+        } else if (RequestUtil.getUserId(requestInfo).equalsIgnoreCase(publication.getOwner())) {
             return;
         }
         throw new UnauthorizedException(ERROR_UNAUTHORIZED);
-    }
-
-    @Override
-    protected Integer getSuccessStatusCode(Void input, Void output) {
-        return HttpStatus.SC_MOVED_TEMPORARILY;
     }
 
 }

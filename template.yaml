@@ -48,9 +48,9 @@ Resources:
           title: NVA Download Publication File API
           version: '1.0'
         paths:
-          /{identifier}/files/{fileIdentifier}/generate:
+          /{identifier}/files/{fileIdentifier}:
             get:
-              summary: Returns an S3 presigned download URL to a publication file (Location header)
+              summary: Returns an S3 presigned download URL to a publication file (within json response body)
               consumes:
                 - application/json
               produces:
@@ -77,8 +77,10 @@ Resources:
                 httpMethod: POST
                 type: AWS_PROXY
               responses:
-                '302':
-                  description: FOUND
+                '200':
+                  description: OK
+                  schema:
+                    type: object
                 '400':
                   description: BAD REQUEST
                   schema:
@@ -133,7 +135,7 @@ Resources:
         GetEvent:
           Type: Api
           Properties:
-            Path: /{identifier}/files/{fileIdentifier}/generate
+            Path: /{identifier}/files/{fileIdentifier}
             Method: get
             RestApiId: !Ref NvaDownloadPublicationFileApi
 
