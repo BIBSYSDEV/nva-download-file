@@ -46,11 +46,10 @@ import static nva.commons.utils.MockClaims.CUSTOM_FEIDE_ID;
 import static nva.commons.utils.MockClaims.REQUEST_CONTEXT_NODE;
 import static org.apache.http.HttpHeaders.AUTHORIZATION;
 import static org.apache.http.HttpHeaders.CONTENT_TYPE;
-import static org.apache.http.HttpHeaders.LOCATION;
 import static org.apache.http.HttpStatus.SC_BAD_REQUEST;
 import static org.apache.http.HttpStatus.SC_INTERNAL_SERVER_ERROR;
-import static org.apache.http.HttpStatus.SC_MOVED_TEMPORARILY;
 import static org.apache.http.HttpStatus.SC_NOT_FOUND;
+import static org.apache.http.HttpStatus.SC_OK;
 import static org.apache.http.HttpStatus.SC_SERVICE_UNAVAILABLE;
 import static org.apache.http.HttpStatus.SC_UNAUTHORIZED;
 import static org.junit.Assert.assertEquals;
@@ -104,8 +103,8 @@ public class CreatePresignedDownloadUrlHandlerTest {
     }
 
     @Test
-    @DisplayName("handler Returns Found Response On Valid Input (Published Publication)")
-    public void handlerReturnsFoundResponseOnValidInputPublishedPublication() throws IOException,
+    @DisplayName("handler Returns Ok Response On Valid Input (Published Publication)")
+    public void handlerReturnsOkResponseOnValidInputPublishedPublication() throws IOException,
             ApiGatewayException {
 
         Publication publication = createPublishedPublication(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE);
@@ -114,18 +113,18 @@ public class CreatePresignedDownloadUrlHandlerTest {
         when(awsS3Service.createPresignedDownloadUrl(IDENTIFIER_FILE_VALUE, MIME_TYPE_APPLICATION_PDF))
                 .thenReturn(PRESIGNED_DOWNLOAD_URL);
 
-        createPresignedDownloadUrlHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE), output,
-                context);
+        createPresignedDownloadUrlHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE),
+                output, context);
 
         GatewayResponse gatewayResponse = objectMapper.readValue(output.toString(), GatewayResponse.class);
-        assertEquals(SC_MOVED_TEMPORARILY, gatewayResponse.getStatusCode());
-        assertTrue(gatewayResponse.getHeaders().keySet().contains(LOCATION));
+        assertEquals(SC_OK, gatewayResponse.getStatusCode());
+        assertTrue(gatewayResponse.getHeaders().keySet().contains(CONTENT_TYPE));
         assertTrue(gatewayResponse.getHeaders().keySet().contains(ACCESS_CONTROL_ALLOW_ORIGIN));
     }
 
     @Test
-    @DisplayName("handler Returns Found Response On Valid Input (Unpublished Publication)")
-    public void handlerReturnsFoundResponseOnValidInputUnpublishedPublication() throws IOException,
+    @DisplayName("handler Returns Ok Response On Valid Input (Unpublished Publication)")
+    public void handlerReturnsOkResponseOnValidInputUnpublishedPublication() throws IOException,
             ApiGatewayException {
 
         Publication publication = createUnpublishedPublication(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE);
@@ -138,8 +137,8 @@ public class CreatePresignedDownloadUrlHandlerTest {
                 OWNER_USER_ID), output, context);
 
         GatewayResponse gatewayResponse = objectMapper.readValue(output.toString(), GatewayResponse.class);
-        assertEquals(SC_MOVED_TEMPORARILY, gatewayResponse.getStatusCode());
-        assertTrue(gatewayResponse.getHeaders().keySet().contains(LOCATION));
+        assertEquals(SC_OK, gatewayResponse.getStatusCode());
+        assertTrue(gatewayResponse.getHeaders().keySet().contains(CONTENT_TYPE));
         assertTrue(gatewayResponse.getHeaders().keySet().contains(ACCESS_CONTROL_ALLOW_ORIGIN));
     }
 
@@ -149,8 +148,8 @@ public class CreatePresignedDownloadUrlHandlerTest {
         when(publicationService.getPublication(any(UUID.class), anyString()))
                 .thenThrow(new NotFoundException(ERROR_PUBLICATION_NOT_FOUND_FOR_IDENTIFIER + IDENTIFIER_VALUE));
 
-        createPresignedDownloadUrlHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE), output,
-                context);
+        createPresignedDownloadUrlHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE),
+                output, context);
 
         GatewayResponse gatewayResponse = objectMapper.readValue(output.toString(), GatewayResponse.class);
         assertEquals(SC_NOT_FOUND, gatewayResponse.getStatusCode());
@@ -179,8 +178,8 @@ public class CreatePresignedDownloadUrlHandlerTest {
         when(publicationService.getPublication(any(UUID.class), anyString()))
                 .thenThrow(new NoResponseException(ERROR_COMMUNICATING_WITH_REMOTE_SERVICE,
                         new Exception()));
-        createPresignedDownloadUrlHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE), output,
-                context);
+        createPresignedDownloadUrlHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE),
+                output, context);
 
         GatewayResponse gatewayResponse = objectMapper.readValue(output.toString(), GatewayResponse.class);
         assertEquals(SC_SERVICE_UNAVAILABLE, gatewayResponse.getStatusCode());
@@ -195,8 +194,8 @@ public class CreatePresignedDownloadUrlHandlerTest {
         when(publicationService.getPublication(any(UUID.class), anyString()))
                 .thenReturn(publication);
 
-        createPresignedDownloadUrlHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE), output,
-                context);
+        createPresignedDownloadUrlHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE),
+                output, context);
 
         GatewayResponse gatewayResponse = objectMapper.readValue(output.toString(), GatewayResponse.class);
         assertEquals(SC_NOT_FOUND, gatewayResponse.getStatusCode());
@@ -212,8 +211,8 @@ public class CreatePresignedDownloadUrlHandlerTest {
         when(publicationService.getPublication(any(UUID.class), anyString()))
                 .thenReturn(publication);
 
-        createPresignedDownloadUrlHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE), output,
-                context);
+        createPresignedDownloadUrlHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE),
+                output, context);
 
         GatewayResponse gatewayResponse = objectMapper.readValue(output.toString(), GatewayResponse.class);
         assertEquals(SC_INTERNAL_SERVER_ERROR, gatewayResponse.getStatusCode());
@@ -229,8 +228,8 @@ public class CreatePresignedDownloadUrlHandlerTest {
         when(publicationService.getPublication(any(UUID.class), anyString()))
                 .thenReturn(publication);
 
-        createPresignedDownloadUrlHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE), output,
-                context);
+        createPresignedDownloadUrlHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE),
+                output, context);
 
         GatewayResponse gatewayResponse = objectMapper.readValue(output.toString(), GatewayResponse.class);
         assertEquals(SC_NOT_FOUND, gatewayResponse.getStatusCode());
@@ -248,8 +247,8 @@ public class CreatePresignedDownloadUrlHandlerTest {
         when(publicationService.getPublication(any(UUID.class), anyString()))
                 .thenReturn(publication);
 
-        createPresignedDownloadUrlHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE), output,
-                context);
+        createPresignedDownloadUrlHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE),
+                output, context);
 
         GatewayResponse gatewayResponse = objectMapper.readValue(output.toString(), GatewayResponse.class);
         assertEquals(SC_BAD_REQUEST, gatewayResponse.getStatusCode());
@@ -286,8 +285,8 @@ public class CreatePresignedDownloadUrlHandlerTest {
         when(awsS3Service.createPresignedDownloadUrl(IDENTIFIER_FILE_VALUE, MIME_TYPE_APPLICATION_PDF))
                 .thenThrow(new S3ServiceException("message", new SdkClientException("message")));
 
-        createPresignedDownloadUrlHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE), output,
-                context);
+        createPresignedDownloadUrlHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE),
+                output, context);
 
         GatewayResponse gatewayResponse = objectMapper.readValue(output.toString(), GatewayResponse.class);
         assertEquals(SC_SERVICE_UNAVAILABLE, gatewayResponse.getStatusCode());
