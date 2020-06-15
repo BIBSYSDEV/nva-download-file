@@ -19,6 +19,8 @@ import org.apache.http.HttpStatus;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void,
         CreatePresignedDownloadUrlResponse> {
@@ -28,8 +30,10 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void,
     public static final String ERROR_MISSING_FILES_IN_PUBLICATION = "Publication does not have any associated files";
     public static final String ERROR_UNAUTHORIZED = "Unauthorized";
 
+    private static final Logger logger = LoggerFactory.getLogger(CreatePresignedDownloadUrlHandler.class);
     private final RestPublicationService publicationService;
     private final AwsS3Service awsS3Service;
+
 
     /**
      * Constructor for CreatePresignedDownloadUrlHandler.
@@ -40,7 +44,7 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void,
     public CreatePresignedDownloadUrlHandler(RestPublicationService publicationService,
                                              AwsS3Service awsS3Service,
                                              Environment environment) {
-        super(Void.class, environment);
+        super(Void.class, environment, logger);
         this.publicationService = publicationService;
         this.awsS3Service = awsS3Service;
     }
