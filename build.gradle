@@ -33,7 +33,7 @@ subprojects {
     def zalandoVersion = '0.23.0'
 
     dependencies {
-        implementation group: 'com.github.BIBSYSDEV', name: 'nva-datamodel-java', version: '0.9.0'
+        implementation group: 'com.github.BIBSYSDEV', name: 'nva-datamodel-java', version: '0.10.0'
         implementation group: 'com.github.BIBSYSDEV', name: 'nva-commons', version: '0.3.4'
 
         implementation group: 'io.mikael', name: 'urlbuilder', version: '2.0.9'
