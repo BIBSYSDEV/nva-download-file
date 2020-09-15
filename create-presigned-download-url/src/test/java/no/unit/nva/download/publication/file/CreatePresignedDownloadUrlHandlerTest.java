@@ -108,7 +108,7 @@ public class CreatePresignedDownloadUrlHandlerTest {
             ApiGatewayException {
 
         Publication publication = createPublishedPublication(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE);
-        when(publicationService.getPublication(any(UUID.class), anyString()))
+        when(publicationService.getPublicationWithAuthorizationToken(any(UUID.class), anyString()))
                 .thenReturn(publication);
         when(awsS3Service.createPresignedDownloadUrl(IDENTIFIER_FILE_VALUE, MIME_TYPE_APPLICATION_PDF))
                 .thenReturn(PRESIGNED_DOWNLOAD_URL);
@@ -128,7 +128,7 @@ public class CreatePresignedDownloadUrlHandlerTest {
             ApiGatewayException {
 
         Publication publication = createUnpublishedPublication(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE);
-        when(publicationService.getPublication(any(UUID.class), anyString()))
+        when(publicationService.getPublicationWithAuthorizationToken(any(UUID.class), anyString()))
                 .thenReturn(publication);
         when(awsS3Service.createPresignedDownloadUrl(IDENTIFIER_FILE_VALUE, MIME_TYPE_APPLICATION_PDF))
                 .thenReturn(PRESIGNED_DOWNLOAD_URL);
@@ -145,7 +145,7 @@ public class CreatePresignedDownloadUrlHandlerTest {
     @Test
     @DisplayName("handler Returns Not Found Response On Unknown Identifier")
     public void handlerReturnsNotFoundResponseOnUnknownIdentifier() throws IOException, ApiGatewayException {
-        when(publicationService.getPublication(any(UUID.class), anyString()))
+        when(publicationService.getPublicationWithAuthorizationToken(any(UUID.class), anyString()))
                 .thenThrow(new NotFoundException(ERROR_PUBLICATION_NOT_FOUND_FOR_IDENTIFIER + IDENTIFIER_VALUE));
 
         createPresignedDownloadUrlHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE),
@@ -175,7 +175,7 @@ public class CreatePresignedDownloadUrlHandlerTest {
     public void handlerReturnsServiceUnavailableResponseOnNoResponseFromPublicationService() throws IOException,
             ApiGatewayException {
 
-        when(publicationService.getPublication(any(UUID.class), anyString()))
+        when(publicationService.getPublicationWithAuthorizationToken(any(UUID.class), any(String.class)))
                 .thenThrow(new NoResponseException(ERROR_COMMUNICATING_WITH_REMOTE_SERVICE,
                         new Exception()));
         createPresignedDownloadUrlHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE),
@@ -191,7 +191,7 @@ public class CreatePresignedDownloadUrlHandlerTest {
     @DisplayName("handler Returns Not Found Response On Unknown File Identifier")
     public void handlerReturnsBadRequestResponseOnUnknownFileIdentifier() throws ApiGatewayException, IOException {
         Publication publication = createPublishedPublication(IDENTIFIER_VALUE, IDENTIFIER_VALUE);
-        when(publicationService.getPublication(any(UUID.class), anyString()))
+        when(publicationService.getPublicationWithAuthorizationToken(any(UUID.class), anyString()))
                 .thenReturn(publication);
 
         createPresignedDownloadUrlHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE),
@@ -208,7 +208,7 @@ public class CreatePresignedDownloadUrlHandlerTest {
     public void handlerReturnsInternalServerErrorResponseOnDuplicateFileIdentifierInPublication()
             throws ApiGatewayException, IOException {
         Publication publication = createPublishedPublicationDuplicateFile(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE);
-        when(publicationService.getPublication(any(UUID.class), anyString()))
+        when(publicationService.getPublicationWithAuthorizationToken(any(UUID.class), anyString()))
                 .thenReturn(publication);
 
         createPresignedDownloadUrlHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE),
@@ -225,7 +225,7 @@ public class CreatePresignedDownloadUrlHandlerTest {
     public void handlerReturnsBadRequestResponseOnPublicationWithoutFile() throws IOException,
             ApiGatewayException {
         Publication publication = createPublicationWithoutFileSetFile(IDENTIFIER_VALUE);
-        when(publicationService.getPublication(any(UUID.class), anyString()))
+        when(publicationService.getPublicationWithAuthorizationToken(any(UUID.class), anyString()))
                 .thenReturn(publication);
 
         createPresignedDownloadUrlHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE),
@@ -244,7 +244,7 @@ public class CreatePresignedDownloadUrlHandlerTest {
 
         Publication publication = createUnpublishedPublication(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE);
 
-        when(publicationService.getPublication(any(UUID.class), anyString()))
+        when(publicationService.getPublicationWithAuthorizationToken(any(UUID.class), anyString()))
                 .thenReturn(publication);
 
         createPresignedDownloadUrlHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE),
@@ -263,7 +263,7 @@ public class CreatePresignedDownloadUrlHandlerTest {
 
         Publication publication = createUnpublishedPublication(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE);
 
-        when(publicationService.getPublication(any(UUID.class), anyString()))
+        when(publicationService.getPublicationWithAuthorizationToken(any(UUID.class), anyString()))
                 .thenReturn(publication);
 
         createPresignedDownloadUrlHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE,
@@ -280,7 +280,7 @@ public class CreatePresignedDownloadUrlHandlerTest {
     public void handlerReturnsServiceUnavailableResponseOnS3ServiceException() throws IOException,
             ApiGatewayException {
         Publication publication = createPublishedPublication(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE);
-        when(publicationService.getPublication(any(UUID.class), anyString()))
+        when(publicationService.getPublicationWithAuthorizationToken(any(UUID.class), anyString()))
                 .thenReturn(publication);
         when(awsS3Service.createPresignedDownloadUrl(IDENTIFIER_FILE_VALUE, MIME_TYPE_APPLICATION_PDF))
                 .thenThrow(new S3ServiceException("message", new SdkClientException("message")));

@@ -1,5 +1,7 @@
 package no.unit.nva.download.publication.file;
 
+import static nva.commons.utils.attempt.Try.attempt;
+
 import com.amazonaws.services.lambda.runtime.Context;
 import no.unit.nva.download.publication.file.aws.s3.AwsS3Service;
 import no.unit.nva.download.publication.file.exception.UnauthorizedException;
@@ -59,10 +61,11 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void,
 
     @Override
     protected CreatePresignedDownloadUrlResponse processInput(Void input, RequestInfo requestInfo, Context context)
-            throws ApiGatewayException {
-        Publication publication = publicationService.getPublication(
-                RequestUtil.getIdentifier(requestInfo),
-                RequestUtil.getAuthorization(requestInfo));
+        throws ApiGatewayException {
+
+        var publication = attempt(() -> RequestUtil.getAuthorization(requestInfo))
+            .map(authToken -> fetchPublilcationWithAuthorizationToken(requestInfo, authToken))
+            .orElse(fail -> fetchPublicationWithoutAuthorizationToken(requestInfo));
 
         UUID fileIdentifier = RequestUtil.getFileIdentifier(requestInfo);
 
@@ -71,9 +74,19 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void,
         File file = getValidFile(fileIdentifier, publication.getFileSet());
 
         String presignedDownloadUrl = awsS3Service.createPresignedDownloadUrl(file.getIdentifier().toString(),
-                file.getMimeType());
+            file.getMimeType());
 
         return new CreatePresignedDownloadUrlResponse(presignedDownloadUrl);
+    }
+
+    private Publication fetchPublicationWithoutAuthorizationToken(RequestInfo requestInfo) throws ApiGatewayException {
+        return publicationService.getPublicationWithoutAuthorizationToken(RequestUtil.getIdentifier(requestInfo));
+    }
+
+    private Publication fetchPublilcationWithAuthorizationToken(RequestInfo requestInfo, String authToken)
+        throws ApiGatewayException {
+        return publicationService.getPublicationWithAuthorizationToken(
+            RequestUtil.getIdentifier(requestInfo), authToken);
     }
 
     @Override

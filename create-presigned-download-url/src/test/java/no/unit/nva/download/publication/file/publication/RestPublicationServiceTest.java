@@ -57,9 +57,9 @@ public class RestPublicationServiceTest {
         RestPublicationService publicationService = new RestPublicationService(client, objectMapper, API_SCHEME,
                 API_HOST);
 
-        assertThrows(NoResponseException.class, () -> publicationService.getPublication(
-                UUID.randomUUID(),
-                SOME_API_KEY
+        assertThrows(NoResponseException.class, () -> publicationService.getPublicationWithAuthorizationToken(
+            UUID.randomUUID(),
+            SOME_API_KEY
         ));
     }
 
@@ -72,9 +72,9 @@ public class RestPublicationServiceTest {
         RestPublicationService publicationService = new RestPublicationService(client, objectMapper, API_SCHEME,
                 API_HOST);
 
-        Publication publication = publicationService.getPublication(
-                UUID.randomUUID(),
-                SOME_API_KEY
+        Publication publication = publicationService.getPublicationWithAuthorizationToken(
+            UUID.randomUUID(),
+            SOME_API_KEY
         );
 
         assertNotNull(publication);
@@ -89,9 +89,9 @@ public class RestPublicationServiceTest {
         RestPublicationService publicationService = new RestPublicationService(client, objectMapper, API_SCHEME,
                 API_HOST);
 
-        assertThrows(NoResponseException.class, () -> publicationService.getPublication(
-                UUID.randomUUID(),
-                SOME_API_KEY
+        assertThrows(NoResponseException.class, () -> publicationService.getPublicationWithAuthorizationToken(
+            UUID.randomUUID(),
+            SOME_API_KEY
         ));
     }
 
