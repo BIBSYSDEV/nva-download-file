@@ -56,8 +56,6 @@ Resources:
           /{identifier}/files/{fileIdentifier}:
             get:
               summary: Returns an S3 presigned download URL to a publication file (within json response body)
-              consumes:
-                - application/json
               produces:
                 - application/json
               security:
