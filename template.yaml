@@ -60,6 +60,7 @@ Resources:
                 - application/json
               security:
                 - CognitoUserPool: []
+                - none: [ ]
               parameters:
                 - in: path
                   name: identifier
@@ -111,6 +112,9 @@ Resources:
               detail:
                 type: string
         securityDefinitions:
+          none:
+            "type": "none"
+            "description": "Publicly accessible (no authentication needed)."
           CognitoUserPool:
             type: apiKey
             name: Authorization
