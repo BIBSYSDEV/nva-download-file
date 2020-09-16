@@ -1,6 +1,7 @@
 package no.unit.nva.download.publication.file;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import java.util.Optional;
 import no.unit.nva.download.publication.file.publication.exception.InputException;
 import nva.commons.exceptions.ApiGatewayException;
 import nva.commons.handlers.RequestInfo;
@@ -8,6 +9,8 @@ import org.apache.http.HttpHeaders;
 
 import java.util.Objects;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class RequestUtil {
 
@@ -18,7 +21,9 @@ public final class RequestUtil {
     public static final String AUTHORIZER_CLAIMS = "/authorizer/claims/";
     public static final String CUSTOM_FEIDE_ID = "custom:feideId";
     public static final String MISSING_CLAIM_IN_REQUEST_CONTEXT =
-            "Missing claim in requestContext: ";
+        "Missing claim in requestContext: ";
+
+    public static final Logger logger = LoggerFactory.getLogger(RequestUtil.class);
 
     private RequestUtil() {
     }
@@ -74,20 +79,19 @@ public final class RequestUtil {
         }
     }
 
-
     /**
      * Get userId from requestContext authorizer claims.
      *
      * @param requestInfo requestInfo.
      * @return the userId
-     * @throws ApiGatewayException exception thrown if value is missing
      */
-    public static String getUserId(RequestInfo requestInfo) throws ApiGatewayException {
+    public static Optional<String> getUserId(RequestInfo requestInfo) {
         JsonNode jsonNode = requestInfo.getRequestContext().at(AUTHORIZER_CLAIMS + CUSTOM_FEIDE_ID);
         if (!jsonNode.isMissingNode()) {
-            return jsonNode.textValue();
+            return Optional.ofNullable(jsonNode.textValue());
         }
-        throw new InputException(MISSING_CLAIM_IN_REQUEST_CONTEXT + CUSTOM_FEIDE_ID, null);
+        logger.warn(MISSING_CLAIM_IN_REQUEST_CONTEXT + CUSTOM_FEIDE_ID);
+        return Optional.empty();
     }
 
 }

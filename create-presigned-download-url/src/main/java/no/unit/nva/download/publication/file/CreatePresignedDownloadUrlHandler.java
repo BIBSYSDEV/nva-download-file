@@ -1,5 +1,6 @@
 package no.unit.nva.download.publication.file;
 
+import static java.util.Objects.requireNonNull;
 import static nva.commons.utils.attempt.Try.attempt;
 
 import com.amazonaws.services.lambda.runtime.Context;
@@ -135,11 +136,16 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void,
      * @throws ApiGatewayException when authorization fails.
      */
     private void authorize(RequestInfo requestInfo, Publication publication) throws ApiGatewayException {
-        if (publication.getStatus().equals(PublicationStatus.PUBLISHED)) {
-            return;
-        } else if (RequestUtil.getUserId(requestInfo).equalsIgnoreCase(publication.getOwner())) {
+        if (isPublished(publication)) {
             return;
         }
-        throw new UnauthorizedException(ERROR_UNAUTHORIZED);
+        String user = RequestUtil.getUserId(requestInfo)
+            .filter(userId -> userId.equalsIgnoreCase(publication.getOwner()))
+            .orElseThrow(() -> new UnauthorizedException(ERROR_UNAUTHORIZED));
+        requireNonNull(user);
+    }
+
+    private boolean isPublished(Publication publication) {
+        return publication.getStatus().equals(PublicationStatus.PUBLISHED);
     }
 }
