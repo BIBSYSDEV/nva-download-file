@@ -3,19 +3,13 @@ package no.unit.nva.download.publication.file.publication;
 import static org.apache.http.HttpStatus.SC_NOT_FOUND;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.mikael.urlbuilder.UrlBuilder;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import no.unit.nva.download.publication.file.publication.exception.NoResponseException;
 import no.unit.nva.download.publication.file.publication.exception.NotFoundException;
 import no.unit.nva.model.Publication;
@@ -78,14 +72,11 @@ public class RestPublicationService {
         throws ApiGatewayException {
 
         URI uri = buildUriToPublicationService(identifier);
-        HttpRequest httpRequest = buildHttpRequest(uri, headers(authorizationToken));
+        HttpRequest httpRequest = buildHttpRequest(uri, authorizationToken);
         return fetchPublicationFromService(identifier, uri, httpRequest);
     }
 
-    private Map<String, String> headers(String authorization) {
-        return Map.of(HttpHeaders.ACCEPT, APPLICATION_JSON,
-            HttpHeaders.AUTHORIZATION, authorization);
-    }
+
 
     private Publication fetchPublicationFromService(UUID identifier, URI uri, HttpRequest httpRequest)
         throws NoResponseException {
@@ -103,7 +94,6 @@ public class RestPublicationService {
         if (httpResponse.statusCode() == SC_NOT_FOUND) {
             throw new NotFoundException(ERROR_PUBLICATION_NOT_FOUND_FOR_IDENTIFIER + identifier);
         }
-
         return parseJsonObjectToPublication(httpResponse);
     }
 
@@ -113,35 +103,18 @@ public class RestPublicationService {
     }
 
     private Publication parseJsonObjectToPublication(HttpResponse<String> httpResponse) throws JsonProcessingException {
-        JsonNode jsonNode = objectMapper.readTree(httpResponse.body());
-        return objectMapper.convertValue(jsonNode, Publication.class);
+        return objectMapper.readValue(httpResponse.body(), Publication.class);
     }
 
-    private HttpRequest buildHttpRequest(URI uri, Map<String, String> headers) {
+    private HttpRequest buildHttpRequest(URI uri, String authToken) {
         return HttpRequest.newBuilder()
             .uri(uri)
-            .headers(serializeHeaders(headers))
+            .header(HttpHeaders.ACCEPT, APPLICATION_JSON)
+            .header(HttpHeaders.AUTHORIZATION, authToken)
             .GET()
             .build();
     }
 
-    private String[] serializeHeaders(Map<String, String> headers) {
-        List<String> mapEntriesAsList = headers.entrySet()
-            .stream()
-            .flatMap(this::keyValuePairAsStream)
-            .collect(Collectors.toList());
-        return toArray(mapEntriesAsList);
-    }
-
-    private String[] toArray(List<String> x) {
-        String[] result = new String[x.size()];
-        x.toArray(result);
-        return result;
-    }
-
-    private Stream<String> keyValuePairAsStream(Map.Entry<String, String> entry) {
-        return Arrays.asList(entry.getKey(), entry.getValue()).stream();
-    }
 
     private URI buildUriToPublicationService(UUID identifier) {
         return UrlBuilder.empty()

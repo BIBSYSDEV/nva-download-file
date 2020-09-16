@@ -1,13 +1,12 @@
 package no.unit.nva.download.publication.file.publication;
 
-import no.unit.nva.download.publication.file.publication.exception.NoResponseException;
-import no.unit.nva.model.Publication;
-
-import nva.commons.exceptions.ApiGatewayException;
-import nva.commons.utils.Environment;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import static nva.commons.utils.JsonUtils.objectMapper;
+import static org.apache.http.HttpStatus.SC_NOT_FOUND;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.net.http.HttpClient;
@@ -16,15 +15,12 @@ import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.UUID;
-
-import static nva.commons.utils.JsonUtils.objectMapper;
-
-import static org.apache.http.HttpStatus.SC_NOT_FOUND;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import no.unit.nva.download.publication.file.publication.exception.NoResponseException;
+import no.unit.nva.model.Publication;
+import nva.commons.exceptions.ApiGatewayException;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 public class RestPublicationServiceTest {
 
@@ -46,18 +42,17 @@ public class RestPublicationServiceTest {
         response = mock(HttpResponse.class);
     }
 
-
     @Test
     @DisplayName("getPublication throws NoResponseException when publication could not be retrieved")
     public void getPublicationClientError() throws IOException, InterruptedException {
         when(client.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class))).thenThrow(IOException.class);
 
         RestPublicationService publicationService = new RestPublicationService(client, objectMapper, API_SCHEME,
-                API_HOST);
+            API_HOST);
 
         assertThrows(NoResponseException.class, () -> publicationService.getPublication(
-                UUID.randomUUID(),
-                SOME_API_KEY
+            UUID.randomUUID(),
+            SOME_API_KEY
         ));
     }
 
@@ -68,11 +63,11 @@ public class RestPublicationServiceTest {
         when((response.body())).thenReturn(getResponse(PUBLICATION_RESPONSE));
 
         RestPublicationService publicationService = new RestPublicationService(client, objectMapper, API_SCHEME,
-                API_HOST);
+            API_HOST);
 
         Publication publication = publicationService.getPublication(
-                UUID.randomUUID(),
-                SOME_API_KEY
+            UUID.randomUUID(),
+            SOME_API_KEY
         );
 
         assertNotNull(publication);
@@ -85,17 +80,15 @@ public class RestPublicationServiceTest {
         when((response.statusCode())).thenReturn(SC_NOT_FOUND);
 
         RestPublicationService publicationService = new RestPublicationService(client, objectMapper, API_SCHEME,
-                API_HOST);
+            API_HOST);
 
         assertThrows(NoResponseException.class, () -> publicationService.getPublication(
-                UUID.randomUUID(),
-                SOME_API_KEY
+            UUID.randomUUID(),
+            SOME_API_KEY
         ));
     }
-
 
     private String getResponse(String path) throws IOException {
         return Files.readString(Path.of(path));
     }
-
 }
