@@ -59,8 +59,8 @@ Resources:
               produces:
                 - application/json
               security:
-                # - CognitoUserPool: [ ]
                 - none: [ ]
+                - CognitoUserPool: [ ]
               parameters:
                 - in: path
                   name: identifier
@@ -113,8 +113,8 @@ Resources:
                 type: string
         securityDefinitions:
           none:
-            "type": "none"
-            "description": "Publicly accessible (no authentication needed)."
+            type: "none"
+            description: "Publicly accessible (no authentication needed)."
           CognitoUserPool:
             type: apiKey
             name: Authorization
