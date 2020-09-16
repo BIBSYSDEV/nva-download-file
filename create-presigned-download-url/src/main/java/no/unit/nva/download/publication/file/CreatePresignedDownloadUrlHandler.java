@@ -93,10 +93,6 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void,
         return publicationService.getPublication(RequestUtil.getIdentifier(requestInfo), authToken);
     }
 
-    private String fetchUrlFromS3(File file) throws ApiGatewayException {
-        return awsS3Service.createPresignedDownloadUrl(file.getIdentifier().toString(), file.getMimeType());
-    }
-
     private ApiGatewayException handleFailure(Failure<Publication> fail) {
         if (fail.getException() instanceof ApiGatewayException) {
             return (ApiGatewayException) fail.getException();
@@ -105,14 +101,10 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void,
         }
     }
 
-    /**
-     * Get valid file from publication.
-     *
-     * @param fileIdentifier fileIdentifier
-     * @param fileSet        fileSet
-     * @return valid file
-     * @throws ApiGatewayException exception thrown if valid file not present
-     */
+    private String fetchUrlFromS3(File file) throws ApiGatewayException {
+        return awsS3Service.createPresignedDownloadUrl(file.getIdentifier().toString(), file.getMimeType());
+    }
+
     private File getValidFile(UUID fileIdentifier, FileSet fileSet) throws ApiGatewayException {
 
         List<File> files = Optional.ofNullable(fileSet.getFiles()).orElse(Collections.emptyList());
@@ -133,13 +125,6 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void,
         return new IllegalStateException(ERROR_DUPLICATE_FILES_IN_PUBLICATION);
     }
 
-    /**
-     * Authorize request if publication is published or user is publication owner.
-     *
-     * @param requestInfo requestInfo
-     * @param publication publication
-     * @throws ApiGatewayException when authorization fails.
-     */
     private void authorize(RequestInfo requestInfo, Publication publication) throws ApiGatewayException {
         if (isPublished(publication) || userIsOwner(requestInfo, publication)) {
             return;
