@@ -59,7 +59,7 @@ Resources:
               produces:
                 - application/json
               security:
-                ##- CognitoUserPool: []
+                - CognitoUserPool: [ ]
                 - none: [ ]
               parameters:
                 - in: path
