@@ -36,7 +36,6 @@ public class RestPublicationServiceTest {
 
     private HttpClient client;
     private HttpResponse<String> response;
-    private Environment environment;
 
     /**
      * Set up environment.
@@ -45,7 +44,6 @@ public class RestPublicationServiceTest {
     public void setUp() {
         client = mock(HttpClient.class);
         response = mock(HttpResponse.class);
-        environment = mock(Environment.class);
     }
 
 
