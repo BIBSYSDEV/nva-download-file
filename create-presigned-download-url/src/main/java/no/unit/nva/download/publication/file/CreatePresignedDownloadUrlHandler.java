@@ -3,6 +3,9 @@ package no.unit.nva.download.publication.file;
 import static nva.commons.utils.attempt.Try.attempt;
 
 import com.amazonaws.services.lambda.runtime.Context;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import no.unit.nva.download.publication.file.aws.s3.AwsS3Service;
 import no.unit.nva.download.publication.file.exception.UnauthorizedException;
 import no.unit.nva.download.publication.file.publication.RestPublicationService;
@@ -16,16 +19,13 @@ import nva.commons.handlers.ApiGatewayHandler;
 import nva.commons.handlers.RequestInfo;
 import nva.commons.utils.Environment;
 import nva.commons.utils.JacocoGenerated;
+import nva.commons.utils.attempt.Failure;
 import org.apache.http.HttpStatus;
-
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void,
-        CreatePresignedDownloadUrlResponse> {
+    CreatePresignedDownloadUrlResponse> {
 
     public static final String ERROR_MISSING_FILE_IN_PUBLICATION_FILE_SET = "File not found in publication file set";
     public static final String ERROR_DUPLICATE_FILES_IN_PUBLICATION = "Publication contains duplicate files";
@@ -35,7 +35,6 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void,
     private static final Logger logger = LoggerFactory.getLogger(CreatePresignedDownloadUrlHandler.class);
     private final RestPublicationService publicationService;
     private final AwsS3Service awsS3Service;
-
 
     /**
      * Constructor for CreatePresignedDownloadUrlHandler.
@@ -63,9 +62,12 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void,
     protected CreatePresignedDownloadUrlResponse processInput(Void input, RequestInfo requestInfo, Context context)
         throws ApiGatewayException {
 
-        var publication = attempt(() -> RequestUtil.getAuthorization(requestInfo))
-            .map(authToken -> fetchPublilcationWithAuthorizationToken(requestInfo, authToken))
-            .orElse(fail -> fetchPublicationWithoutAuthorizationToken(requestInfo));
+        Publication publication =
+            attempt(() -> RequestUtil.getAuthorization(requestInfo))
+                .toOptional()
+                .map(attempt(authToken -> fetchPublicationWithAuthorizationToken(requestInfo, authToken)))
+                .orElse(attempt(() -> fetchPublicationWithoutAuthorizationToken(requestInfo)))
+                .orElseThrow(this::handleFailure);
 
         UUID fileIdentifier = RequestUtil.getFileIdentifier(requestInfo);
 
@@ -79,26 +81,34 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void,
         return new CreatePresignedDownloadUrlResponse(presignedDownloadUrl);
     }
 
+    @Override
+    protected Integer getSuccessStatusCode(Void input, CreatePresignedDownloadUrlResponse output) {
+        return HttpStatus.SC_OK;
+    }
+
+    private ApiGatewayException handleFailure(Failure<Publication> fail) {
+        if (fail.getException() instanceof ApiGatewayException) {
+            return (ApiGatewayException) fail.getException();
+        } else {
+            throw new RuntimeException(fail.getException());
+        }
+    }
+
     private Publication fetchPublicationWithoutAuthorizationToken(RequestInfo requestInfo) throws ApiGatewayException {
         return publicationService.getPublicationWithoutAuthorizationToken(RequestUtil.getIdentifier(requestInfo));
     }
 
-    private Publication fetchPublilcationWithAuthorizationToken(RequestInfo requestInfo, String authToken)
+    private Publication fetchPublicationWithAuthorizationToken(RequestInfo requestInfo, String authToken)
         throws ApiGatewayException {
         return publicationService.getPublicationWithAuthorizationToken(
             RequestUtil.getIdentifier(requestInfo), authToken);
-    }
-
-    @Override
-    protected Integer getSuccessStatusCode(Void input, CreatePresignedDownloadUrlResponse output) {
-        return HttpStatus.SC_OK;
     }
 
     /**
      * Get valid file from publication.
      *
      * @param fileIdentifier fileIdentifier
-     * @param fileSet fileSet
+     * @param fileSet        fileSet
      * @return valid file
      * @throws ApiGatewayException exception thrown if valid file not present
      */
@@ -108,11 +118,11 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void,
 
         if (files.isPresent()) {
             return files.get().stream()
-                    .filter(f -> f.getIdentifier().equals(fileIdentifier))
-                    .reduce((a, b) -> {
-                        throw new IllegalStateException(ERROR_DUPLICATE_FILES_IN_PUBLICATION);
-                    })
-                    .orElseThrow(() -> new FileNotFoundException(ERROR_MISSING_FILE_IN_PUBLICATION_FILE_SET));
+                .filter(f -> f.getIdentifier().equals(fileIdentifier))
+                .reduce((a, b) -> {
+                    throw new IllegalStateException(ERROR_DUPLICATE_FILES_IN_PUBLICATION);
+                })
+                .orElseThrow(() -> new FileNotFoundException(ERROR_MISSING_FILE_IN_PUBLICATION_FILE_SET));
         }
         throw new FileNotFoundException(ERROR_MISSING_FILES_IN_PUBLICATION);
     }
@@ -132,5 +142,4 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void,
         }
         throw new UnauthorizedException(ERROR_UNAUTHORIZED);
     }
-
 }

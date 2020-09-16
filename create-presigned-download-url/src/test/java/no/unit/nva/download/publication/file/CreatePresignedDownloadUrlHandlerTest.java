@@ -111,10 +111,10 @@ public class CreatePresignedDownloadUrlHandlerTest {
         when(publicationService.getPublicationWithAuthorizationToken(any(UUID.class), anyString()))
                 .thenReturn(publication);
         when(awsS3Service.createPresignedDownloadUrl(IDENTIFIER_FILE_VALUE, MIME_TYPE_APPLICATION_PDF))
-                .thenReturn(PRESIGNED_DOWNLOAD_URL);
+            .thenReturn(PRESIGNED_DOWNLOAD_URL);
 
         createPresignedDownloadUrlHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE),
-                output, context);
+            output, context);
 
         GatewayResponse gatewayResponse = objectMapper.readValue(output.toString(), GatewayResponse.class);
         assertEquals(SC_OK, gatewayResponse.getStatusCode());
@@ -123,13 +123,18 @@ public class CreatePresignedDownloadUrlHandlerTest {
     }
 
     @Test
+    public void handlerReturnsPublishedPublicationWhenRequestDoesNotContainAuthorizationToken() {
+        Publication publication = createPublishedPublication(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE);
+    }
+
+    @Test
     @DisplayName("handler Returns Ok Response On Valid Input (Unpublished Publication)")
     public void handlerReturnsOkResponseOnValidInputUnpublishedPublication() throws IOException,
-            ApiGatewayException {
+                                                                                    ApiGatewayException {
 
         Publication publication = createUnpublishedPublication(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE);
         when(publicationService.getPublicationWithAuthorizationToken(any(UUID.class), anyString()))
-                .thenReturn(publication);
+            .thenReturn(publication);
         when(awsS3Service.createPresignedDownloadUrl(IDENTIFIER_FILE_VALUE, MIME_TYPE_APPLICATION_PDF))
                 .thenReturn(PRESIGNED_DOWNLOAD_URL);
 

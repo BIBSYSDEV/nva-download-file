@@ -11,10 +11,10 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import no.unit.nva.download.publication.file.publication.exception.NoResponseException;
@@ -85,6 +85,13 @@ public class RestPublicationService {
         return fetchPublicationFromService(identifier, uri, httpRequest);
     }
 
+    /**
+     * Retrieve publication metadata without authorization token.
+     *
+     * @param identifier the publication identifier.
+     * @return A {@link Publication} instance
+     * @throws ApiGatewayException when value is missing.
+     */
     public Publication getPublicationWithoutAuthorizationToken(UUID identifier) throws ApiGatewayException {
 
         URI uri = buildUriToPublicationService(identifier);
@@ -93,7 +100,7 @@ public class RestPublicationService {
     }
 
     private Map<String, String> headersWithAuthorization(String authorization) {
-        Map<String, String> headers = new HashMap<>(DEFAULT_REQUEST_HEADERS);
+        Map<String, String> headers = new ConcurrentHashMap<>(DEFAULT_REQUEST_HEADERS);
         headers.put(HttpHeaders.AUTHORIZATION, authorization);
         return headers;
     }
