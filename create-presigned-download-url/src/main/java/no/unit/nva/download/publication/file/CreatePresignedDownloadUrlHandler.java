@@ -3,6 +3,7 @@ package no.unit.nva.download.publication.file;
 import static nva.commons.utils.attempt.Try.attempt;
 
 import com.amazonaws.services.lambda.runtime.Context;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -63,13 +64,9 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void,
         throws ApiGatewayException {
 
         Publication publication = fetchPublication(requestInfo);
-
-        UUID fileIdentifier = RequestUtil.getFileIdentifier(requestInfo);
-
         authorize(requestInfo, publication);
 
-        File file = getValidFile(fileIdentifier, publication.getFileSet());
-
+        File file = fetchFile(requestInfo, publication);
         String presignedDownloadUrl = fetchUrlFromS3(file);
 
         return new CreatePresignedDownloadUrlResponse(presignedDownloadUrl);
@@ -78,6 +75,11 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void,
     @Override
     protected Integer getSuccessStatusCode(Void input, CreatePresignedDownloadUrlResponse output) {
         return HttpStatus.SC_OK;
+    }
+
+    private File fetchFile(RequestInfo requestInfo, Publication publication) throws ApiGatewayException {
+        UUID fileIdentifier = RequestUtil.getFileIdentifier(requestInfo);
+        return getValidFile(fileIdentifier, publication.getFileSet());
     }
 
     private Publication fetchPublication(RequestInfo requestInfo) throws ApiGatewayException {
@@ -113,17 +115,22 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void,
      */
     private File getValidFile(UUID fileIdentifier, FileSet fileSet) throws ApiGatewayException {
 
-        Optional<List<File>> files = Optional.ofNullable(fileSet.getFiles());
+        List<File> files = Optional.ofNullable(fileSet.getFiles()).orElse(Collections.emptyList());
 
-        if (files.isPresent()) {
-            return files.get().stream()
-                .filter(f -> f.getIdentifier().equals(fileIdentifier))
-                .reduce((a, b) -> {
-                    throw new IllegalStateException(ERROR_DUPLICATE_FILES_IN_PUBLICATION);
-                })
-                .orElseThrow(() -> new FileNotFoundException(ERROR_MISSING_FILE_IN_PUBLICATION_FILE_SET));
-        }
-        throw new FileNotFoundException(ERROR_MISSING_FILES_IN_PUBLICATION);
+        return files.stream()
+            .filter(f -> f.getIdentifier().equals(fileIdentifier))
+            .reduce((a, b) -> {
+                throw oneItemExpected();
+            })
+            .orElseThrow(this::fileNotFound);
+    }
+
+    private FileNotFoundException fileNotFound() {
+        return new FileNotFoundException(ERROR_MISSING_FILE_IN_PUBLICATION_FILE_SET);
+    }
+
+    private IllegalStateException oneItemExpected() {
+        return new IllegalStateException(ERROR_DUPLICATE_FILES_IN_PUBLICATION);
     }
 
     /**
