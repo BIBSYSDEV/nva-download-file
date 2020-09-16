@@ -62,10 +62,7 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void,
     protected CreatePresignedDownloadUrlResponse processInput(Void input, RequestInfo requestInfo, Context context)
         throws ApiGatewayException {
 
-        Publication publication =
-            attempt(() -> RequestUtil.getAuthorization(requestInfo))
-                .map(authToken -> fetchPublicationWithAuthorizationToken(requestInfo, authToken))
-                .orElseThrow(this::handleFailure);
+        Publication publication = fetchPublication(requestInfo);
 
         UUID fileIdentifier = RequestUtil.getFileIdentifier(requestInfo);
 
@@ -73,8 +70,7 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void,
 
         File file = getValidFile(fileIdentifier, publication.getFileSet());
 
-        String presignedDownloadUrl = awsS3Service.createPresignedDownloadUrl(file.getIdentifier().toString(),
-            file.getMimeType());
+        String presignedDownloadUrl = fetchUrlFromS3(file);
 
         return new CreatePresignedDownloadUrlResponse(presignedDownloadUrl);
     }
@@ -84,18 +80,27 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void,
         return HttpStatus.SC_OK;
     }
 
+    private Publication fetchPublication(RequestInfo requestInfo) throws ApiGatewayException {
+        return attempt(() -> RequestUtil.getAuthorization(requestInfo))
+            .map(authToken -> fetchPublication(requestInfo, authToken))
+            .orElseThrow(this::handleFailure);
+    }
+
+    private Publication fetchPublication(RequestInfo requestInfo, String authToken)
+        throws ApiGatewayException {
+        return publicationService.getPublication(RequestUtil.getIdentifier(requestInfo), authToken);
+    }
+
+    private String fetchUrlFromS3(File file) throws ApiGatewayException {
+        return awsS3Service.createPresignedDownloadUrl(file.getIdentifier().toString(), file.getMimeType());
+    }
+
     private ApiGatewayException handleFailure(Failure<Publication> fail) {
         if (fail.getException() instanceof ApiGatewayException) {
             return (ApiGatewayException) fail.getException();
         } else {
             throw new RuntimeException(fail.getException());
         }
-    }
-
-    private Publication fetchPublicationWithAuthorizationToken(RequestInfo requestInfo, String authToken)
-        throws ApiGatewayException {
-        return publicationService.getPublication(
-            RequestUtil.getIdentifier(requestInfo), authToken);
     }
 
     /**
@@ -129,12 +134,17 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void,
      * @throws ApiGatewayException when authorization fails.
      */
     private void authorize(RequestInfo requestInfo, Publication publication) throws ApiGatewayException {
-        if (publication.getStatus().equals(PublicationStatus.PUBLISHED)) {
-            return;
-        } else if (RequestUtil.getUserId(requestInfo).equalsIgnoreCase(publication.getOwner())) {
+        if (isPublished(publication) || userIsOwner(requestInfo, publication)) {
             return;
         }
         throw new UnauthorizedException(ERROR_UNAUTHORIZED);
     }
 
+    private boolean userIsOwner(RequestInfo requestInfo, Publication publication) throws ApiGatewayException {
+        return RequestUtil.getUserId(requestInfo).equalsIgnoreCase(publication.getOwner());
+    }
+
+    private boolean isPublished(Publication publication) {
+        return publication.getStatus().equals(PublicationStatus.PUBLISHED);
+    }
 }

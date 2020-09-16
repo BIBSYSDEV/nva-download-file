@@ -100,7 +100,6 @@ public class RestPublicationService {
         throws java.io.IOException, InterruptedException, NotFoundException {
 
         HttpResponse<String> httpResponse = sendHttpRequest(httpRequest);
-
         if (httpResponse.statusCode() == SC_NOT_FOUND) {
             throw new NotFoundException(ERROR_PUBLICATION_NOT_FOUND_FOR_IDENTIFIER + identifier);
         }
