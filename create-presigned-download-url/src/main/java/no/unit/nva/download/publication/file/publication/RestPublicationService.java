@@ -1,5 +1,6 @@
 package no.unit.nva.download.publication.file.publication;
 
+import static nva.commons.utils.attempt.Try.attempt;
 import static org.apache.http.HttpStatus.SC_NOT_FOUND;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -9,6 +10,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.Optional;
 import java.util.UUID;
 import no.unit.nva.download.publication.file.publication.exception.NoResponseException;
 import no.unit.nva.download.publication.file.publication.exception.NotFoundException;
@@ -18,6 +20,7 @@ import nva.commons.utils.Environment;
 import nva.commons.utils.JacocoGenerated;
 import nva.commons.utils.JsonUtils;
 import org.apache.http.HttpHeaders;
+import org.zalando.problem.Problem;
 
 public class RestPublicationService {
 
@@ -28,6 +31,8 @@ public class RestPublicationService {
     public static final String API_SCHEME_ENV = "API_SCHEME";
     public static final String ERROR_COMMUNICATING_WITH_REMOTE_SERVICE = "Error communicating with remote service: ";
     public static final String ERROR_PUBLICATION_NOT_FOUND_FOR_IDENTIFIER = "Publication not found for identifier: ";
+    public static final String EXTERNAL_ERROR_MESSAGE_DECORATION = "Error fetching downloading link for publication:";
+    public static final String ERROR_MESSAGE_DELIMITER = " ";
 
     private final ObjectMapper objectMapper;
     private final HttpClient client;
@@ -76,15 +81,21 @@ public class RestPublicationService {
         return fetchPublicationFromService(identifier, uri, httpRequest);
     }
 
-
-
     private Publication fetchPublicationFromService(UUID identifier, URI uri, HttpRequest httpRequest)
-        throws NoResponseException {
+        throws ApiGatewayException {
+
         try {
             return fetchPublicationFromService(identifier, httpRequest);
         } catch (Exception e) {
-            throw new NoResponseException(ERROR_COMMUNICATING_WITH_REMOTE_SERVICE + uri.toString(), e);
+            throw handleException(uri, e);
         }
+    }
+
+    private ApiGatewayException handleException(URI uri, Exception exception) {
+        if (exception instanceof NotFoundException) {
+            return (NotFoundException) exception;
+        }
+        return new NoResponseException(ERROR_COMMUNICATING_WITH_REMOTE_SERVICE + uri.toString(), exception);
     }
 
     private Publication fetchPublicationFromService(UUID identifier, HttpRequest httpRequest)
@@ -92,9 +103,30 @@ public class RestPublicationService {
 
         HttpResponse<String> httpResponse = sendHttpRequest(httpRequest);
         if (httpResponse.statusCode() == SC_NOT_FOUND) {
-            throw new NotFoundException(ERROR_PUBLICATION_NOT_FOUND_FOR_IDENTIFIER + identifier);
+            String externalErrorMessage = extractExternalErrorMessage(identifier, httpResponse);
+            throw new NotFoundException(externalErrorMessage);
         }
         return parseJsonObjectToPublication(httpResponse);
+    }
+
+    private String extractExternalErrorMessage(UUID identifier, HttpResponse<String> httpResponse) {
+        String externalErrorMessage = parseResponseBody(httpResponse.body())
+            .map(Problem::getDetail)
+            .orElse(ERROR_PUBLICATION_NOT_FOUND_FOR_IDENTIFIER + identifier);
+        return decorateExternalErrorMessage(identifier, externalErrorMessage);
+    }
+
+    private String decorateExternalErrorMessage(UUID identifier, String externalErrorMessage) {
+        return String.join(ERROR_MESSAGE_DELIMITER, externalErrorDecoration(identifier), externalErrorMessage);
+    }
+
+    private String externalErrorDecoration(UUID identifier) {
+        return EXTERNAL_ERROR_MESSAGE_DECORATION + identifier;
+    }
+
+    private Optional<Problem> parseResponseBody(String body) {
+        return attempt(() -> objectMapper.readValue(body, Problem.class))
+            .toOptional();
     }
 
     private HttpResponse<String> sendHttpRequest(HttpRequest httpRequest)
@@ -114,7 +146,6 @@ public class RestPublicationService {
             .GET()
             .build();
     }
-
 
     private URI buildUriToPublicationService(UUID identifier) {
         return UrlBuilder.empty()
