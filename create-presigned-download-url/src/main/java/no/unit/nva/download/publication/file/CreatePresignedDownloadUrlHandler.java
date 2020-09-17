@@ -1,7 +1,5 @@
 package no.unit.nva.download.publication.file;
 
-import static nva.commons.utils.attempt.Try.attempt;
-
 import com.amazonaws.services.lambda.runtime.Context;
 import java.util.Collections;
 import java.util.List;
@@ -20,13 +18,11 @@ import nva.commons.handlers.ApiGatewayHandler;
 import nva.commons.handlers.RequestInfo;
 import nva.commons.utils.Environment;
 import nva.commons.utils.JacocoGenerated;
-import nva.commons.utils.attempt.Failure;
 import org.apache.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void,
-    CreatePresignedDownloadUrlResponse> {
+public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, CreatePresignedDownloadUrlResponse> {
 
     public static final String ERROR_MISSING_FILE_IN_PUBLICATION_FILE_SET = "File not found in publication file set";
     public static final String ERROR_DUPLICATE_FILES_IN_PUBLICATION = "Publication contains duplicate files";
@@ -87,10 +83,8 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void,
     }
 
     private Publication fetchPublication(RequestInfo requestInfo) throws ApiGatewayException {
-        return
-            attempt(() -> extractAuthToken(requestInfo))
-                .map(authToken -> fetchPublication(requestInfo, authToken))
-                .orElseThrow(this::handleFailure);
+        String authToken = extractAuthToken(requestInfo);
+        return fetchPublication(requestInfo, authToken);
     }
 
     private String extractAuthToken(RequestInfo requestInfo) throws ApiGatewayException {
@@ -100,14 +94,6 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void,
     private Publication fetchPublication(RequestInfo requestInfo, String authToken)
         throws ApiGatewayException {
         return publicationService.getPublication(RequestUtil.getIdentifier(requestInfo), authToken);
-    }
-
-    private ApiGatewayException handleFailure(Failure<Publication> fail) {
-        if (fail.getException() instanceof ApiGatewayException) {
-            return (ApiGatewayException) fail.getException();
-        } else {
-            throw new RuntimeException(fail.getException());
-        }
     }
 
     private String fetchUrlFromS3(File file) throws ApiGatewayException {
