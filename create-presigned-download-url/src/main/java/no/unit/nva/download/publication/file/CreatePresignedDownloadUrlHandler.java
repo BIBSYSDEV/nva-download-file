@@ -30,7 +30,6 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void,
 
     public static final String ERROR_MISSING_FILE_IN_PUBLICATION_FILE_SET = "File not found in publication file set";
     public static final String ERROR_DUPLICATE_FILES_IN_PUBLICATION = "Publication contains duplicate files";
-    public static final String ERROR_MISSING_FILES_IN_PUBLICATION = "Publication does not have any associated files";
     public static final String ERROR_UNAUTHORIZED = "User is not authorized to view the resource";
 
     private static final Logger logger = LoggerFactory.getLogger(CreatePresignedDownloadUrlHandler.class);
