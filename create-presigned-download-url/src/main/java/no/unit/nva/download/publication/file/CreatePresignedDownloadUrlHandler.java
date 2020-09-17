@@ -64,7 +64,7 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void,
 
         Publication publication = fetchPublicationForAuthorizedUser(requestInfo);
 
-        File file = fetchFile(requestInfo, publication);
+        File file = fetchFileDescriptor(requestInfo, publication);
         String presignedDownloadUrl = fetchUrlFromS3(file);
 
         return new CreatePresignedDownloadUrlResponse(presignedDownloadUrl);
@@ -81,7 +81,7 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void,
         return publication;
     }
 
-    private File fetchFile(RequestInfo requestInfo, Publication publication) throws ApiGatewayException {
+    private File fetchFileDescriptor(RequestInfo requestInfo, Publication publication) throws ApiGatewayException {
         UUID fileIdentifier = RequestUtil.getFileIdentifier(requestInfo);
         return getValidFile(fileIdentifier, publication.getFileSet());
     }
