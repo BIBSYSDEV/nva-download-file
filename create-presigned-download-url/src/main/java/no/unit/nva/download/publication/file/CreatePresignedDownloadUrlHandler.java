@@ -1,6 +1,10 @@
 package no.unit.nva.download.publication.file;
 
 import com.amazonaws.services.lambda.runtime.Context;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import no.unit.nva.download.publication.file.aws.s3.AwsS3Service;
 import no.unit.nva.download.publication.file.exception.UnauthorizedException;
 import no.unit.nva.download.publication.file.publication.RestPublicationService;
@@ -15,25 +19,18 @@ import nva.commons.handlers.RequestInfo;
 import nva.commons.utils.Environment;
 import nva.commons.utils.JacocoGenerated;
 import org.apache.http.HttpStatus;
-
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void,
-        CreatePresignedDownloadUrlResponse> {
+public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, CreatePresignedDownloadUrlResponse> {
 
     public static final String ERROR_MISSING_FILE_IN_PUBLICATION_FILE_SET = "File not found in publication file set";
     public static final String ERROR_DUPLICATE_FILES_IN_PUBLICATION = "Publication contains duplicate files";
-    public static final String ERROR_MISSING_FILES_IN_PUBLICATION = "Publication does not have any associated files";
-    public static final String ERROR_UNAUTHORIZED = "Unauthorized";
+    public static final String ERROR_UNAUTHORIZED = "User is not authorized to view the resource";
 
     private static final Logger logger = LoggerFactory.getLogger(CreatePresignedDownloadUrlHandler.class);
     private final RestPublicationService publicationService;
     private final AwsS3Service awsS3Service;
-
 
     /**
      * Constructor for CreatePresignedDownloadUrlHandler.
@@ -59,19 +56,12 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void,
 
     @Override
     protected CreatePresignedDownloadUrlResponse processInput(Void input, RequestInfo requestInfo, Context context)
-            throws ApiGatewayException {
-        Publication publication = publicationService.getPublication(
-                RequestUtil.getIdentifier(requestInfo),
-                RequestUtil.getAuthorization(requestInfo));
+        throws ApiGatewayException {
 
-        UUID fileIdentifier = RequestUtil.getFileIdentifier(requestInfo);
+        Publication publication = fetchPublicationForAuthorizedUser(requestInfo);
 
-        authorize(requestInfo, publication);
-
-        File file = getValidFile(fileIdentifier, publication.getFileSet());
-
-        String presignedDownloadUrl = awsS3Service.createPresignedDownloadUrl(file.getIdentifier().toString(),
-                file.getMimeType());
+        File file = fetchFileDescriptor(requestInfo, publication);
+        String presignedDownloadUrl = fetchUrlFromS3(file);
 
         return new CreatePresignedDownloadUrlResponse(presignedDownloadUrl);
     }
@@ -81,43 +71,67 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void,
         return HttpStatus.SC_OK;
     }
 
-    /**
-     * Get valid file from publication.
-     *
-     * @param fileIdentifier fileIdentifier
-     * @param fileSet fileSet
-     * @return valid file
-     * @throws ApiGatewayException exception thrown if valid file not present
-     */
-    private File getValidFile(UUID fileIdentifier, FileSet fileSet) throws ApiGatewayException {
-
-        Optional<List<File>> files = Optional.ofNullable(fileSet.getFiles());
-
-        if (files.isPresent()) {
-            return files.get().stream()
-                    .filter(f -> f.getIdentifier().equals(fileIdentifier))
-                    .reduce((a, b) -> {
-                        throw new IllegalStateException(ERROR_DUPLICATE_FILES_IN_PUBLICATION);
-                    })
-                    .orElseThrow(() -> new FileNotFoundException(ERROR_MISSING_FILE_IN_PUBLICATION_FILE_SET));
-        }
-        throw new FileNotFoundException(ERROR_MISSING_FILES_IN_PUBLICATION);
+    private Publication fetchPublicationForAuthorizedUser(RequestInfo requestInfo) throws ApiGatewayException {
+        Publication publication = fetchPublication(requestInfo);
+        authorize(requestInfo, publication);
+        return publication;
     }
 
-    /**
-     * Authorize request if publication is published or user is publication owner.
-     *
-     * @param requestInfo requestInfo
-     * @param publication publication
-     * @throws ApiGatewayException when authorization fails.
-     */
+    private File fetchFileDescriptor(RequestInfo requestInfo, Publication publication) throws ApiGatewayException {
+        UUID fileIdentifier = RequestUtil.getFileIdentifier(requestInfo);
+        return getValidFile(fileIdentifier, publication.getFileSet());
+    }
+
+    private Publication fetchPublication(RequestInfo requestInfo) throws ApiGatewayException {
+        String authToken = extractAuthToken(requestInfo);
+        return fetchPublication(requestInfo, authToken);
+    }
+
+    private String extractAuthToken(RequestInfo requestInfo) throws ApiGatewayException {
+        return RequestUtil.getAuthorization(requestInfo);
+    }
+
+    private Publication fetchPublication(RequestInfo requestInfo, String authToken)
+        throws ApiGatewayException {
+        return publicationService.getPublication(RequestUtil.getIdentifier(requestInfo), authToken);
+    }
+
+    private String fetchUrlFromS3(File file) throws ApiGatewayException {
+        return awsS3Service.createPresignedDownloadUrl(file.getIdentifier().toString(), file.getMimeType());
+    }
+
+    private File getValidFile(UUID fileIdentifier, FileSet fileSet) throws ApiGatewayException {
+
+        List<File> files = Optional.ofNullable(fileSet.getFiles()).orElse(Collections.emptyList());
+
+        return files.stream()
+            .filter(f -> f.getIdentifier().equals(fileIdentifier))
+            .reduce((a, b) -> {
+                throw oneItemExpected();
+            })
+            .orElseThrow(this::fileNotFound);
+    }
+
+    private FileNotFoundException fileNotFound() {
+        return new FileNotFoundException(ERROR_MISSING_FILE_IN_PUBLICATION_FILE_SET);
+    }
+
+    private IllegalStateException oneItemExpected() {
+        return new IllegalStateException(ERROR_DUPLICATE_FILES_IN_PUBLICATION);
+    }
+
     private void authorize(RequestInfo requestInfo, Publication publication) throws ApiGatewayException {
-        if (publication.getStatus().equals(PublicationStatus.PUBLISHED)) {
-            return;
-        } else if (RequestUtil.getUserId(requestInfo).equalsIgnoreCase(publication.getOwner())) {
+        if (isPublished(publication) || userIsOwner(requestInfo, publication)) {
             return;
         }
         throw new UnauthorizedException(ERROR_UNAUTHORIZED);
     }
 
+    private boolean userIsOwner(RequestInfo requestInfo, Publication publication) throws ApiGatewayException {
+        return RequestUtil.getUserId(requestInfo).equalsIgnoreCase(publication.getOwner());
+    }
+
+    private boolean isPublished(Publication publication) {
+        return publication.getStatus().equals(PublicationStatus.PUBLISHED);
+    }
 }
