@@ -13,7 +13,6 @@ import no.unit.nva.model.License;
 import no.unit.nva.model.Organization;
 import no.unit.nva.model.Publication;
 import no.unit.nva.model.PublicationStatus;
-import no.unit.nva.testutils.TestContext;
 import nva.commons.exceptions.ApiGatewayException;
 import nva.commons.handlers.GatewayResponse;
 import nva.commons.utils.Environment;
@@ -90,7 +89,7 @@ public class CreatePresignedDownloadUrlHandlerTest {
 
         publicationService = mock(RestPublicationService.class);
         awsS3Service = mock(AwsS3Service.class);
-        context = new TestContext();
+        context = mock(Context.class);
         output = new ByteArrayOutputStream();
         createPresignedDownloadUrlHandler =
                 new CreatePresignedDownloadUrlHandler(publicationService, awsS3Service, environment);
