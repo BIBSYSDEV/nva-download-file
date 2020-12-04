@@ -91,15 +91,8 @@ public class RestPublicationService {
         }
     }
 
-    private ApiGatewayException handleException(URI uri, Exception exception) {
-        if (exception instanceof NotFoundException) {
-            return (NotFoundException) exception;
-        }
-        return new NoResponseException(ERROR_COMMUNICATING_WITH_REMOTE_SERVICE + uri.toString(), exception);
-    }
-
     private Publication fetchPublicationFromService(UUID identifier, HttpRequest httpRequest)
-        throws java.io.IOException, InterruptedException, NotFoundException {
+            throws java.io.IOException, InterruptedException, NotFoundException {
 
         HttpResponse<String> httpResponse = sendHttpRequest(httpRequest);
         if (httpResponse.statusCode() == SC_NOT_FOUND) {
@@ -107,6 +100,13 @@ public class RestPublicationService {
             throw new NotFoundException(externalErrorMessage);
         }
         return parseJsonObjectToPublication(httpResponse);
+    }
+
+    private ApiGatewayException handleException(URI uri, Exception exception) {
+        if (exception instanceof NotFoundException) {
+            return (NotFoundException) exception;
+        }
+        return new NoResponseException(ERROR_COMMUNICATING_WITH_REMOTE_SERVICE + uri.toString(), exception);
     }
 
     private String extractExternalErrorMessage(UUID identifier, HttpResponse<String> httpResponse) {

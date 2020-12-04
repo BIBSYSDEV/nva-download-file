@@ -51,7 +51,7 @@ import static org.apache.http.HttpStatus.SC_NOT_FOUND;
 import static org.apache.http.HttpStatus.SC_OK;
 import static org.apache.http.HttpStatus.SC_SERVICE_UNAVAILABLE;
 import static org.apache.http.HttpStatus.SC_UNAUTHORIZED;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -71,7 +71,6 @@ public class CreatePresignedDownloadUrlHandlerTest {
     public static final String OWNER_USER_ID = "owner@unit.no";
     public static final String NOT_OWNER_USER_ID = "not-owner@unit.no";
 
-    private Environment environment;
     private RestPublicationService publicationService;
     private AwsS3Service awsS3Service;
     private Context context;
@@ -84,7 +83,7 @@ public class CreatePresignedDownloadUrlHandlerTest {
      */
     @BeforeEach
     public void setUp() {
-        environment = mock(Environment.class);
+        Environment environment = mock(Environment.class);
         when(environment.readEnv(ALLOWED_ORIGIN_ENV)).thenReturn("*");
 
         publicationService = mock(RestPublicationService.class);
@@ -115,10 +114,10 @@ public class CreatePresignedDownloadUrlHandlerTest {
         createPresignedDownloadUrlHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE),
                 output, context);
 
-        GatewayResponse gatewayResponse = objectMapper.readValue(output.toString(), GatewayResponse.class);
+        var gatewayResponse = objectMapper.readValue(output.toString(), GatewayResponse.class);
         assertEquals(SC_OK, gatewayResponse.getStatusCode());
-        assertTrue(gatewayResponse.getHeaders().keySet().contains(CONTENT_TYPE));
-        assertTrue(gatewayResponse.getHeaders().keySet().contains(ACCESS_CONTROL_ALLOW_ORIGIN));
+        assertTrue(gatewayResponse.getHeaders().containsKey(CONTENT_TYPE));
+        assertTrue(gatewayResponse.getHeaders().containsKey(ACCESS_CONTROL_ALLOW_ORIGIN));
     }
 
     @Test
@@ -135,10 +134,10 @@ public class CreatePresignedDownloadUrlHandlerTest {
         createPresignedDownloadUrlHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE,
                 OWNER_USER_ID), output, context);
 
-        GatewayResponse gatewayResponse = objectMapper.readValue(output.toString(), GatewayResponse.class);
+        var gatewayResponse = objectMapper.readValue(output.toString(), GatewayResponse.class);
         assertEquals(SC_OK, gatewayResponse.getStatusCode());
-        assertTrue(gatewayResponse.getHeaders().keySet().contains(CONTENT_TYPE));
-        assertTrue(gatewayResponse.getHeaders().keySet().contains(ACCESS_CONTROL_ALLOW_ORIGIN));
+        assertTrue(gatewayResponse.getHeaders().containsKey(CONTENT_TYPE));
+        assertTrue(gatewayResponse.getHeaders().containsKey(ACCESS_CONTROL_ALLOW_ORIGIN));
     }
 
     @Test
@@ -150,10 +149,10 @@ public class CreatePresignedDownloadUrlHandlerTest {
         createPresignedDownloadUrlHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE),
                 output, context);
 
-        GatewayResponse gatewayResponse = objectMapper.readValue(output.toString(), GatewayResponse.class);
+        var gatewayResponse = objectMapper.readValue(output.toString(), GatewayResponse.class);
         assertEquals(SC_NOT_FOUND, gatewayResponse.getStatusCode());
-        assertTrue(gatewayResponse.getHeaders().keySet().contains(CONTENT_TYPE));
-        assertTrue(gatewayResponse.getHeaders().keySet().contains(ACCESS_CONTROL_ALLOW_ORIGIN));
+        assertTrue(gatewayResponse.getHeaders().containsKey(CONTENT_TYPE));
+        assertTrue(gatewayResponse.getHeaders().containsKey(ACCESS_CONTROL_ALLOW_ORIGIN));
     }
 
     @Test
@@ -163,10 +162,10 @@ public class CreatePresignedDownloadUrlHandlerTest {
         createPresignedDownloadUrlHandler.handleRequest(inputStream(IDENTIFIER, IDENTIFIER_FILE_VALUE), output,
                 context);
 
-        GatewayResponse gatewayResponse = objectMapper.readValue(output.toString(), GatewayResponse.class);
+        var gatewayResponse = objectMapper.readValue(output.toString(), GatewayResponse.class);
         assertEquals(SC_BAD_REQUEST, gatewayResponse.getStatusCode());
-        assertTrue(gatewayResponse.getHeaders().keySet().contains(CONTENT_TYPE));
-        assertTrue(gatewayResponse.getHeaders().keySet().contains(ACCESS_CONTROL_ALLOW_ORIGIN));
+        assertTrue(gatewayResponse.getHeaders().containsKey(CONTENT_TYPE));
+        assertTrue(gatewayResponse.getHeaders().containsKey(ACCESS_CONTROL_ALLOW_ORIGIN));
     }
 
     @Test
@@ -180,10 +179,10 @@ public class CreatePresignedDownloadUrlHandlerTest {
         createPresignedDownloadUrlHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE),
                 output, context);
 
-        GatewayResponse gatewayResponse = objectMapper.readValue(output.toString(), GatewayResponse.class);
+        var gatewayResponse = objectMapper.readValue(output.toString(), GatewayResponse.class);
         assertEquals(SC_SERVICE_UNAVAILABLE, gatewayResponse.getStatusCode());
-        assertTrue(gatewayResponse.getHeaders().keySet().contains(CONTENT_TYPE));
-        assertTrue(gatewayResponse.getHeaders().keySet().contains(ACCESS_CONTROL_ALLOW_ORIGIN));
+        assertTrue(gatewayResponse.getHeaders().containsKey(CONTENT_TYPE));
+        assertTrue(gatewayResponse.getHeaders().containsKey(ACCESS_CONTROL_ALLOW_ORIGIN));
     }
 
     @Test
@@ -196,10 +195,10 @@ public class CreatePresignedDownloadUrlHandlerTest {
         createPresignedDownloadUrlHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE),
                 output, context);
 
-        GatewayResponse gatewayResponse = objectMapper.readValue(output.toString(), GatewayResponse.class);
+        var gatewayResponse = objectMapper.readValue(output.toString(), GatewayResponse.class);
         assertEquals(SC_NOT_FOUND, gatewayResponse.getStatusCode());
-        assertTrue(gatewayResponse.getHeaders().keySet().contains(CONTENT_TYPE));
-        assertTrue(gatewayResponse.getHeaders().keySet().contains(ACCESS_CONTROL_ALLOW_ORIGIN));
+        assertTrue(gatewayResponse.getHeaders().containsKey(CONTENT_TYPE));
+        assertTrue(gatewayResponse.getHeaders().containsKey(ACCESS_CONTROL_ALLOW_ORIGIN));
     }
 
     @Test
@@ -213,10 +212,10 @@ public class CreatePresignedDownloadUrlHandlerTest {
         createPresignedDownloadUrlHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE),
                 output, context);
 
-        GatewayResponse gatewayResponse = objectMapper.readValue(output.toString(), GatewayResponse.class);
+        var gatewayResponse = objectMapper.readValue(output.toString(), GatewayResponse.class);
         assertEquals(SC_INTERNAL_SERVER_ERROR, gatewayResponse.getStatusCode());
-        assertTrue(gatewayResponse.getHeaders().keySet().contains(CONTENT_TYPE));
-        assertTrue(gatewayResponse.getHeaders().keySet().contains(ACCESS_CONTROL_ALLOW_ORIGIN));
+        assertTrue(gatewayResponse.getHeaders().containsKey(CONTENT_TYPE));
+        assertTrue(gatewayResponse.getHeaders().containsKey(ACCESS_CONTROL_ALLOW_ORIGIN));
     }
 
     @Test
@@ -230,10 +229,10 @@ public class CreatePresignedDownloadUrlHandlerTest {
         createPresignedDownloadUrlHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE),
                 output, context);
 
-        GatewayResponse gatewayResponse = objectMapper.readValue(output.toString(), GatewayResponse.class);
+        var gatewayResponse = objectMapper.readValue(output.toString(), GatewayResponse.class);
         assertEquals(SC_NOT_FOUND, gatewayResponse.getStatusCode());
-        assertTrue(gatewayResponse.getHeaders().keySet().contains(CONTENT_TYPE));
-        assertTrue(gatewayResponse.getHeaders().keySet().contains(ACCESS_CONTROL_ALLOW_ORIGIN));
+        assertTrue(gatewayResponse.getHeaders().containsKey(CONTENT_TYPE));
+        assertTrue(gatewayResponse.getHeaders().containsKey(ACCESS_CONTROL_ALLOW_ORIGIN));
     }
 
     @Test
@@ -249,10 +248,10 @@ public class CreatePresignedDownloadUrlHandlerTest {
         createPresignedDownloadUrlHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE),
                 output, context);
 
-        GatewayResponse gatewayResponse = objectMapper.readValue(output.toString(), GatewayResponse.class);
+        var gatewayResponse = objectMapper.readValue(output.toString(), GatewayResponse.class);
         assertEquals(SC_BAD_REQUEST, gatewayResponse.getStatusCode());
-        assertTrue(gatewayResponse.getHeaders().keySet().contains(CONTENT_TYPE));
-        assertTrue(gatewayResponse.getHeaders().keySet().contains(ACCESS_CONTROL_ALLOW_ORIGIN));
+        assertTrue(gatewayResponse.getHeaders().containsKey(CONTENT_TYPE));
+        assertTrue(gatewayResponse.getHeaders().containsKey(ACCESS_CONTROL_ALLOW_ORIGIN));
     }
 
     @Test
@@ -268,10 +267,10 @@ public class CreatePresignedDownloadUrlHandlerTest {
         createPresignedDownloadUrlHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE,
                 NOT_OWNER_USER_ID), output, context);
 
-        GatewayResponse gatewayResponse = objectMapper.readValue(output.toString(), GatewayResponse.class);
+        var gatewayResponse = objectMapper.readValue(output.toString(), GatewayResponse.class);
         assertEquals(SC_UNAUTHORIZED, gatewayResponse.getStatusCode());
-        assertTrue(gatewayResponse.getHeaders().keySet().contains(CONTENT_TYPE));
-        assertTrue(gatewayResponse.getHeaders().keySet().contains(ACCESS_CONTROL_ALLOW_ORIGIN));
+        assertTrue(gatewayResponse.getHeaders().containsKey(CONTENT_TYPE));
+        assertTrue(gatewayResponse.getHeaders().containsKey(ACCESS_CONTROL_ALLOW_ORIGIN));
     }
 
     @Test
@@ -287,10 +286,10 @@ public class CreatePresignedDownloadUrlHandlerTest {
         createPresignedDownloadUrlHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE),
                 output, context);
 
-        GatewayResponse gatewayResponse = objectMapper.readValue(output.toString(), GatewayResponse.class);
+        var gatewayResponse = objectMapper.readValue(output.toString(), GatewayResponse.class);
         assertEquals(SC_SERVICE_UNAVAILABLE, gatewayResponse.getStatusCode());
-        assertTrue(gatewayResponse.getHeaders().keySet().contains(CONTENT_TYPE));
-        assertTrue(gatewayResponse.getHeaders().keySet().contains(ACCESS_CONTROL_ALLOW_ORIGIN));
+        assertTrue(gatewayResponse.getHeaders().containsKey(CONTENT_TYPE));
+        assertTrue(gatewayResponse.getHeaders().containsKey(ACCESS_CONTROL_ALLOW_ORIGIN));
     }
 
 

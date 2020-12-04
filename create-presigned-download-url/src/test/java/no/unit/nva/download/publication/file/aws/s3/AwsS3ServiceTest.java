@@ -4,7 +4,6 @@ import com.amazonaws.SdkClientException;
 import com.amazonaws.services.s3.AmazonS3;
 import no.unit.nva.download.publication.file.aws.s3.exception.S3ServiceException;
 import nva.commons.exceptions.ApiGatewayException;
-import nva.commons.utils.Environment;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -20,14 +19,12 @@ import static org.mockito.Mockito.when;
 
 public class AwsS3ServiceTest {
 
-    public static final String REGION = "region";
     public static final String BUCKET_NAME = "bucketname";
     public static final String OBJECT_KEY = "12345";
     public static final String PRESIGNED_DOWNLOAD_URL = "https://example.com/download/12345";
     public static final String MIME_TYPE_APPLICATION_PDF = "application/pdf";
 
     private AmazonS3 s3Client;
-    private Environment environment;
 
     /**
      * Set up environment.
@@ -35,7 +32,6 @@ public class AwsS3ServiceTest {
     @BeforeEach
     public void setUp() {
         s3Client = mock(AmazonS3.class);
-        environment = mock(Environment.class);
     }
 
 
