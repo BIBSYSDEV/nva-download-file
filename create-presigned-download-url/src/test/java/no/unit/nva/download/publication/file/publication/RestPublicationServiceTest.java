@@ -7,7 +7,6 @@ import static org.hamcrest.core.StringContains.containsString;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -22,11 +21,15 @@ import no.unit.nva.download.publication.file.publication.exception.NoResponseExc
 import no.unit.nva.download.publication.file.publication.exception.NotFoundException;
 import no.unit.nva.model.Publication;
 import nva.commons.exceptions.ApiGatewayException;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentMatchers;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.zalando.problem.Problem;
 
+@ExtendWith(MockitoExtension.class)
 public class RestPublicationServiceTest {
 
     public static final String PUBLICATION_RESPONSE = "src/test/resources/publication_response.json";
@@ -36,22 +39,16 @@ public class RestPublicationServiceTest {
     public static final String API_SCHEME = "http";
     public static final String NOT_FOUND_ERROR_MESSAGE = "NotFoundErrorMessage";
 
+    @Mock
     private HttpClient client;
+    @Mock
     private HttpResponse<String> response;
-
-    /**
-     * Set up environment.
-     */
-    @BeforeEach
-    public void setUp() {
-        client = mock(HttpClient.class);
-        response = mock(HttpResponse.class);
-    }
 
     @Test
     @DisplayName("getPublication throws NoResponseException when publication could not be retrieved")
     public void getPublicationClientError() throws IOException, InterruptedException {
-        when(client.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class))).thenThrow(IOException.class);
+        when(client.send(any(HttpRequest.class), ArgumentMatchers.<HttpResponse.BodyHandler<String>>any()))
+                .thenThrow(IOException.class);
 
         RestPublicationService publicationService = new RestPublicationService(client, objectMapper, API_SCHEME,
             API_HOST);
@@ -65,7 +62,8 @@ public class RestPublicationServiceTest {
     @Test
     @DisplayName("getPublication returns a nonEmpty publication when it receives a non empty json object")
     public void getPublicationReturnsJsonObject() throws IOException, InterruptedException, ApiGatewayException {
-        when(client.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class))).thenReturn(response);
+        when(client.send(any(HttpRequest.class), ArgumentMatchers.<HttpResponse.BodyHandler<String>>any()))
+                .thenReturn(response);
         when((response.body())).thenReturn(getResponse(PUBLICATION_RESPONSE));
 
         RestPublicationService publicationService = new RestPublicationService(client, objectMapper, API_SCHEME,
@@ -122,7 +120,8 @@ public class RestPublicationServiceTest {
     }
 
     private void clientReceivesNotFoundError() throws IOException, InterruptedException {
-        when(client.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class))).thenReturn(response);
+        when(client.send(any(HttpRequest.class), ArgumentMatchers.<HttpResponse.BodyHandler<String>>any()))
+                .thenReturn(response);
         when((response.statusCode())).thenReturn(SC_NOT_FOUND);
         when(response.body()).thenReturn(problemString());
     }
