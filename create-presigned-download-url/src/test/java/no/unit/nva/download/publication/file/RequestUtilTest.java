@@ -2,8 +2,6 @@ package no.unit.nva.download.publication.file;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import no.unit.nva.download.publication.file.RequestUtil;
-import no.unit.nva.download.publication.file.exception.UnauthorizedException;
 import no.unit.nva.download.publication.file.publication.exception.InputException;
 import nva.commons.exceptions.ApiGatewayException;
 import nva.commons.handlers.RequestInfo;
@@ -25,7 +23,7 @@ public class RequestUtilTest {
 
 
     @Test
-    public void getIdentifierReturnsIdentifierFromRequestWhenPresent() throws ApiGatewayException {
+    void getIdentifierReturnsIdentifierFromRequestWhenPresent() throws ApiGatewayException {
         UUID uuid = UUID.randomUUID();
         RequestInfo requestInfo = new RequestInfo();
         requestInfo.setPathParameters(Map.of(RequestUtil.IDENTIFIER, uuid.toString()));
@@ -36,19 +34,19 @@ public class RequestUtilTest {
     }
 
     @Test
-    public void getIdentifierThrowsExceptionWhenIdentifierNotPresent() {
+    void getIdentifierThrowsExceptionWhenIdentifierNotPresent() {
         RequestInfo requestInfo = new RequestInfo();
         assertThrows(InputException.class, () -> RequestUtil.getIdentifier(requestInfo));
     }
 
     @Test
-    public void getFileIdentifierThrowsExceptionWhenFileIdentifierNotPresent() {
+    void getFileIdentifierThrowsExceptionWhenFileIdentifierNotPresent() {
         RequestInfo requestInfo = new RequestInfo();
         assertThrows(InputException.class, () -> RequestUtil.getFileIdentifier(requestInfo));
     }
 
     @Test
-    public void getAuthorizationReturnsTheValueOfAuthorizationHeader() throws ApiGatewayException {
+    void getAuthorizationReturnsTheValueOfAuthorizationHeader() throws ApiGatewayException {
         RequestInfo requestInfo = new RequestInfo();
         requestInfo.setHeaders(Map.of(HttpHeaders.AUTHORIZATION, VALUE));
 
@@ -58,14 +56,14 @@ public class RequestUtilTest {
     }
 
     @Test
-    public void getAuthorizationThrowsExceptionWhenAuthorizationNotPresent() {
+    void getAuthorizationThrowsExceptionWhenAuthorizationNotPresent() {
         RequestInfo requestInfo = new RequestInfo();
         assertThrows(InputException.class, () -> RequestUtil.getAuthorization(requestInfo));
     }
 
 
     @Test
-    public void getUserIdReturnsOwnerFromRequestWhenPresent() throws Exception {
+    void getUserIdReturnsOwnerFromRequestWhenPresent() throws Exception {
         RequestInfo requestInfo = new RequestInfo();
         requestInfo.setRequestContext(getRequestContextForClaim(RequestUtil.CUSTOM_FEIDE_ID, VALUE));
 
@@ -75,7 +73,7 @@ public class RequestUtilTest {
     }
 
     @Test
-    public void getUserIdThrowsExceptionWhenMissingClaimsNode() throws Exception {
+    void getUserIdThrowsExceptionWhenMissingClaimsNode() throws Exception {
         RequestInfo requestInfo = new RequestInfo();
         requestInfo.setRequestContext(getRequestContextWithMissingNode());
 
@@ -83,7 +81,7 @@ public class RequestUtilTest {
     }
 
     @Test
-    public void getUserIdThrowsExceptionWhenUserIdNotPresent() {
+    void getUserIdThrowsExceptionWhenUserIdNotPresent() {
         RequestInfo requestInfo = new RequestInfo();
         assertThrows(InputException.class, () -> RequestUtil.getUserId(requestInfo));
     }

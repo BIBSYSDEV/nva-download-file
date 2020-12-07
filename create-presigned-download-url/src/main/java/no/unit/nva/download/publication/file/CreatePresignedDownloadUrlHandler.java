@@ -87,13 +87,13 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, C
         return fetchPublication(requestInfo, authToken);
     }
 
-    private String extractAuthToken(RequestInfo requestInfo) throws ApiGatewayException {
-        return RequestUtil.getAuthorization(requestInfo);
+    private Publication fetchPublication(RequestInfo requestInfo, String authToken)
+            throws ApiGatewayException {
+        return publicationService.getPublication(RequestUtil.getIdentifier(requestInfo), authToken);
     }
 
-    private Publication fetchPublication(RequestInfo requestInfo, String authToken)
-        throws ApiGatewayException {
-        return publicationService.getPublication(RequestUtil.getIdentifier(requestInfo), authToken);
+    private String extractAuthToken(RequestInfo requestInfo) throws ApiGatewayException {
+        return RequestUtil.getAuthorization(requestInfo);
     }
 
     private String fetchUrlFromS3(File file) throws ApiGatewayException {
