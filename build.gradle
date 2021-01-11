@@ -35,7 +35,7 @@ subprojects {
     gradleLint.rules = ['unused-dependency']
 
     dependencies {
-        implementation group: 'com.github.BIBSYSDEV', name: 'nva-datamodel-java', version: '0.11.2'
+        implementation group: 'com.github.BIBSYSDEV', name: 'nva-datamodel-java', version: '0.11.5'
         implementation group: 'com.github.BIBSYSDEV', name: 'nva-commons', version: '0.7.4'
 
         implementation (group: 'org.slf4j', name: 'slf4j-api', version: '1.8.0-beta4') {
