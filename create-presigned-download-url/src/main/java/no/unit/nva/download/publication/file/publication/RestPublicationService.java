@@ -69,15 +69,14 @@ public class RestPublicationService {
      * Retrieve publication metadata.
      *
      * @param identifier         identifier
-     * @param authorizationToken authorization
      * @return A publication
      * @throws ApiGatewayException exception thrown if value is missing
      */
-    public Publication getPublication(UUID identifier, String authorizationToken)
+    public Publication getPublication(UUID identifier)
         throws ApiGatewayException {
 
         URI uri = buildUriToPublicationService(identifier);
-        HttpRequest httpRequest = buildHttpRequest(uri, authorizationToken);
+        HttpRequest httpRequest = buildHttpRequest(uri);
         return fetchPublicationFromService(identifier, uri, httpRequest);
     }
 
@@ -138,13 +137,12 @@ public class RestPublicationService {
         return objectMapper.readValue(httpResponse.body(), Publication.class);
     }
 
-    private HttpRequest buildHttpRequest(URI uri, String authToken) {
+    private HttpRequest buildHttpRequest(URI uri) {
         return HttpRequest.newBuilder()
-            .uri(uri)
-            .header(HttpHeaders.ACCEPT, APPLICATION_JSON)
-            .header(HttpHeaders.AUTHORIZATION, authToken)
-            .GET()
-            .build();
+                .uri(uri)
+                .header(HttpHeaders.ACCEPT, APPLICATION_JSON)
+                .GET()
+                .build();
     }
 
     private URI buildUriToPublicationService(UUID identifier) {

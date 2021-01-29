@@ -102,6 +102,53 @@ Resources:
                   description: SERVICE UNAVAILABLE
                   schema:
                     $ref: '#/definitions/Problem'
+          /public/{identifier}/files/{fileIdentifier}:
+            get:
+              summary: Returns an S3 presigned download URL to a publication file (within json response body)
+              consumes:
+                - application/json
+              produces:
+                - application/json
+              parameters:
+                - in: path
+                  name: identifier
+                  type: string
+                  format: uuid
+                  required: true
+                  description: UUID identifier of the Publication.
+                - in: path
+                  name: fileIdentifier
+                  type: string
+                  format: uuid
+                  required: true
+                  description: UUID identifier of the Publication File.
+              x-amazon-apigateway-integration:
+                uri:
+                  Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${NvaDownloadPublicationFileFunction.Arn}/invocations
+                responses: { }
+                httpMethod: POST
+                type: AWS_PROXY
+              responses:
+                '200':
+                  description: OK
+                  schema:
+                    type: object
+                '400':
+                  description: BAD REQUEST
+                  schema:
+                    $ref: '#/definitions/Problem'
+                '404':
+                  description: NOT FOUND
+                  schema:
+                    $ref: '#/definitions/Problem'
+                '500':
+                  description: INTERNAL SERVER ERROR
+                  schema:
+                    $ref: '#/definitions/Problem'
+                '503':
+                  description: SERVICE UNAVAILABLE
+                  schema:
+                    $ref: '#/definitions/Problem'
         definitions:
           Problem:
             type: object
@@ -137,10 +184,16 @@ Resources:
           BUCKET_NAME: !Ref S3Bucket
       Role: !GetAtt UploadExecutionRole.Arn
       Events:
-        GetEvent:
+        AuthorizedGetEvent:
           Type: Api
           Properties:
             Path: /{identifier}/files/{fileIdentifier}
+            Method: get
+            RestApiId: !Ref NvaDownloadPublicationFileApi
+        AnonymousGetEvent:
+          Type: Api
+          Properties:
+            Path: /public/{identifier}/files/{fileIdentifier}
             Method: get
             RestApiId: !Ref NvaDownloadPublicationFileApi
 
