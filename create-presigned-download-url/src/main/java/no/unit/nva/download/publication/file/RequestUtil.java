@@ -6,7 +6,7 @@ import nva.commons.exceptions.ApiGatewayException;
 import nva.commons.handlers.RequestInfo;
 import org.apache.http.HttpHeaders;
 
-import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 
 public final class RequestUtil {
@@ -31,13 +31,12 @@ public final class RequestUtil {
      * @throws ApiGatewayException exception thrown if value is missing
      */
     public static String getAuthorization(RequestInfo requestInfo) throws ApiGatewayException {
-        try {
-            String authorization = requestInfo.getHeaders().get(HttpHeaders.AUTHORIZATION);
-            Objects.requireNonNull(authorization);
-            return authorization;
-        } catch (Exception e) {
-            throw new InputException(MISSING_AUTHORIZATION_IN_HEADERS, e);
-        }
+        return getAuthorizationOptional(requestInfo)
+                .orElseThrow(() -> new InputException(MISSING_AUTHORIZATION_IN_HEADERS, null));
+    }
+
+    public static Optional<String> getAuthorizationOptional(RequestInfo requestInfo) {
+        return Optional.ofNullable(requestInfo.getHeaders().get(HttpHeaders.AUTHORIZATION));
     }
 
     /**
