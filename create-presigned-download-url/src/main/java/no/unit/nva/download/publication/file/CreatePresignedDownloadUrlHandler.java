@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import no.unit.nva.download.publication.file.aws.s3.AwsS3Service;
-import no.unit.nva.download.publication.file.exception.UnauthorizedException;
+import no.unit.nva.download.publication.file.exception.NotFoundException;
 import no.unit.nva.download.publication.file.publication.RestPublicationService;
 import no.unit.nva.download.publication.file.publication.exception.FileNotFoundException;
 import no.unit.nva.model.File;
@@ -26,7 +26,6 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, C
 
     public static final String ERROR_MISSING_FILE_IN_PUBLICATION_FILE_SET = "File not found in publication file set";
     public static final String ERROR_DUPLICATE_FILES_IN_PUBLICATION = "Publication contains duplicate files";
-    public static final String ERROR_UNAUTHORIZED = "User is not authorized to view the resource";
 
     private static final Logger logger = LoggerFactory.getLogger(CreatePresignedDownloadUrlHandler.class);
     private final RestPublicationService publicationService;
@@ -70,7 +69,9 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, C
 
     private void authorizeIfNotPublished(RequestInfo requestInfo, Publication publication) throws ApiGatewayException {
         if (!isPublished(publication)) {
-            authorize(requestInfo, publication);
+            UUID identifier = RequestUtil.getIdentifier(requestInfo);
+            String userId = RequestUtil.getUserIdOptional(requestInfo).orElse(null);
+            authorize(identifier, userId, publication);
         }
     }
 
@@ -100,15 +101,15 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, C
             .orElseThrow(() -> new FileNotFoundException(ERROR_MISSING_FILE_IN_PUBLICATION_FILE_SET));
     }
 
-    private void authorize(RequestInfo requestInfo, Publication publication) throws ApiGatewayException {
-        if (isPublished(publication) || userIsOwner(requestInfo, publication)) {
+    private void authorize(UUID identifier, String userId, Publication publication) throws ApiGatewayException {
+        if (isPublished(publication) || userIsOwner(userId, publication)) {
             return;
         }
-        throw new UnauthorizedException(ERROR_UNAUTHORIZED);
+        throw new NotFoundException(identifier);
     }
 
-    private boolean userIsOwner(RequestInfo requestInfo, Publication publication) throws ApiGatewayException {
-        return RequestUtil.getUserId(requestInfo).equalsIgnoreCase(publication.getOwner());
+    private boolean userIsOwner(String userId, Publication publication) {
+        return publication.getOwner().equals(userId);
     }
 
     private boolean isPublished(Publication publication) {
