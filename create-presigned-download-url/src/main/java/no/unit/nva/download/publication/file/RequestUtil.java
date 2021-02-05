@@ -6,7 +6,7 @@ import nva.commons.exceptions.ApiGatewayException;
 import nva.commons.handlers.RequestInfo;
 import org.apache.http.HttpHeaders;
 
-import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 
 public final class RequestUtil {
@@ -31,13 +31,18 @@ public final class RequestUtil {
      * @throws ApiGatewayException exception thrown if value is missing
      */
     public static String getAuthorization(RequestInfo requestInfo) throws ApiGatewayException {
-        try {
-            String authorization = requestInfo.getHeaders().get(HttpHeaders.AUTHORIZATION);
-            Objects.requireNonNull(authorization);
-            return authorization;
-        } catch (Exception e) {
-            throw new InputException(MISSING_AUTHORIZATION_IN_HEADERS, e);
-        }
+        return getAuthorizationOptional(requestInfo)
+                .orElseThrow(() -> new InputException(MISSING_AUTHORIZATION_IN_HEADERS, null));
+    }
+
+    /**
+     * Get optional Authorization header from request.
+     *
+     * @param requestInfo   requestInfo
+     * @return  optional Authorization header
+     */
+    public static Optional<String> getAuthorizationOptional(RequestInfo requestInfo) {
+        return Optional.ofNullable(requestInfo.getHeaders().get(HttpHeaders.AUTHORIZATION));
     }
 
     /**
@@ -83,11 +88,22 @@ public final class RequestUtil {
      * @throws ApiGatewayException exception thrown if value is missing
      */
     public static String getUserId(RequestInfo requestInfo) throws ApiGatewayException {
+        return getUserIdOptional(requestInfo)
+                .orElseThrow(() -> new InputException(MISSING_CLAIM_IN_REQUEST_CONTEXT + CUSTOM_FEIDE_ID, null));
+    }
+
+    /**
+     * Get optional userId from requestContext authorizer claims.
+     *
+     * @param requestInfo   requestInfo
+     * @return  optional userId
+     */
+    public static Optional<String> getUserIdOptional(RequestInfo requestInfo) {
         JsonNode jsonNode = requestInfo.getRequestContext().at(AUTHORIZER_CLAIMS + CUSTOM_FEIDE_ID);
         if (!jsonNode.isMissingNode()) {
-            return jsonNode.textValue();
+            return Optional.ofNullable(jsonNode.textValue());
         }
-        throw new InputException(MISSING_CLAIM_IN_REQUEST_CONTEXT + CUSTOM_FEIDE_ID, null);
+        return  Optional.empty();
     }
 
 }
