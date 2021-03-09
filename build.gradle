@@ -63,7 +63,7 @@ subprojects {
             because('Required by build')
         }
 
-        implementation ('org.apiguardian:apiguardian-api:1.0.0') {
+        implementation ('org.apiguardian:apiguardian-api:1.1.0') {
             because('Required by build')
         }
 
