@@ -53,7 +53,7 @@ public class RestPublicationServiceTest {
         RestPublicationService publicationService = new RestPublicationService(client, objectMapper, API_SCHEME,
             API_HOST);
 
-        assertThrows(NoResponseException.class, () -> publicationService.getPublication(UUID.randomUUID()));
+        assertThrows(NoResponseException.class, () -> publicationService.getPublication(UUID.randomUUID().toString()));
     }
 
     @Test
@@ -66,7 +66,7 @@ public class RestPublicationServiceTest {
         RestPublicationService publicationService = new RestPublicationService(client, objectMapper, API_SCHEME,
             API_HOST);
 
-        Publication publication = publicationService.getPublication(UUID.randomUUID());
+        Publication publication = publicationService.getPublication(UUID.randomUUID().toString());
 
         assertNotNull(publication);
     }
@@ -81,7 +81,7 @@ public class RestPublicationServiceTest {
         RestPublicationService publicationService = new RestPublicationService(client, objectMapper, API_SCHEME,
             API_HOST);
 
-        assertThrows(NotFoundException.class, () -> publicationService.getPublication(UUID.randomUUID()));
+        assertThrows(NotFoundException.class, () -> publicationService.getPublication(UUID.randomUUID().toString()));
     }
 
     @Test
@@ -96,7 +96,7 @@ public class RestPublicationServiceTest {
             API_HOST);
 
         NotFoundException actualException = assertThrows(NotFoundException.class,
-            () -> publicationService.getPublication(UUID.randomUUID()));
+            () -> publicationService.getPublication(UUID.randomUUID().toString()));
 
         assertThat(actualException.getMessage(), containsString(NOT_FOUND_ERROR_MESSAGE));
     }

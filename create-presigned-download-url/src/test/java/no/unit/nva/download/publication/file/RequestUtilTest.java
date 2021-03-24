@@ -28,9 +28,9 @@ public class RequestUtilTest {
         RequestInfo requestInfo = new RequestInfo();
         requestInfo.setPathParameters(Map.of(RequestUtil.IDENTIFIER, uuid.toString()));
 
-        UUID identifier = RequestUtil.getIdentifier(requestInfo);
+        String identifier = RequestUtil.getIdentifier(requestInfo);
 
-        assertEquals(uuid, identifier);
+        assertEquals(uuid.toString(), identifier);
     }
 
     @Test

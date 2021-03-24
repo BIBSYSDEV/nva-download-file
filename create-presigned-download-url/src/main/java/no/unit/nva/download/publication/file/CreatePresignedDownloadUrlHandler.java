@@ -57,7 +57,7 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, C
     protected CreatePresignedDownloadUrlResponse processInput(Void input, RequestInfo requestInfo, Context context)
         throws ApiGatewayException {
 
-        UUID identifier = RequestUtil.getIdentifier(requestInfo);
+        String identifier = RequestUtil.getIdentifier(requestInfo);
         Publication publication = publicationService.getPublication(identifier);
         authorizeIfNotPublished(requestInfo, publication);
 
@@ -69,7 +69,7 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, C
 
     private void authorizeIfNotPublished(RequestInfo requestInfo, Publication publication) throws ApiGatewayException {
         if (!isPublished(publication)) {
-            UUID identifier = RequestUtil.getIdentifier(requestInfo);
+            String identifier = RequestUtil.getIdentifier(requestInfo);
             String userId = RequestUtil.getUserIdOptional(requestInfo).orElse(null);
             authorize(identifier, userId, publication);
         }
@@ -101,7 +101,7 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, C
             .orElseThrow(() -> new FileNotFoundException(ERROR_MISSING_FILE_IN_PUBLICATION_FILE_SET));
     }
 
-    private void authorize(UUID identifier, String userId, Publication publication) throws ApiGatewayException {
+    private void authorize(String identifier, String userId, Publication publication) throws ApiGatewayException {
         if (isPublished(publication) || userIsOwner(userId, publication)) {
             return;
         }
