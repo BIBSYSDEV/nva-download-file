@@ -1,6 +1,5 @@
 package no.unit.nva.download.publication.file.exception;
 
-import java.util.UUID;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
 import org.apache.http.HttpStatus;
 
@@ -8,7 +7,7 @@ public class NotFoundException extends ApiGatewayException {
 
     public static final String RESOURCE_NOT_FOUND = "Resource not found: ";
 
-    public NotFoundException(UUID identifier) {
+    public NotFoundException(String identifier) {
         super(RESOURCE_NOT_FOUND + identifier);
     }
 

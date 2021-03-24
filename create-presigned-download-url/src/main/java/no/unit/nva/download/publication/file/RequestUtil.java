@@ -1,13 +1,12 @@
 package no.unit.nva.download.publication.file;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import java.util.Optional;
+import java.util.UUID;
 import no.unit.nva.download.publication.file.publication.exception.InputException;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
 import org.apache.http.HttpHeaders;
-
-import java.util.Optional;
-import java.util.UUID;
 
 public final class RequestUtil {
 
@@ -15,10 +14,11 @@ public final class RequestUtil {
     public static final String FILE_IDENTIFIER = "fileIdentifier";
     public static final String MISSING_AUTHORIZATION_IN_HEADERS = "Missing Authorization in Headers";
     public static final String IDENTIFIER_IS_NOT_A_VALID_UUID = "Identifier is not a valid UUID: ";
+    public static final String MISSING_RESOURCE_IDENTIFIER = "Missing Resource identifier";
     public static final String AUTHORIZER_CLAIMS = "/authorizer/claims/";
     public static final String CUSTOM_FEIDE_ID = "custom:feideId";
     public static final String MISSING_CLAIM_IN_REQUEST_CONTEXT =
-            "Missing claim in requestContext: ";
+        "Missing claim in requestContext: ";
 
     private RequestUtil() {
     }
@@ -32,14 +32,14 @@ public final class RequestUtil {
      */
     public static String getAuthorization(RequestInfo requestInfo) throws ApiGatewayException {
         return getAuthorizationOptional(requestInfo)
-                .orElseThrow(() -> new InputException(MISSING_AUTHORIZATION_IN_HEADERS, null));
+                   .orElseThrow(() -> new InputException(MISSING_AUTHORIZATION_IN_HEADERS, null));
     }
 
     /**
      * Get optional Authorization header from request.
      *
-     * @param requestInfo   requestInfo
-     * @return  optional Authorization header
+     * @param requestInfo requestInfo
+     * @return optional Authorization header
      */
     public static Optional<String> getAuthorizationOptional(RequestInfo requestInfo) {
         return Optional.ofNullable(requestInfo.getHeaders().get(HttpHeaders.AUTHORIZATION));
@@ -50,16 +50,12 @@ public final class RequestUtil {
      *
      * @param requestInfo requestInfo
      * @return the identifier
-     * @throws ApiGatewayException exception thrown if value is missing
      */
-    public static UUID getIdentifier(RequestInfo requestInfo) throws ApiGatewayException {
-        String identifier = null;
-        try {
-            identifier = requestInfo.getPathParameters().get(IDENTIFIER);
-            return UUID.fromString(identifier);
-        } catch (Exception e) {
-            throw new InputException(IDENTIFIER_IS_NOT_A_VALID_UUID + identifier, e);
-        }
+    public static String getIdentifier(RequestInfo requestInfo) {
+        return Optional.of(requestInfo)
+                   .map(RequestInfo::getPathParameters)
+                   .map(pathParameters -> pathParameters.get(IDENTIFIER))
+                   .orElseThrow(() -> new InputException(MISSING_RESOURCE_IDENTIFIER));
     }
 
     /**
@@ -79,7 +75,6 @@ public final class RequestUtil {
         }
     }
 
-
     /**
      * Get userId from requestContext authorizer claims.
      *
@@ -89,21 +84,20 @@ public final class RequestUtil {
      */
     public static String getUserId(RequestInfo requestInfo) throws ApiGatewayException {
         return getUserIdOptional(requestInfo)
-                .orElseThrow(() -> new InputException(MISSING_CLAIM_IN_REQUEST_CONTEXT + CUSTOM_FEIDE_ID, null));
+                   .orElseThrow(() -> new InputException(MISSING_CLAIM_IN_REQUEST_CONTEXT + CUSTOM_FEIDE_ID, null));
     }
 
     /**
      * Get optional userId from requestContext authorizer claims.
      *
-     * @param requestInfo   requestInfo
-     * @return  optional userId
+     * @param requestInfo requestInfo
+     * @return optional userId
      */
     public static Optional<String> getUserIdOptional(RequestInfo requestInfo) {
         JsonNode jsonNode = requestInfo.getRequestContext().at(AUTHORIZER_CLAIMS + CUSTOM_FEIDE_ID);
         if (!jsonNode.isMissingNode()) {
             return Optional.ofNullable(jsonNode.textValue());
         }
-        return  Optional.empty();
+        return Optional.empty();
     }
-
 }
