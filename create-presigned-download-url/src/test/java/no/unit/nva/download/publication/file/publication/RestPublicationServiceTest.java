@@ -1,6 +1,7 @@
 package no.unit.nva.download.publication.file.publication;
 
-import static nva.commons.utils.JsonUtils.objectMapper;
+
+import static nva.commons.core.JsonUtils.objectMapper;
 import static org.apache.http.HttpStatus.SC_NOT_FOUND;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.StringContains.containsString;
@@ -20,7 +21,8 @@ import java.util.UUID;
 import no.unit.nva.download.publication.file.publication.exception.NoResponseException;
 import no.unit.nva.download.publication.file.publication.exception.NotFoundException;
 import no.unit.nva.model.Publication;
-import nva.commons.exceptions.ApiGatewayException;
+
+import nva.commons.apigateway.exceptions.ApiGatewayException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

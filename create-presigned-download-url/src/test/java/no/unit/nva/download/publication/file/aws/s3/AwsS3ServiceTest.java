@@ -3,7 +3,8 @@ package no.unit.nva.download.publication.file.aws.s3;
 import com.amazonaws.SdkClientException;
 import com.amazonaws.services.s3.AmazonS3;
 import no.unit.nva.download.publication.file.aws.s3.exception.S3ServiceException;
-import nva.commons.exceptions.ApiGatewayException;
+
+import nva.commons.apigateway.exceptions.ApiGatewayException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

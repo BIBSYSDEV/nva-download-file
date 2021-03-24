@@ -1,6 +1,6 @@
 package no.unit.nva.download.publication.file.publication;
 
-import static nva.commons.utils.attempt.Try.attempt;
+import static nva.commons.core.attempt.Try.attempt;
 import static org.apache.http.HttpStatus.SC_NOT_FOUND;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -13,10 +13,10 @@ import java.util.Optional;
 import no.unit.nva.download.publication.file.publication.exception.NoResponseException;
 import no.unit.nva.download.publication.file.publication.exception.NotFoundException;
 import no.unit.nva.model.Publication;
-import nva.commons.exceptions.ApiGatewayException;
-import nva.commons.utils.Environment;
-import nva.commons.utils.JacocoGenerated;
-import nva.commons.utils.JsonUtils;
+import nva.commons.apigateway.exceptions.ApiGatewayException;
+import nva.commons.core.Environment;
+import nva.commons.core.JacocoGenerated;
+import nva.commons.core.JsonUtils;
 import org.apache.http.HttpHeaders;
 import org.zalando.problem.Problem;
 
@@ -60,7 +60,7 @@ public class RestPublicationService {
     @JacocoGenerated
     public RestPublicationService(Environment environment) {
         this(HttpClient.newHttpClient(), JsonUtils.objectMapper, environment.readEnv(API_SCHEME_ENV),
-            environment.readEnv(API_HOST_ENV));
+             environment.readEnv(API_HOST_ENV));
     }
 
     /**

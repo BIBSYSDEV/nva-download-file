@@ -4,8 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import java.util.Optional;
 import java.util.UUID;
 import no.unit.nva.download.publication.file.publication.exception.InputException;
-import nva.commons.exceptions.ApiGatewayException;
-import nva.commons.handlers.RequestInfo;
+import nva.commons.apigateway.RequestInfo;
+import nva.commons.apigateway.exceptions.ApiGatewayException;
 import org.apache.http.HttpHeaders;
 
 public final class RequestUtil {
