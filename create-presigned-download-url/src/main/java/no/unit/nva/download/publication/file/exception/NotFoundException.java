@@ -1,9 +1,8 @@
 package no.unit.nva.download.publication.file.exception;
 
-import nva.commons.exceptions.ApiGatewayException;
-import org.apache.http.HttpStatus;
-
 import java.util.UUID;
+import nva.commons.apigateway.exceptions.ApiGatewayException;
+import org.apache.http.HttpStatus;
 
 public class NotFoundException extends ApiGatewayException {
 

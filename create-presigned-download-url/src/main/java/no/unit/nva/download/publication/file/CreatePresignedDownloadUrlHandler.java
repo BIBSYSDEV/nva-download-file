@@ -13,21 +13,18 @@ import no.unit.nva.model.File;
 import no.unit.nva.model.FileSet;
 import no.unit.nva.model.Publication;
 import no.unit.nva.model.PublicationStatus;
-import nva.commons.exceptions.ApiGatewayException;
-import nva.commons.handlers.ApiGatewayHandler;
-import nva.commons.handlers.RequestInfo;
-import nva.commons.utils.Environment;
-import nva.commons.utils.JacocoGenerated;
+import nva.commons.apigateway.ApiGatewayHandler;
+import nva.commons.apigateway.RequestInfo;
+import nva.commons.apigateway.exceptions.ApiGatewayException;
+import nva.commons.core.Environment;
+import nva.commons.core.JacocoGenerated;
 import org.apache.http.HttpStatus;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, CreatePresignedDownloadUrlResponse> {
 
     public static final String ERROR_MISSING_FILE_IN_PUBLICATION_FILE_SET = "File not found in publication file set";
     public static final String ERROR_DUPLICATE_FILES_IN_PUBLICATION = "Publication contains duplicate files";
 
-    private static final Logger logger = LoggerFactory.getLogger(CreatePresignedDownloadUrlHandler.class);
     private final RestPublicationService publicationService;
     private final AwsS3Service awsS3Service;
 
@@ -40,7 +37,7 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, C
     public CreatePresignedDownloadUrlHandler(RestPublicationService publicationService,
                                              AwsS3Service awsS3Service,
                                              Environment environment) {
-        super(Void.class, environment, logger);
+        super(Void.class, environment);
         this.publicationService = publicationService;
         this.awsS3Service = awsS3Service;
     }
