@@ -2,7 +2,6 @@ package no.unit.nva.download.publication.file.publication;
 
 import static nva.commons.utils.attempt.Try.attempt;
 import static org.apache.http.HttpStatus.SC_NOT_FOUND;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.mikael.urlbuilder.UrlBuilder;
@@ -11,7 +10,6 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Optional;
-import java.util.UUID;
 import no.unit.nva.download.publication.file.publication.exception.NoResponseException;
 import no.unit.nva.download.publication.file.publication.exception.NotFoundException;
 import no.unit.nva.model.Publication;
@@ -72,7 +70,7 @@ public class RestPublicationService {
      * @return A publication
      * @throws ApiGatewayException exception thrown if value is missing
      */
-    public Publication getPublication(UUID identifier)
+    public Publication getPublication(String identifier)
         throws ApiGatewayException {
 
         URI uri = buildUriToPublicationService(identifier);
@@ -80,7 +78,7 @@ public class RestPublicationService {
         return fetchPublicationFromService(identifier, uri, httpRequest);
     }
 
-    private Publication fetchPublicationFromService(UUID identifier, URI uri, HttpRequest httpRequest)
+    private Publication fetchPublicationFromService(String identifier, URI uri, HttpRequest httpRequest)
         throws ApiGatewayException {
 
         try {
@@ -90,7 +88,7 @@ public class RestPublicationService {
         }
     }
 
-    private Publication fetchPublicationFromService(UUID identifier, HttpRequest httpRequest)
+    private Publication fetchPublicationFromService(String identifier, HttpRequest httpRequest)
             throws java.io.IOException, InterruptedException, NotFoundException {
 
         HttpResponse<String> httpResponse = sendHttpRequest(httpRequest);
@@ -108,18 +106,18 @@ public class RestPublicationService {
         return new NoResponseException(ERROR_COMMUNICATING_WITH_REMOTE_SERVICE + uri.toString(), exception);
     }
 
-    private String extractExternalErrorMessage(UUID identifier, HttpResponse<String> httpResponse) {
+    private String extractExternalErrorMessage(String identifier, HttpResponse<String> httpResponse) {
         String externalErrorMessage = parseResponseBody(httpResponse.body())
             .map(Problem::getDetail)
             .orElse(ERROR_PUBLICATION_NOT_FOUND_FOR_IDENTIFIER + identifier);
         return decorateExternalErrorMessage(identifier, externalErrorMessage);
     }
 
-    private String decorateExternalErrorMessage(UUID identifier, String externalErrorMessage) {
+    private String decorateExternalErrorMessage(String identifier, String externalErrorMessage) {
         return String.join(ERROR_MESSAGE_DELIMITER, externalErrorDecoration(identifier), externalErrorMessage);
     }
 
-    private String externalErrorDecoration(UUID identifier) {
+    private String externalErrorDecoration(String identifier) {
         return EXTERNAL_ERROR_MESSAGE_DECORATION + identifier;
     }
 
@@ -145,11 +143,11 @@ public class RestPublicationService {
                 .build();
     }
 
-    private URI buildUriToPublicationService(UUID identifier) {
+    private URI buildUriToPublicationService(String identifier) {
         return UrlBuilder.empty()
             .withScheme(apiScheme)
             .withHost(apiHost)
-            .withPath(PATH + identifier.toString())
+            .withPath(PATH + identifier)
             .toUri();
     }
 }
