@@ -33,12 +33,16 @@ subprojects {
     def awsSdkVersion = '1.11.911'
     def zalandoVersion = '0.25.0'
     def mockitoVersion = '3.6.28'
+    def nvaCommonsVersion = '1.5.3'
 
     gradleLint.rules = ['unused-dependency']
 
     dependencies {
-        implementation group: 'com.github.BIBSYSDEV', name: 'nva-datamodel-java', version: '0.11.5'
-        implementation group: 'com.github.BIBSYSDEV', name: 'nva-commons', version: '0.7.4'
+        implementation group: 'com.github.BIBSYSDEV', name: 'nva-datamodel-java', version: '0.11.8'
+
+        implementation group: 'com.github.bibsysdev', name: 'core', version: nvaCommonsVersion
+        implementation group: 'com.github.bibsysdev', name: 'apigateway', version: nvaCommonsVersion
+        implementation group: 'com.github.bibsysdev', name: 'identifiers', version: nvaCommonsVersion
 
         implementation (group: 'org.slf4j', name: 'slf4j-api', version: '1.8.0-beta4') {
             because('Required by build')

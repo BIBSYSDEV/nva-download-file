@@ -1,19 +1,17 @@
 package no.unit.nva.download.publication.file;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import no.unit.nva.download.publication.file.publication.exception.InputException;
-import nva.commons.exceptions.ApiGatewayException;
-import nva.commons.handlers.RequestInfo;
-import org.apache.http.HttpHeaders;
-import org.junit.jupiter.api.Test;
-
-import java.util.Map;
-import java.util.UUID;
-
-import static nva.commons.utils.JsonUtils.objectMapper;
+import static nva.commons.core.JsonUtils.objectMapper;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import java.util.Map;
+import java.util.UUID;
+import no.unit.nva.download.publication.file.publication.exception.InputException;
+import nva.commons.apigateway.RequestInfo;
+import nva.commons.apigateway.exceptions.ApiGatewayException;
+import org.apache.http.HttpHeaders;
+import org.junit.jupiter.api.Test;
 
 public class RequestUtilTest {
 
@@ -28,9 +26,9 @@ public class RequestUtilTest {
         RequestInfo requestInfo = new RequestInfo();
         requestInfo.setPathParameters(Map.of(RequestUtil.IDENTIFIER, uuid.toString()));
 
-        UUID identifier = RequestUtil.getIdentifier(requestInfo);
+        String identifier = RequestUtil.getIdentifier(requestInfo);
 
-        assertEquals(uuid, identifier);
+        assertEquals(uuid.toString(), identifier);
     }
 
     @Test

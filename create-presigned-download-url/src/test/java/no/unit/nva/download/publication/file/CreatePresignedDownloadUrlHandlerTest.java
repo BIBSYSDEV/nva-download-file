@@ -2,20 +2,22 @@ package no.unit.nva.download.publication.file;
 
 import com.amazonaws.SdkClientException;
 import com.amazonaws.services.lambda.runtime.Context;
+import java.net.HttpURLConnection;
 import no.unit.nva.download.publication.file.aws.s3.AwsS3Service;
 import no.unit.nva.download.publication.file.aws.s3.exception.S3ServiceException;
 import no.unit.nva.download.publication.file.publication.RestPublicationService;
 import no.unit.nva.download.publication.file.publication.exception.NoResponseException;
 import no.unit.nva.download.publication.file.publication.exception.NotFoundException;
+import no.unit.nva.identifiers.SortableIdentifier;
 import no.unit.nva.model.File;
 import no.unit.nva.model.FileSet;
 import no.unit.nva.model.License;
 import no.unit.nva.model.Organization;
 import no.unit.nva.model.Publication;
 import no.unit.nva.model.PublicationStatus;
-import nva.commons.exceptions.ApiGatewayException;
-import nva.commons.handlers.GatewayResponse;
-import nva.commons.utils.Environment;
+import nva.commons.apigateway.GatewayResponse;
+import nva.commons.apigateway.exceptions.ApiGatewayException;
+import nva.commons.core.Environment;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -31,31 +33,28 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import org.zalando.problem.Problem;
 
+import static no.unit.nva.download.publication.file.RequestUtil.CUSTOM_FEIDE_ID;
 import static no.unit.nva.download.publication.file.aws.s3.AwsS3ServiceTest.MIME_TYPE_APPLICATION_PDF;
 import static no.unit.nva.download.publication.file.aws.s3.AwsS3ServiceTest.PRESIGNED_DOWNLOAD_URL;
 import static no.unit.nva.download.publication.file.publication.RestPublicationService.ERROR_COMMUNICATING_WITH_REMOTE_SERVICE;
 import static no.unit.nva.download.publication.file.publication.RestPublicationService.ERROR_PUBLICATION_NOT_FOUND_FOR_IDENTIFIER;
-import static nva.commons.handlers.ApiGatewayHandler.ACCESS_CONTROL_ALLOW_ORIGIN;
-import static nva.commons.handlers.ApiGatewayHandler.ALLOWED_ORIGIN_ENV;
-import static nva.commons.utils.JsonUtils.objectMapper;
-import static nva.commons.utils.MockClaims.AUTHORIZER_NODE;
-import static nva.commons.utils.MockClaims.CLAIMS_NODE;
-import static nva.commons.utils.MockClaims.CUSTOM_FEIDE_ID;
-import static nva.commons.utils.MockClaims.REQUEST_CONTEXT_NODE;
+import static no.unit.nva.testutils.HandlerRequestBuilder.AUTHORIZER_NODE;
+import static no.unit.nva.testutils.HandlerRequestBuilder.CLAIMS_NODE;
+import static nva.commons.apigateway.ApiGatewayHandler.ACCESS_CONTROL_ALLOW_ORIGIN;
+import static nva.commons.apigateway.ApiGatewayHandler.ALLOWED_ORIGIN_ENV;
+import static nva.commons.core.JsonUtils.objectMapper;
 import static org.apache.http.HttpHeaders.AUTHORIZATION;
 import static org.apache.http.HttpHeaders.CONTENT_TYPE;
-import static org.apache.http.HttpStatus.SC_BAD_REQUEST;
 import static org.apache.http.HttpStatus.SC_INTERNAL_SERVER_ERROR;
 import static org.apache.http.HttpStatus.SC_NOT_FOUND;
 import static org.apache.http.HttpStatus.SC_OK;
 import static org.apache.http.HttpStatus.SC_SERVICE_UNAVAILABLE;
-import static org.apache.http.HttpStatus.SC_UNAUTHORIZED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -69,12 +68,12 @@ public class CreatePresignedDownloadUrlHandlerTest {
     public static final String IDENTIFIER_VALUE = "29f6887c-8852-11ea-bc55-0242ac130003";
     public static final String IDENTIFIER_FILE_VALUE = "29f68c1e-8852-11ea-bc55-0242ac130003";
     public static final String OWNER_USER_ID = "owner@unit.no";
-    public static final String NOT_OWNER_USER_ID = "not-owner@unit.no";
+    public static final String REQUEST_CONTEXT_NODE = "requestContext";
 
     private RestPublicationService publicationService;
     private AwsS3Service awsS3Service;
     private Context context;
-    private OutputStream output;
+    private ByteArrayOutputStream output;
 
     private CreatePresignedDownloadUrlHandler createPresignedDownloadUrlHandler;
 
@@ -103,10 +102,10 @@ public class CreatePresignedDownloadUrlHandlerTest {
     @Test
     @DisplayName("handler Returns Ok Response On Valid Input (Published Publication)")
     public void handlerReturnsOkResponseOnValidInputPublishedPublication() throws IOException,
-            ApiGatewayException {
+                                                                                  ApiGatewayException {
 
         Publication publication = createPublishedPublication(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE);
-        when(publicationService.getPublication(any(UUID.class)))
+        when(publicationService.getPublication(any(String.class)))
                 .thenReturn(publication);
         when(awsS3Service.createPresignedDownloadUrl(IDENTIFIER_FILE_VALUE, MIME_TYPE_APPLICATION_PDF))
                 .thenReturn(PRESIGNED_DOWNLOAD_URL);
@@ -126,7 +125,7 @@ public class CreatePresignedDownloadUrlHandlerTest {
             ApiGatewayException {
 
         Publication publication = createUnpublishedPublication(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE);
-        when(publicationService.getPublication(any(UUID.class)))
+        when(publicationService.getPublication(any(String.class)))
                 .thenReturn(publication);
         when(awsS3Service.createPresignedDownloadUrl(IDENTIFIER_FILE_VALUE, MIME_TYPE_APPLICATION_PDF))
                 .thenReturn(PRESIGNED_DOWNLOAD_URL);
@@ -143,7 +142,7 @@ public class CreatePresignedDownloadUrlHandlerTest {
     @Test
     @DisplayName("handler Returns Not Found Response On Unknown Identifier")
     public void handlerReturnsNotFoundResponseOnUnknownIdentifier() throws IOException, ApiGatewayException {
-        when(publicationService.getPublication(any(UUID.class)))
+        when(publicationService.getPublication(any(String.class)))
                 .thenThrow(new NotFoundException(ERROR_PUBLICATION_NOT_FOUND_FOR_IDENTIFIER + IDENTIFIER_VALUE));
 
         createPresignedDownloadUrlHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE),
@@ -156,16 +155,18 @@ public class CreatePresignedDownloadUrlHandlerTest {
     }
 
     @Test
-    @DisplayName("handler Returns Bad Request Response On Malformed Identifier")
-    public void handlerReturnsBadRequestResponseOnMalformedIdentifier() throws IOException {
-
+    @DisplayName("handler Returns Not Found Response On Malformed Resource Identifier")
+    public void handlerReturnsNotFoundResponseOnMalformedIdentifier() throws IOException, ApiGatewayException {
+        when(publicationService.getPublication(any(String.class)))
+            .thenThrow(new NotFoundException(ERROR_PUBLICATION_NOT_FOUND_FOR_IDENTIFIER + IDENTIFIER_VALUE));
         createPresignedDownloadUrlHandler.handleRequest(inputStream(IDENTIFIER, IDENTIFIER_FILE_VALUE), output,
                 context);
 
         var gatewayResponse = objectMapper.readValue(output.toString(), GatewayResponse.class);
-        assertEquals(SC_BAD_REQUEST, gatewayResponse.getStatusCode());
+        assertEquals(HttpURLConnection.HTTP_NOT_FOUND, gatewayResponse.getStatusCode());
         assertTrue(gatewayResponse.getHeaders().containsKey(CONTENT_TYPE));
         assertTrue(gatewayResponse.getHeaders().containsKey(ACCESS_CONTROL_ALLOW_ORIGIN));
+
     }
 
     @Test
@@ -173,7 +174,7 @@ public class CreatePresignedDownloadUrlHandlerTest {
     public void handlerReturnsServiceUnavailableResponseOnNoResponseFromPublicationService() throws IOException,
             ApiGatewayException {
 
-        when(publicationService.getPublication(any(UUID.class)))
+        when(publicationService.getPublication(any(String.class)))
                 .thenThrow(new NoResponseException(ERROR_COMMUNICATING_WITH_REMOTE_SERVICE,
                         new Exception()));
         createPresignedDownloadUrlHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE),
@@ -189,7 +190,7 @@ public class CreatePresignedDownloadUrlHandlerTest {
     @DisplayName("handler Returns Not Found Response On Unknown File Identifier")
     public void handlerReturnsBadRequestResponseOnUnknownFileIdentifier() throws ApiGatewayException, IOException {
         Publication publication = createPublishedPublication(IDENTIFIER_VALUE, IDENTIFIER_VALUE);
-        when(publicationService.getPublication(any(UUID.class)))
+        when(publicationService.getPublication(any(String.class)))
                 .thenReturn(publication);
 
         createPresignedDownloadUrlHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE),
@@ -206,7 +207,7 @@ public class CreatePresignedDownloadUrlHandlerTest {
     public void handlerReturnsInternalServerErrorResponseOnDuplicateFileIdentifierInPublication()
             throws ApiGatewayException, IOException {
         Publication publication = createPublishedPublicationDuplicateFile(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE);
-        when(publicationService.getPublication(any(UUID.class)))
+        when(publicationService.getPublication(any(String.class)))
                 .thenReturn(publication);
 
         createPresignedDownloadUrlHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE),
@@ -223,7 +224,7 @@ public class CreatePresignedDownloadUrlHandlerTest {
     public void handlerReturnsBadRequestResponseOnPublicationWithoutFile() throws IOException,
             ApiGatewayException {
         Publication publication = createPublicationWithoutFileSetFile(IDENTIFIER_VALUE);
-        when(publicationService.getPublication(any(UUID.class)))
+        when(publicationService.getPublication(any(String.class)))
                 .thenReturn(publication);
 
         createPresignedDownloadUrlHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE),
@@ -240,7 +241,7 @@ public class CreatePresignedDownloadUrlHandlerTest {
     public void handlerReturnsServiceUnavailableResponseOnS3ServiceException() throws IOException,
             ApiGatewayException {
         Publication publication = createPublishedPublication(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE);
-        when(publicationService.getPublication(any(UUID.class)))
+        when(publicationService.getPublication(any(String.class)))
                 .thenReturn(publication);
         when(awsS3Service.createPresignedDownloadUrl(IDENTIFIER_FILE_VALUE, MIME_TYPE_APPLICATION_PDF))
                 .thenThrow(new S3ServiceException("message", new SdkClientException("message")));
@@ -259,7 +260,7 @@ public class CreatePresignedDownloadUrlHandlerTest {
     public void handlerReturnsNotFoundOnAnonymousRequestForNotPublishedPublication()
             throws ApiGatewayException, IOException {
         Publication publication = createUnpublishedPublication(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE);
-        when(publicationService.getPublication(any(UUID.class)))
+        when(publicationService.getPublication(any(String.class)))
                 .thenReturn(publication);
 
         createPresignedDownloadUrlHandler.handleRequest(anonymousInputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE),
@@ -269,9 +270,10 @@ public class CreatePresignedDownloadUrlHandlerTest {
         assertEquals(SC_NOT_FOUND, gatewayResponse.getStatusCode());
     }
 
+
     private Publication createPublicationWithoutFileSetFile(String identifier) {
         return new Publication.Builder()
-                .withIdentifier(UUID.fromString(identifier))
+                .withIdentifier(new SortableIdentifier(identifier))
                 .withModifiedDate(Instant.now())
                 .withOwner(OWNER_USER_ID)
                 .withFileSet(new FileSet.Builder().build())
@@ -290,7 +292,7 @@ public class CreatePresignedDownloadUrlHandlerTest {
                 ).build();
 
         return new Publication.Builder()
-                .withIdentifier(UUID.fromString(identifier))
+                .withIdentifier(new SortableIdentifier(identifier))
                 .withModifiedDate(Instant.now())
                 .withOwner(OWNER_USER_ID)
                 .withStatus(PublicationStatus.NEW)
@@ -308,7 +310,7 @@ public class CreatePresignedDownloadUrlHandlerTest {
                 ).build();
 
         return new Publication.Builder()
-                .withIdentifier(UUID.fromString(identifier))
+                .withIdentifier(new SortableIdentifier(identifier))
                 .withCreatedDate(Instant.now())
                 .withModifiedDate(Instant.now())
                 .withOwner(OWNER_USER_ID)
@@ -331,7 +333,7 @@ public class CreatePresignedDownloadUrlHandlerTest {
                 ).build();
 
         return new Publication.Builder()
-                .withIdentifier(UUID.fromString(identifier))
+                .withIdentifier(new SortableIdentifier(identifier))
                 .withCreatedDate(Instant.now())
                 .withModifiedDate(Instant.now())
                 .withOwner(OWNER_USER_ID)
