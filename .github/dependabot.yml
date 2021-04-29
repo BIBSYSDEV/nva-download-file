@@ -1,0 +1,17 @@
+version: 2
+updates:
+- package-ecosystem: gradle
+  directory: "/"
+  schedule:
+    interval: daily
+    timezone: Europe/Oslo
+  open-pull-requests-limit: 20
+  ignore:
+  - dependency-name: nebula.lint
+    versions:
+    - 16.17.0
+    - 16.17.1
+    - 16.18.0
+    - 16.19.0
+    - 16.20.0
+    - 16.22.0
