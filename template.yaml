@@ -183,7 +183,7 @@ Resources:
         Variables:
           ALLOWED_ORIGIN: '*'
           API_SCHEME: https
-          API_HOST: !Ref CustomDomain
+          API_HOST: !Sub api.${CustomDomain}
           BUCKET_NAME: !Ref S3Bucket
       Role: !GetAtt UploadExecutionRole.Arn
       Events:
@@ -204,7 +204,7 @@ Resources:
     Type: AWS::ApiGateway::BasePathMapping
     Properties:
       BasePath: !Ref CustomDomainBasePath
-      DomainName: !Ref CustomDomain
+      DomainName: !Sub api.{CustomDomain}
       RestApiId: !Ref NvaDownloadPublicationFileApi
       Stage: !Ref NvaDownloadPublicationFileApi.Stage
 
