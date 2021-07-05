@@ -44,7 +44,7 @@ subprojects {
         implementation group: 'com.github.bibsysdev', name: 'apigateway', version: nvaCommonsVersion
         implementation group: 'com.github.bibsysdev', name: 'identifiers', version: nvaCommonsVersion
 
-        implementation (group: 'org.slf4j', name: 'slf4j-api', version: '1.8.0-beta4') {
+        implementation (group: 'org.slf4j', name: 'slf4j-api', version: '2.0.0-alpha2') {
             because('Required by build')
         }
 
