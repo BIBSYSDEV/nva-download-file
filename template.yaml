@@ -290,7 +290,6 @@ Resources:
                 responseStatus = cfnresponse.FAILED
             cfnresponse.send(event, context, responseStatus, responseData)
   ApiGatewayCreateDeploymentCustomResource:
-    DependsOn: UploadApi
     Type: AWS::CloudFormation::CustomResource
     Properties:
       ServiceToken: !GetAtt ApiGatewayCreateDeploymentLambda.Arn
