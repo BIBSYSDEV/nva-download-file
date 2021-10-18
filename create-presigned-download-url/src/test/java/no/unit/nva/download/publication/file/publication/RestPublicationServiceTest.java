@@ -1,7 +1,7 @@
 package no.unit.nva.download.publication.file.publication;
 
 
-import static nva.commons.core.JsonUtils.objectMapper;
+import static nva.commons.core.JsonUtils.dtoObjectMapper;
 import static org.apache.http.HttpStatus.SC_NOT_FOUND;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.StringContains.containsString;
@@ -20,7 +20,6 @@ import java.nio.file.Path;
 import java.util.UUID;
 import no.unit.nva.download.publication.file.publication.exception.NoResponseException;
 import no.unit.nva.download.publication.file.publication.exception.NotFoundException;
-import no.unit.nva.model.Publication;
 
 import nva.commons.apigateway.exceptions.ApiGatewayException;
 import org.junit.jupiter.api.DisplayName;
@@ -36,7 +35,6 @@ public class RestPublicationServiceTest {
 
     public static final String PUBLICATION_RESPONSE = "src/test/resources/publication_response.json";
 
-    public static final String SOME_API_KEY = "some api key";
     public static final String API_HOST = "example.org";
     public static final String API_SCHEME = "http";
     public static final String NOT_FOUND_ERROR_MESSAGE = "NotFoundErrorMessage";
@@ -52,7 +50,7 @@ public class RestPublicationServiceTest {
         when(client.send(any(HttpRequest.class), ArgumentMatchers.<HttpResponse.BodyHandler<String>>any()))
                 .thenThrow(IOException.class);
 
-        RestPublicationService publicationService = new RestPublicationService(client, objectMapper, API_SCHEME,
+        RestPublicationService publicationService = new RestPublicationService(client, dtoObjectMapper, API_SCHEME,
             API_HOST);
 
         assertThrows(NoResponseException.class, () -> publicationService.getPublication(UUID.randomUUID().toString()));
@@ -65,10 +63,10 @@ public class RestPublicationServiceTest {
                 .thenReturn(response);
         when((response.body())).thenReturn(getResponse(PUBLICATION_RESPONSE));
 
-        RestPublicationService publicationService = new RestPublicationService(client, objectMapper, API_SCHEME,
+        RestPublicationService publicationService = new RestPublicationService(client, dtoObjectMapper, API_SCHEME,
             API_HOST);
 
-        Publication publication = publicationService.getPublication(UUID.randomUUID().toString());
+        var publication = publicationService.getPublication(UUID.randomUUID().toString());
 
         assertNotNull(publication);
     }
@@ -80,7 +78,7 @@ public class RestPublicationServiceTest {
 
         clientReceivesNotFoundError();
 
-        RestPublicationService publicationService = new RestPublicationService(client, objectMapper, API_SCHEME,
+        RestPublicationService publicationService = new RestPublicationService(client, dtoObjectMapper, API_SCHEME,
             API_HOST);
 
         assertThrows(NotFoundException.class, () -> publicationService.getPublication(UUID.randomUUID().toString()));
@@ -94,7 +92,7 @@ public class RestPublicationServiceTest {
 
         clientReceivesNotFoundError();
 
-        RestPublicationService publicationService = new RestPublicationService(client, objectMapper, API_SCHEME,
+        RestPublicationService publicationService = new RestPublicationService(client, dtoObjectMapper, API_SCHEME,
             API_HOST);
 
         NotFoundException actualException = assertThrows(NotFoundException.class,
@@ -118,7 +116,7 @@ public class RestPublicationServiceTest {
 
     private String problemString() throws JsonProcessingException {
         Problem problem = Problem.builder().withDetail(NOT_FOUND_ERROR_MESSAGE).build();
-        return objectMapper.writeValueAsString(problem);
+        return dtoObjectMapper.writeValueAsString(problem);
     }
 
     private String getResponse(String path) throws IOException {
