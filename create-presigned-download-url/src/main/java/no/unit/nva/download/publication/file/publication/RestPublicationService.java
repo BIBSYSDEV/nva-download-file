@@ -10,9 +10,10 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Optional;
+
+import no.unit.nva.api.PublicationResponse;
 import no.unit.nva.download.publication.file.publication.exception.NoResponseException;
 import no.unit.nva.download.publication.file.publication.exception.NotFoundException;
-import no.unit.nva.model.Publication;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
@@ -59,7 +60,7 @@ public class RestPublicationService {
      */
     @JacocoGenerated
     public RestPublicationService(Environment environment) {
-        this(HttpClient.newHttpClient(), JsonUtils.objectMapper, environment.readEnv(API_SCHEME_ENV),
+        this(HttpClient.newHttpClient(), JsonUtils.dtoObjectMapper, environment.readEnv(API_SCHEME_ENV),
              environment.readEnv(API_HOST_ENV));
     }
 
@@ -70,7 +71,7 @@ public class RestPublicationService {
      * @return A publication
      * @throws ApiGatewayException exception thrown if value is missing
      */
-    public Publication getPublication(String identifier)
+    public PublicationResponse getPublication(String identifier)
         throws ApiGatewayException {
 
         URI uri = buildUriToPublicationService(identifier);
@@ -78,7 +79,7 @@ public class RestPublicationService {
         return fetchPublicationFromService(identifier, uri, httpRequest);
     }
 
-    private Publication fetchPublicationFromService(String identifier, URI uri, HttpRequest httpRequest)
+    private PublicationResponse fetchPublicationFromService(String identifier, URI uri, HttpRequest httpRequest)
         throws ApiGatewayException {
 
         try {
@@ -88,7 +89,7 @@ public class RestPublicationService {
         }
     }
 
-    private Publication fetchPublicationFromService(String identifier, HttpRequest httpRequest)
+    private PublicationResponse fetchPublicationFromService(String identifier, HttpRequest httpRequest)
             throws java.io.IOException, InterruptedException, NotFoundException {
 
         HttpResponse<String> httpResponse = sendHttpRequest(httpRequest);
@@ -131,8 +132,9 @@ public class RestPublicationService {
         return client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
     }
 
-    private Publication parseJsonObjectToPublication(HttpResponse<String> httpResponse) throws JsonProcessingException {
-        return objectMapper.readValue(httpResponse.body(), Publication.class);
+    private PublicationResponse parseJsonObjectToPublication(HttpResponse<String> httpResponse)
+            throws JsonProcessingException {
+        return objectMapper.readValue(httpResponse.body(), PublicationResponse.class);
     }
 
     private HttpRequest buildHttpRequest(URI uri) {

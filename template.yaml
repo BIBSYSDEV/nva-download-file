@@ -185,6 +185,7 @@ Resources:
           API_SCHEME: https
           API_HOST: !Sub api.${CustomDomain}
           BUCKET_NAME: !Ref S3Bucket
+          ID_NAMESPACE: !Sub 'https://api.${CustomDomain}/${CustomDomainBasePath}'
       Role: !GetAtt UploadExecutionRole.Arn
       Events:
         AuthorizedGetEvent:

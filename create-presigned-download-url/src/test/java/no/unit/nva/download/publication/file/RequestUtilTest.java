@@ -1,6 +1,6 @@
 package no.unit.nva.download.publication.file;
 
-import static nva.commons.core.JsonUtils.objectMapper;
+import static nva.commons.core.JsonUtils.dtoObjectMapper;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -87,10 +87,10 @@ public class RequestUtilTest {
     private JsonNode getRequestContextWithMissingNode() throws JsonProcessingException {
         Map<String, Map<String, JsonNode>> map = Map.of(
                 AUTHORIZER, Map.of(
-                        CLAIMS, objectMapper.createObjectNode().nullNode()
+                        CLAIMS, dtoObjectMapper.createObjectNode().nullNode()
                 )
         );
-        return objectMapper.readTree(objectMapper.writeValueAsString(map));
+        return dtoObjectMapper.readTree(dtoObjectMapper.writeValueAsString(map));
     }
 
     private JsonNode getRequestContextForClaim(String key, String value) throws JsonProcessingException {
@@ -101,7 +101,7 @@ public class RequestUtilTest {
                 )
             )
         );
-        return objectMapper.readTree(objectMapper.writeValueAsString(map));
+        return dtoObjectMapper.readTree(dtoObjectMapper.writeValueAsString(map));
     }
 
 }
