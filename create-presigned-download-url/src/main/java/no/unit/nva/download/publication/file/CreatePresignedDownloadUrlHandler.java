@@ -1,6 +1,10 @@
 package no.unit.nva.download.publication.file;
 
 import com.amazonaws.services.lambda.runtime.Context;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -18,6 +22,7 @@ import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
+import nva.commons.core.ioutils.IoUtils;
 import org.apache.http.HttpStatus;
 
 public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, CreatePresignedDownloadUrlResponse> {
@@ -48,6 +53,13 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, C
     @JacocoGenerated
     public CreatePresignedDownloadUrlHandler() {
         this(new RestPublicationService(new Environment()), new AwsS3Service(new Environment()), new Environment());
+    }
+
+    @Override
+    public void handleRequest(InputStream input, OutputStream output, Context context) throws IOException {
+        var inputx = IoUtils.streamToString(input);
+        System.out.println(inputx);
+        super.handleRequest(IoUtils.stringToStream(inputx), output, context);
     }
 
     @Override
