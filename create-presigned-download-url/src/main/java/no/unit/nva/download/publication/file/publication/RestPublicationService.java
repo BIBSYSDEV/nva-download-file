@@ -134,9 +134,7 @@ public class RestPublicationService {
 
     private PublicationResponse parseJsonObjectToPublication(HttpResponse<String> httpResponse)
             throws JsonProcessingException {
-        String body = httpResponse.body();
-        System.out.println(body);
-        return objectMapper.readValue(body, PublicationResponse.class);
+        return objectMapper.readValue(httpResponse.body(), PublicationResponse.class);
     }
 
     private HttpRequest buildHttpRequest(URI uri) {
