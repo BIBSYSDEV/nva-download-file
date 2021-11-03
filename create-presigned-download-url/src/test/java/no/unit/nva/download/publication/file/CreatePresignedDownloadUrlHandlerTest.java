@@ -4,20 +4,16 @@ import com.amazonaws.SdkClientException;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.net.HttpURLConnection;
 
-import com.google.common.net.HttpHeaders;
-import no.unit.nva.api.PublicationResponse;
 import no.unit.nva.download.publication.file.aws.s3.AwsS3Service;
 import no.unit.nva.download.publication.file.aws.s3.exception.S3ServiceException;
+import no.unit.nva.download.publication.file.publication.PublicationResponse;
+import no.unit.nva.download.publication.file.publication.PublicationStatus;
 import no.unit.nva.download.publication.file.publication.RestPublicationService;
 import no.unit.nva.download.publication.file.publication.exception.NoResponseException;
 import no.unit.nva.download.publication.file.publication.exception.NotFoundException;
-import no.unit.nva.identifiers.SortableIdentifier;
-import no.unit.nva.model.File;
-import no.unit.nva.model.FileSet;
-import no.unit.nva.model.License;
-import no.unit.nva.model.Organization;
-import no.unit.nva.model.Publication;
-import no.unit.nva.model.PublicationStatus;
+import no.unit.nva.file.model.File;
+import no.unit.nva.file.model.FileSet;
+import no.unit.nva.file.model.License;
 import nva.commons.apigateway.GatewayResponse;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
 import nva.commons.core.Environment;
@@ -29,14 +25,13 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URI;
-import java.time.Instant;
 import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static com.google.common.net.HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN;
+import static java.util.Collections.emptyList;
 import static no.unit.nva.download.publication.file.RequestUtil.CUSTOM_FEIDE_ID;
 import static no.unit.nva.download.publication.file.aws.s3.AwsS3ServiceTest.MIME_TYPE_APPLICATION_PDF;
 import static no.unit.nva.download.publication.file.aws.s3.AwsS3ServiceTest.PRESIGNED_DOWNLOAD_URL;
@@ -273,81 +268,45 @@ public class CreatePresignedDownloadUrlHandlerTest {
 
 
     private PublicationResponse createPublicationWithoutFileSetFile(String identifier) {
-        var publication = new Publication.Builder()
-                .withIdentifier(new SortableIdentifier(identifier))
-                .withModifiedDate(Instant.now())
-                .withOwner(OWNER_USER_ID)
-                .withFileSet(new FileSet.Builder().build())
-                .withStatus(PublicationStatus.PUBLISHED)
-                .build();
-        return PublicationResponse.fromPublication(publication);
+        return new PublicationResponse(PublicationStatus.PUBLISHED, OWNER_USER_ID, new FileSet(emptyList()));
     }
 
     private PublicationResponse createUnpublishedPublication(String identifier, String fileIdentifier) {
-        FileSet fileSet = new FileSet.Builder()
-                .withFiles(Collections.singletonList(
+        FileSet fileSet = new FileSet(
+                Collections.singletonList(
                         new File.Builder()
                                 .withIdentifier(UUID.fromString(fileIdentifier))
                                 .withMimeType(MIME_TYPE_APPLICATION_PDF)
                                 .withLicense(new License.Builder().build())
                                 .build())
-                ).build();
+                );
 
-        var publication = new Publication.Builder()
-                .withIdentifier(new SortableIdentifier(identifier))
-                .withModifiedDate(Instant.now())
-                .withOwner(OWNER_USER_ID)
-                .withStatus(PublicationStatus.NEW)
-                .withFileSet(fileSet).build();
-        return PublicationResponse.fromPublication(publication);
+        return new PublicationResponse(PublicationStatus.NEW, OWNER_USER_ID, fileSet);
     }
 
     private PublicationResponse createPublishedPublication(String identifier, String fileIdentifier) {
-        FileSet fileSet = new FileSet.Builder()
-                .withFiles(Collections.singletonList(
+        FileSet fileSet = new FileSet(Collections.singletonList(
                         new File.Builder()
                                 .withIdentifier(UUID.fromString(fileIdentifier))
                                 .withMimeType(MIME_TYPE_APPLICATION_PDF)
                                 .withLicense(new License.Builder().build())
                                 .build())
-                ).build();
+                );
 
-        var publication = new Publication.Builder()
-                .withIdentifier(new SortableIdentifier(identifier))
-                .withCreatedDate(Instant.now())
-                .withModifiedDate(Instant.now())
-                .withOwner(OWNER_USER_ID)
-                .withPublisher(new Organization.Builder()
-                        .withId(URI.create("http://example.org/publisher/1"))
-                        .build()
-                )
-                .withStatus(PublicationStatus.PUBLISHED)
-                .withFileSet(fileSet).build();
-        return PublicationResponse.fromPublication(publication);
+        return new PublicationResponse(PublicationStatus.PUBLISHED, OWNER_USER_ID, fileSet);
     }
 
     private PublicationResponse createPublishedPublicationDuplicateFile(String identifier, String fileIdentifier) {
-        FileSet fileSet = new FileSet.Builder()
-                .withFiles(Collections.nCopies(2,
+        FileSet fileSet = new FileSet(
+                Collections.nCopies(2,
                         new File.Builder()
                                 .withIdentifier(UUID.fromString(fileIdentifier))
                                 .withMimeType(MIME_TYPE_APPLICATION_PDF)
                                 .withLicense(new License.Builder().build())
                                 .build())
-                ).build();
+                );
 
-        var publication = new Publication.Builder()
-                .withIdentifier(new SortableIdentifier(identifier))
-                .withCreatedDate(Instant.now())
-                .withModifiedDate(Instant.now())
-                .withOwner(OWNER_USER_ID)
-                .withPublisher(new Organization.Builder()
-                        .withId(URI.create("http://example.org/publisher/1"))
-                        .build()
-                )
-                .withStatus(PublicationStatus.PUBLISHED)
-                .withFileSet(fileSet).build();
-        return PublicationResponse.fromPublication(publication);
+        return new PublicationResponse(PublicationStatus.PUBLISHED, OWNER_USER_ID, fileSet);
     }
 
     private InputStream anonymousInputStream(String identifier, String identifierFile) throws IOException {

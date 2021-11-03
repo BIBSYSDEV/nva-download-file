@@ -6,14 +6,14 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import no.unit.nva.api.PublicationResponse;
 import no.unit.nva.download.publication.file.aws.s3.AwsS3Service;
 import no.unit.nva.download.publication.file.exception.NotFoundException;
+import no.unit.nva.download.publication.file.publication.PublicationResponse;
+import no.unit.nva.download.publication.file.publication.PublicationStatus;
 import no.unit.nva.download.publication.file.publication.RestPublicationService;
 import no.unit.nva.download.publication.file.publication.exception.FileNotFoundException;
-import no.unit.nva.model.File;
-import no.unit.nva.model.FileSet;
-import no.unit.nva.model.PublicationStatus;
+import no.unit.nva.file.model.File;
+import no.unit.nva.file.model.FileSet;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
