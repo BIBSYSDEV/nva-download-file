@@ -10,6 +10,12 @@ public class PublicationResponse {
     private final String owner;
     private final FileSet fileSet;
 
+    /**
+     * Constructs a minimal usable object from a full publication.
+     * @param status The publication status.
+     * @param owner The owner identifier for the publication.
+     * @param fileSet The set of files associated with the publication.
+     */
     @JsonCreator
     public PublicationResponse(@JsonProperty("status") PublicationStatus status,
                                @JsonProperty("owner") String owner,

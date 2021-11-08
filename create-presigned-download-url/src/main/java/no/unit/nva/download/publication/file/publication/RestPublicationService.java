@@ -66,7 +66,7 @@ public class RestPublicationService {
     /**
      * Retrieve publication metadata.
      *
-     * @param identifier         identifier
+     * @param identifier           identifier
      * @return A publication
      * @throws ApiGatewayException exception thrown if value is missing
      */
