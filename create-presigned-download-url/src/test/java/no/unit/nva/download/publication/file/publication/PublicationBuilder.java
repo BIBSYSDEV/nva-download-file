@@ -7,7 +7,6 @@ import java.nio.file.Path;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 
-@SuppressWarnings("MissingJavadocMethod")
 public class PublicationBuilder {
     public static final String APPLICATION_PDF = "application/pdf";
     public static final String STRING = "\"";
@@ -53,6 +52,10 @@ public class PublicationBuilder {
         return this;
     }
 
+    /**
+     * Constructs a publication-service response for use in testing.
+     * @return JSON string representing an API response.
+     */
     public String build() {
         return getTemplateAsString()
                 .replace("__STATUS__", status.name())
@@ -60,7 +63,7 @@ public class PublicationBuilder {
                 .replace("__OWNER__", owner)
                 .replace("__ORGANIZATION__", organization)
                 .replace("__FILE_IDENTIFIER__", fileIdentifier)
-                .replace("__MIME_TYPE__", mimeType);
+                .replace("\"__MIME_TYPE__\"", mimeType);
     }
 
     private String getTemplateAsString() {

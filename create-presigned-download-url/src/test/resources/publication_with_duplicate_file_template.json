@@ -90,7 +90,7 @@
         "type": "File",
         "identifier": "__FILE_IDENTIFIER__",
         "name": "new document(1)",
-        "mimeType": "application/pdf",
+        "mimeType": "__MIME_TYPE__",
         "size": 2,
         "license": {
           "type": "License",
