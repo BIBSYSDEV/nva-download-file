@@ -84,7 +84,7 @@ public class CreatePresignedDownloadUrlHandlerTest {
     public static final String OWNER_ORGANIZATION = "https://example.com/customer/1";
     private static final String APPLICATION_JSON = "application/json; charset=utf-8";
     public static final String ANY_ORIGIN = "*";
-    public static final String SOME_RANDOM_IDENTFIER = UUID.randomUUID().toString();
+    public static final String SOME_RANDOM_IDENTIFIER = UUID.randomUUID().toString();
     public static final String UNKNOWN_FILE_ID = UUID.randomUUID().toString();
     public static final String NOT_A_UUID = "not-a-UUID";
     public static final String EASY_TO_SEE = "Easy-to-see: ";
@@ -181,12 +181,12 @@ public class CreatePresignedDownloadUrlHandlerTest {
         var handler = new CreatePresignedDownloadUrlHandler(publicationService,
                 getAwsS3ServiceReturningPresignedUrl(), mockEnvironment());
 
-        handler.handleRequest(createRequest(OWNER_USER_ID, SOME_RANDOM_IDENTFIER), output, context);
+        handler.handleRequest(createRequest(OWNER_USER_ID, SOME_RANDOM_IDENTIFIER), output, context);
 
         GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output);
         assertBasicRestRequirements(gatewayResponse, SC_NOT_FOUND, APPLICATION_PROBLEM_JSON);
         assertProblemEquivalence(gatewayResponse,
-                getNotFoundPublicationServiceResponse(EXTERNAL_ERROR_MESSAGE_DECORATION + SOME_RANDOM_IDENTFIER
+                getNotFoundPublicationServiceResponse(EXTERNAL_ERROR_MESSAGE_DECORATION + SOME_RANDOM_IDENTIFIER
                         + " " + EASY_TO_SEE + IDENTIFIER_VALUE));
     }
 
@@ -197,11 +197,11 @@ public class CreatePresignedDownloadUrlHandlerTest {
         var handler = new CreatePresignedDownloadUrlHandler(publicationService,
                 getAwsS3ServiceReturningPresignedUrl(), mockEnvironment());
 
-        handler.handleRequest(createRequest(OWNER_USER_ID, SOME_RANDOM_IDENTFIER), output, context);
+        handler.handleRequest(createRequest(OWNER_USER_ID, SOME_RANDOM_IDENTIFIER), output, context);
 
         GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output);
         assertBasicRestRequirements(gatewayResponse, SC_SERVICE_UNAVAILABLE, APPLICATION_PROBLEM_JSON);
-        assertProblemEquivalence(gatewayResponse, getServiceUnavailableProblem(SOME_RANDOM_IDENTFIER));
+        assertProblemEquivalence(gatewayResponse, getServiceUnavailableProblem(SOME_RANDOM_IDENTIFIER));
     }
 
     private void assertProblemEquivalence(GatewayResponse<Problem> gatewayResponse, Problem expected)
