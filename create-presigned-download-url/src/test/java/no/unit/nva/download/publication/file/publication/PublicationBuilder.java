@@ -3,6 +3,7 @@ package no.unit.nva.download.publication.file.publication;
 import nva.commons.core.ioutils.IoUtils;
 
 import java.nio.file.Path;
+import java.util.UUID;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
@@ -32,8 +33,8 @@ public class PublicationBuilder {
         return this;
     }
 
-    public PublicationBuilder withIdentifier(String identifier) {
-        this.identifier = identifier;
+    public PublicationBuilder withIdentifier(UUID identifier) {
+        this.identifier = identifier.toString();
         return this;
     }
 
@@ -42,8 +43,8 @@ public class PublicationBuilder {
         return this;
     }
 
-    public PublicationBuilder withFileIdentifier(String fileIdentifier) {
-        this.fileIdentifier = nonNull(fileIdentifier) ? fileIdentifier : "";
+    public PublicationBuilder withFileIdentifier(UUID fileIdentifier) {
+        this.fileIdentifier = nonNull(fileIdentifier) ? fileIdentifier.toString() : "";
         return this;
     }
 
