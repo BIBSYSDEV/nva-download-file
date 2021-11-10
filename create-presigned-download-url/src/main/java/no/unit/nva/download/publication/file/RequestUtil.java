@@ -23,6 +23,7 @@ public final class RequestUtil {
      *
      * @param requestInfo requestInfo
      * @return the identifier
+     * @throws InputException if the resource identifier is missing
      */
     public static String getIdentifier(RequestInfo requestInfo) throws InputException {
         return Optional.of(requestInfo)
@@ -36,6 +37,7 @@ public final class RequestUtil {
      *
      * @param requestInfo requestInfo
      * @return the file identifier
+     * @throws InputException if the file identifier is missing or invalid
      */
     public static UUID getFileIdentifier(RequestInfo requestInfo) throws InputException {
 
@@ -56,7 +58,7 @@ public final class RequestUtil {
     }
 
     private static String checkMissingFileIdentifier(String fileIdentifier) throws InputException {
-        if(StringUtils.isBlank(fileIdentifier)) {
+        if (StringUtils.isBlank(fileIdentifier)) {
             throw new InputException(MISSING_FILE_IDENTIFIER);
         }
         return fileIdentifier;

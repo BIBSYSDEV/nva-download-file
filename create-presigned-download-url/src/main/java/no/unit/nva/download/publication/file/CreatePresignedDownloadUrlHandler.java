@@ -19,7 +19,8 @@ import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
-import org.apache.http.HttpStatus;
+
+import static java.net.HttpURLConnection.HTTP_OK;
 
 public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, PresignedUriResponse> {
 
@@ -82,7 +83,7 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, P
 
     @Override
     protected Integer getSuccessStatusCode(Void input, PresignedUriResponse output) {
-        return HttpStatus.SC_OK;
+        return HTTP_OK;
     }
 
     private File fetchFileDescriptor(UUID fileIdentifier, PublicationResponse publication)
