@@ -11,7 +11,6 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Optional;
 
-import no.unit.nva.api.PublicationResponse;
 import no.unit.nva.download.publication.file.publication.exception.NoResponseException;
 import no.unit.nva.download.publication.file.publication.exception.NotFoundException;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
@@ -67,7 +66,7 @@ public class RestPublicationService {
     /**
      * Retrieve publication metadata.
      *
-     * @param identifier         identifier
+     * @param identifier           identifier
      * @return A publication
      * @throws ApiGatewayException exception thrown if value is missing
      */

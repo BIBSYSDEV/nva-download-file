@@ -1,11 +1,11 @@
 {
   "type" : "Publication",
-  "identifier" : "29f6887c-8852-11ea-bc55-0242ac130003",
-  "status" : "Draft",
-  "owner" : "owner@unit.no",
+  "identifier" : "__IDENTIFIER__",
+  "status" : "__STATUS__",
+  "owner" : "__OWNER__",
   "publisher" : {
     "type" : "Organization",
-    "id" : "http://example.org/org/123",
+    "id" : "__ORGANIZATION__",
     "labels" : {
       "no" : "Eksempelforlaget"
     }
@@ -65,9 +65,9 @@
     "type" : "FileSet",
     "files" : [ {
       "type" : "File",
-      "identifier" : "29f68c1e-8852-11ea-bc55-0242ac130003",
+      "identifier" : "__FILE_IDENTIFIER__",
       "name" : "new document(1)",
-      "mimeType" : "application/pdf",
+      "mimeType" : "__MIME_TYPE__",
       "size" : 2,
       "license" : {
         "type" : "License",

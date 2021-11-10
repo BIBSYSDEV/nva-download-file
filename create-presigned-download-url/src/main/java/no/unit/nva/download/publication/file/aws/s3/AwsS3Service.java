@@ -24,7 +24,7 @@ public class AwsS3Service {
 
     private final String bucketName;
 
-    private AmazonS3 s3Client;
+    private final AmazonS3 s3Client;
 
     /**
      * Constructor for AwsS3Service.
@@ -85,5 +85,4 @@ public class AwsS3Service {
         expiration.setTime(msec);
         return expiration;
     }
-
 }

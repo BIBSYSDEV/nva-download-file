@@ -6,22 +6,23 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import no.unit.nva.api.PublicationResponse;
 import no.unit.nva.download.publication.file.aws.s3.AwsS3Service;
 import no.unit.nva.download.publication.file.exception.NotFoundException;
+import no.unit.nva.download.publication.file.publication.PublicationResponse;
+import no.unit.nva.download.publication.file.publication.PublicationStatus;
 import no.unit.nva.download.publication.file.publication.RestPublicationService;
 import no.unit.nva.download.publication.file.publication.exception.FileNotFoundException;
-import no.unit.nva.model.File;
-import no.unit.nva.model.FileSet;
-import no.unit.nva.model.PublicationStatus;
+import no.unit.nva.file.model.File;
+import no.unit.nva.file.model.FileSet;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
-import org.apache.http.HttpStatus;
 
-public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, CreatePresignedDownloadUrlResponse> {
+import static java.net.HttpURLConnection.HTTP_OK;
+
+public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, PresignedUriResponse> {
 
     public static final String ERROR_MISSING_FILE_IN_PUBLICATION_FILE_SET = "File not found in publication file set";
     public static final String ERROR_DUPLICATE_FILES_IN_PUBLICATION = "Publication contains duplicate files";
@@ -52,36 +53,41 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, C
     }
 
     @Override
-    protected CreatePresignedDownloadUrlResponse processInput(Void input, RequestInfo requestInfo, Context context)
+    protected PresignedUriResponse processInput(Void input, RequestInfo requestInfo, Context context)
         throws ApiGatewayException {
-
-        String identifier = RequestUtil.getIdentifier(requestInfo);
-        PublicationResponse publication = publicationService.getPublication(identifier);
-        authorizeIfNotPublished(requestInfo, publication);
-
-        File file = fetchFileDescriptor(requestInfo, publication);
-        String presignedDownloadUrl = getPresignedDownloadUrl(file);
-
-        return new CreatePresignedDownloadUrlResponse(presignedDownloadUrl);
+        var user = RequestUtil.getUser(requestInfo);
+        var identifier = RequestUtil.getIdentifier(requestInfo);
+        var fileIdentifier = RequestUtil.getFileIdentifier(requestInfo);
+        PublicationResponse publication = getPublicationResponse(user, identifier);
+        return new PresignedUriResponse(getPreSignedUriForFile(fileIdentifier, publication));
     }
 
-    private void authorizeIfNotPublished(RequestInfo requestInfo, PublicationResponse publication)
+    private PublicationResponse getPublicationResponse(String user, String identifier) throws ApiGatewayException {
+        PublicationResponse publication = publicationService.getPublication(identifier);
+        authorizeIfNotPublished(user, identifier, publication);
+        return publication;
+    }
+
+    private String getPreSignedUriForFile(UUID fileIdentifier, PublicationResponse publication)
+            throws ApiGatewayException {
+        File file = fetchFileDescriptor(fileIdentifier, publication);
+        return getPresignedDownloadUrl(file);
+    }
+
+    private void authorizeIfNotPublished(String user, String identifier, PublicationResponse publication)
             throws ApiGatewayException {
         if (!isPublished(publication)) {
-            String identifier = RequestUtil.getIdentifier(requestInfo);
-            String userId = RequestUtil.getUserIdOptional(requestInfo).orElse(null);
-            authorize(identifier, userId, publication);
+            authorize(identifier, user, publication);
         }
     }
 
     @Override
-    protected Integer getSuccessStatusCode(Void input, CreatePresignedDownloadUrlResponse output) {
-        return HttpStatus.SC_OK;
+    protected Integer getSuccessStatusCode(Void input, PresignedUriResponse output) {
+        return HTTP_OK;
     }
 
-    private File fetchFileDescriptor(RequestInfo requestInfo, PublicationResponse publication)
+    private File fetchFileDescriptor(UUID fileIdentifier, PublicationResponse publication)
             throws ApiGatewayException {
-        UUID fileIdentifier = RequestUtil.getFileIdentifier(requestInfo);
         return getValidFile(fileIdentifier, publication.getFileSet());
     }
 
@@ -101,16 +107,16 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, C
             .orElseThrow(() -> new FileNotFoundException(ERROR_MISSING_FILE_IN_PUBLICATION_FILE_SET));
     }
 
-    private void authorize(String identifier, String userId, PublicationResponse publication)
+    private void authorize(String identifier, String user, PublicationResponse publication)
             throws ApiGatewayException {
-        if (isPublished(publication) || userIsOwner(userId, publication)) {
+        if (userIsOwner(user, publication)) {
             return;
         }
         throw new NotFoundException(identifier);
     }
 
-    private boolean userIsOwner(String userId, PublicationResponse publication) {
-        return publication.getOwner().equals(userId);
+    private boolean userIsOwner(String user, PublicationResponse publication) {
+        return publication.getOwner().equals(user);
     }
 
     private boolean isPublished(PublicationResponse publication) {

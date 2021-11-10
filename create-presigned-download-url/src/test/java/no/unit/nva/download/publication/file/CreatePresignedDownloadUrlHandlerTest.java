@@ -1,397 +1,532 @@
 package no.unit.nva.download.publication.file;
 
 import com.amazonaws.SdkClientException;
+import com.amazonaws.services.kms.model.NotFoundException;
 import com.amazonaws.services.lambda.runtime.Context;
-import java.net.HttpURLConnection;
-
-import com.google.common.net.HttpHeaders;
-import no.unit.nva.api.PublicationResponse;
+import com.amazonaws.services.s3.AmazonS3;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import no.unit.nva.download.publication.file.aws.s3.AwsS3Service;
-import no.unit.nva.download.publication.file.aws.s3.exception.S3ServiceException;
+import no.unit.nva.download.publication.file.publication.PublicationBuilder;
+import no.unit.nva.download.publication.file.publication.PublicationStatus;
 import no.unit.nva.download.publication.file.publication.RestPublicationService;
-import no.unit.nva.download.publication.file.publication.exception.NoResponseException;
-import no.unit.nva.download.publication.file.publication.exception.NotFoundException;
-import no.unit.nva.identifiers.SortableIdentifier;
-import no.unit.nva.model.File;
-import no.unit.nva.model.FileSet;
-import no.unit.nva.model.License;
-import no.unit.nva.model.Organization;
-import no.unit.nva.model.Publication;
-import no.unit.nva.model.PublicationStatus;
+import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.GatewayResponse;
-import nva.commons.apigateway.exceptions.ApiGatewayException;
 import nva.commons.core.Environment;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.stubbing.Answer;
+import org.zalando.problem.Problem;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URI;
-import java.time.Instant;
-import java.util.Collections;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.http.HttpClient;
+import java.net.http.HttpResponse;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Stream;
 
 import static com.google.common.net.HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN;
-import static no.unit.nva.download.publication.file.RequestUtil.CUSTOM_FEIDE_ID;
-import static no.unit.nva.download.publication.file.aws.s3.AwsS3ServiceTest.MIME_TYPE_APPLICATION_PDF;
-import static no.unit.nva.download.publication.file.aws.s3.AwsS3ServiceTest.PRESIGNED_DOWNLOAD_URL;
+import static no.unit.nva.download.publication.file.CreatePresignedDownloadUrlHandler.ERROR_MISSING_FILE_IN_PUBLICATION_FILE_SET;
+import static no.unit.nva.download.publication.file.RequestUtil.IDENTIFIER_IS_NOT_A_VALID_UUID;
+import static no.unit.nva.download.publication.file.RequestUtil.MISSING_FILE_IDENTIFIER;
+import static no.unit.nva.download.publication.file.RequestUtil.MISSING_RESOURCE_IDENTIFIER;
+import static no.unit.nva.download.publication.file.exception.NotFoundException.RESOURCE_NOT_FOUND;
+import static no.unit.nva.download.publication.file.publication.PublicationBuilder.APPLICATION_PDF;
+import static no.unit.nva.download.publication.file.publication.PublicationStatus.DRAFT;
+import static no.unit.nva.download.publication.file.publication.PublicationStatus.PUBLISHED;
 import static no.unit.nva.download.publication.file.publication.RestPublicationService.ERROR_COMMUNICATING_WITH_REMOTE_SERVICE;
 import static no.unit.nva.download.publication.file.publication.RestPublicationService.ERROR_PUBLICATION_NOT_FOUND_FOR_IDENTIFIER;
-import static no.unit.nva.testutils.HandlerRequestBuilder.AUTHORIZER_NODE;
-import static no.unit.nva.testutils.HandlerRequestBuilder.CLAIMS_NODE;
+import static no.unit.nva.download.publication.file.publication.RestPublicationService.EXTERNAL_ERROR_MESSAGE_DECORATION;
 import static nva.commons.apigateway.ApiGatewayHandler.ALLOWED_ORIGIN_ENV;
 import static nva.commons.core.JsonUtils.dtoObjectMapper;
 import static org.apache.http.HttpHeaders.AUTHORIZATION;
 import static org.apache.http.HttpHeaders.CONTENT_TYPE;
+import static org.apache.http.HttpStatus.SC_BAD_REQUEST;
 import static org.apache.http.HttpStatus.SC_INTERNAL_SERVER_ERROR;
 import static org.apache.http.HttpStatus.SC_NOT_FOUND;
 import static org.apache.http.HttpStatus.SC_OK;
 import static org.apache.http.HttpStatus.SC_SERVICE_UNAVAILABLE;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.zalando.problem.Status.BAD_REQUEST;
+import static org.zalando.problem.Status.INTERNAL_SERVER_ERROR;
+import static org.zalando.problem.Status.NOT_FOUND;
+import static org.zalando.problem.Status.SERVICE_UNAVAILABLE;
 
 public class CreatePresignedDownloadUrlHandlerTest {
 
     public static final String SOME_API_KEY = "some api key";
-    public static final String PATH_PARAMETERS = "pathParameters";
-    public static final String HEADERS = "headers";
     public static final String IDENTIFIER = "identifier";
     public static final String IDENTIFIER_FILE = "fileIdentifier";
-    public static final String IDENTIFIER_VALUE = "29f6887c-8852-11ea-bc55-0242ac130003";
-    public static final String IDENTIFIER_FILE_VALUE = "29f68c1e-8852-11ea-bc55-0242ac130003";
     public static final String OWNER_USER_ID = "owner@unit.no";
-    public static final String REQUEST_CONTEXT_NODE = "requestContext";
+    public static final String NON_ONWER = "non.owner@unit.no";
+    public static final String ANY_BUCKET = "aBucket";
+    public static final String APPLICATION_PROBLEM_JSON = "application/problem+json";
+    public static final String PRESIGNED_DOWNLOAD_URL = "https://example.com/download/12345";
+    public static final String API_HOST = "example.org";
+    public static final String API_SCHEME = "https";
+    public static final String OWNER_ORGANIZATION = "https://example.com/customer/1";
+    public static final UUID PUBLICATION_IDENTIFIER = UUID.randomUUID();
+    public static final UUID FILE_IDENTIFIER = UUID.randomUUID();
+    private static final String APPLICATION_JSON = "application/json; charset=utf-8";
+    public static final String ANY_ORIGIN = "*";
+    public static final UUID SOME_RANDOM_IDENTIFIER = UUID.randomUUID();
+    public static final String NOT_A_UUID = "not-a-UUID";
+    public static final String EASY_TO_SEE = "Easy-to-see: ";
+    public static final String HTTP_EXAMPLE_ORG_PUBLICATION = "https://example.org/publication/";
 
-    private RestPublicationService publicationService;
-    private AwsS3Service awsS3Service;
+    private HttpClient httpClient;
     private Context context;
     private ByteArrayOutputStream output;
 
-    private CreatePresignedDownloadUrlHandler createPresignedDownloadUrlHandler;
+    private static Stream<String> userSupplier() {
+        return Stream.of(
+                OWNER_USER_ID,
+                null,
+                NON_ONWER
+        );
+    }
 
-    /**
-     * Set up environment.
-     */
+    private static Stream<String> mimeTypeProvider() {
+        return Stream.of(
+                APPLICATION_PDF,
+                null
+        );
+    }
+
+    private static Stream<Arguments> badRequestProvider() throws IOException {
+        return Stream.of(
+                Arguments.of(createBadRequestNoIdentifier(), MISSING_RESOURCE_IDENTIFIER),
+                Arguments.of(createBadRequestNoFileIdentifier(), MISSING_FILE_IDENTIFIER),
+                Arguments.of(createBadRequestNonUuidFileIdentifier(), IDENTIFIER_IS_NOT_A_VALID_UUID + NOT_A_UUID)
+        );
+    }
+
     @BeforeEach
-    public void setUp() {
-        Environment environment = mock(Environment.class);
-        when(environment.readEnv(ALLOWED_ORIGIN_ENV)).thenReturn("*");
-
-        publicationService = mock(RestPublicationService.class);
-        awsS3Service = mock(AwsS3Service.class);
+    void setUp() {
+        httpClient = mock(HttpClient.class);
         context = mock(Context.class);
         output = new ByteArrayOutputStream();
-        createPresignedDownloadUrlHandler =
-                new CreatePresignedDownloadUrlHandler(publicationService, awsS3Service, environment);
     }
 
     @Test
-    @DisplayName("handler Default Constructor Throws Exception When Envs Are Not Set")
-    public void defaultConstructorThrowsExceptionWhenEnvsAreNotSet() {
+    void shouldThrowExceptionWhenEnvironmentVariablesAreUnset() {
         assertThrows(IllegalStateException.class, CreatePresignedDownloadUrlHandler::new);
     }
 
+    @ParameterizedTest(name = "Published publication is downloadable by user {0}")
+    @MethodSource("userSupplier")
+    void handlerReturnsOkResponseOnValidInputPublishedPublication(String user) throws IOException,
+            InterruptedException {
+
+        AwsS3Service s3Service = getAwsS3ServiceReturningPresignedUrl();
+        var publicationService = mockSuccessfulPublicationRequest(
+                getPublication(PUBLISHED));
+        var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment());
+
+        handler.handleRequest(createRequest(user, PUBLICATION_IDENTIFIER, FILE_IDENTIFIER), output, context);
+
+        GatewayResponse<PresignedUriResponse> gatewayResponse = GatewayResponse.fromString(output.toString());
+        assertBasicRestRequirements(gatewayResponse, SC_OK, APPLICATION_JSON);
+        assertPresignedUriIsPresent(gatewayResponse);
+    }
+
     @Test
-    @DisplayName("handler Returns Ok Response On Valid Input (Published Publication)")
-    public void handlerReturnsOkResponseOnValidInputPublishedPublication() throws IOException,
-                                                                                  ApiGatewayException {
+    void shouldReturnOkWhenPublicationUnpublishedAndUserIsOwner() throws IOException, InterruptedException {
+        AwsS3Service s3Service = getAwsS3ServiceReturningPresignedUrl();
+        var publicationService = mockSuccessfulPublicationRequest(
+                getPublication(DRAFT));
+        var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment());
 
-        var publication = createPublishedPublication(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE);
-        when(publicationService.getPublication(any(String.class)))
-                .thenReturn(publication);
-        when(awsS3Service.createPresignedDownloadUrl(IDENTIFIER_FILE_VALUE, MIME_TYPE_APPLICATION_PDF))
-                .thenReturn(PRESIGNED_DOWNLOAD_URL);
+        handler.handleRequest(createRequest(OWNER_USER_ID, PUBLICATION_IDENTIFIER, FILE_IDENTIFIER), output, context);
 
-        createPresignedDownloadUrlHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE),
+        GatewayResponse<PresignedUriResponse> gatewayResponse = GatewayResponse.fromString(output.toString());
+        assertBasicRestRequirements(gatewayResponse, SC_OK, APPLICATION_JSON);
+        assertPresignedUriIsPresent(gatewayResponse);
+    }
+
+    @ParameterizedTest(name = "Should return presigned URI when mime-type of file is {0}")
+    @MethodSource("mimeTypeProvider")
+    void shouldReturnOkWhenPublicationUnpublishedAndUserIsOwnerAndMimeTypeIs(String mimeType) throws IOException,
+            InterruptedException {
+        AwsS3Service s3Service = getAwsS3ServiceReturningPresignedUrl();
+        var publicationService = mockSuccessfulPublicationRequest(
+                getPublication(DRAFT, mimeType));
+        var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment());
+
+        handler.handleRequest(createRequest(OWNER_USER_ID, PUBLICATION_IDENTIFIER, FILE_IDENTIFIER), output, context);
+
+        GatewayResponse<PresignedUriResponse> gatewayResponse = GatewayResponse.fromString(output.toString());
+        assertBasicRestRequirements(gatewayResponse, SC_OK, APPLICATION_JSON);
+        assertPresignedUriIsPresent(gatewayResponse);
+    }
+
+    // Error message here is odd
+    @Test
+    void handlerReturnsNotFoundResponseOnUnknownIdentifier() throws IOException, InterruptedException {
+        var publicationService = mockNotFoundPublicationService();
+        var handler = new CreatePresignedDownloadUrlHandler(publicationService,
+                getAwsS3ServiceReturningPresignedUrl(), mockEnvironment());
+
+        handler.handleRequest(createRequest(OWNER_USER_ID, PUBLICATION_IDENTIFIER, FILE_IDENTIFIER), output, context);
+
+        GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output);
+        assertBasicRestRequirements(gatewayResponse, SC_NOT_FOUND, APPLICATION_PROBLEM_JSON);
+        assertProblemEquivalence(gatewayResponse,
+                getNotFoundPublicationServiceResponse(EXTERNAL_ERROR_MESSAGE_DECORATION + PUBLICATION_IDENTIFIER
+                        + " " + EASY_TO_SEE + PUBLICATION_IDENTIFIER));
+    }
+
+    @Test
+    void handlerReturnsServiceUnavailableResponseOnServerErrorResponseFromPublicationService() throws IOException,
+            InterruptedException {
+        var publicationService = mockUnresponsivePublicationService();
+        var handler = new CreatePresignedDownloadUrlHandler(publicationService,
+                getAwsS3ServiceReturningPresignedUrl(), mockEnvironment());
+
+        handler.handleRequest(createRequest(OWNER_USER_ID, SOME_RANDOM_IDENTIFIER, FILE_IDENTIFIER), output, context);
+
+        GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output);
+        assertBasicRestRequirements(gatewayResponse, SC_SERVICE_UNAVAILABLE, APPLICATION_PROBLEM_JSON);
+        assertProblemEquivalence(gatewayResponse, getServiceUnavailableProblem(SOME_RANDOM_IDENTIFIER));
+    }
+
+    private void assertProblemEquivalence(GatewayResponse<Problem> gatewayResponse, Problem expected)
+            throws JsonProcessingException {
+        var actual = gatewayResponse.getBodyObject(Problem.class);
+        assertThat(actual.getStatus(), equalTo(expected.getStatus()));
+        assertThat(actual.getTitle(), equalTo(expected.getTitle()));
+        assertThat(actual.getDetail(), equalTo(expected.getDetail()));
+    }
+
+    @Test
+    void shouldReturnNotFoundResponseOnUnknownFileIdentifier() {
+    }
+
+    @Test
+    void shouldReturnInternalServerErrorResponseOnDuplicateFileIdentifierInPublication() throws IOException,
+            InterruptedException {
+        var publication = getPublishedPublicationWithDuplicateFileInFileSet();
+        var publicationService = mockSuccessfulPublicationRequest(publication);
+        var handler = new CreatePresignedDownloadUrlHandler(publicationService, getAwsS3ServiceReturningNotFound(),
+                mockEnvironment());
+
+        handler.handleRequest(createRequest(OWNER_USER_ID, PUBLICATION_IDENTIFIER, FILE_IDENTIFIER), output, context);
+
+        GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output);
+        assertBasicRestRequirements(gatewayResponse, SC_INTERNAL_SERVER_ERROR, APPLICATION_PROBLEM_JSON);
+        assertProblemEquivalence(gatewayResponse, getInternalServerError());
+    }
+
+    @Test
+    void handlerReturnsNotFoundOnPublicationWithoutFile() throws IOException, InterruptedException {
+        var publication = createPublishedPublicationWithoutFileSetFile();
+        var publicationService = mockSuccessfulPublicationRequest(publication);
+        var handler = new CreatePresignedDownloadUrlHandler(publicationService, getAwsS3ServiceReturningNotFound(),
+                mockEnvironment());
+
+        handler.handleRequest(createRequest(OWNER_USER_ID, PUBLICATION_IDENTIFIER, SOME_RANDOM_IDENTIFIER),
                 output, context);
 
-        var gatewayResponse = dtoObjectMapper.readValue(output.toString(), GatewayResponse.class);
-        assertEquals(SC_OK, gatewayResponse.getStatusCode());
-        assertTrue(gatewayResponse.getHeaders().containsKey(CONTENT_TYPE));
-        assertTrue(gatewayResponse.getHeaders().containsKey(ACCESS_CONTROL_ALLOW_ORIGIN));
+        GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output);
+        assertBasicRestRequirements(gatewayResponse, SC_NOT_FOUND, APPLICATION_PROBLEM_JSON);
+        assertProblemEquivalence(gatewayResponse,
+                getNotFoundPublicationServiceResponse(ERROR_MISSING_FILE_IN_PUBLICATION_FILE_SET));
+    }
+
+
+    @Test
+    void shouldReturnServiceUnavailableResponseOnS3ServiceException() throws IOException, InterruptedException {
+        AwsS3Service s3Service = getS3ServiceThrowingSdkClientException();
+        var publicationService = mockSuccessfulPublicationRequest(
+                getPublication(PUBLISHED));
+        var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment());
+
+        handler.handleRequest(createRequest(OWNER_USER_ID, PUBLICATION_IDENTIFIER, FILE_IDENTIFIER), output, context);
+
+        GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output);
+        assertBasicRestRequirements(gatewayResponse, SC_SERVICE_UNAVAILABLE, APPLICATION_PROBLEM_JSON);
+        assertProblemEquivalence(gatewayResponse, getServiceUnavailableProblem(PUBLICATION_IDENTIFIER));
     }
 
     @Test
-    @DisplayName("handler Returns Ok Response On Valid Input (Unpublished Publication)")
-    public void handlerReturnsOkResponseOnValidInputUnpublishedPublication() throws IOException,
-            ApiGatewayException {
+    void shouldReturnNotFoundOnAnonymousRequestForDraftPublication()
+            throws IOException, InterruptedException {
+        var publicationService = mockSuccessfulPublicationRequest(
+                getPublication(DRAFT));
+        AwsS3Service s3Service = getAwsS3ServiceReturningPresignedUrl();
 
-        var publication = createUnpublishedPublication(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE);
-        when(publicationService.getPublication(any(String.class)))
-                .thenReturn(publication);
-        when(awsS3Service.createPresignedDownloadUrl(IDENTIFIER_FILE_VALUE, MIME_TYPE_APPLICATION_PDF))
-                .thenReturn(PRESIGNED_DOWNLOAD_URL);
+        var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment());
 
-        createPresignedDownloadUrlHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE,
-                OWNER_USER_ID), output, context);
+        handler.handleRequest(createAnonymousRequest(), output, context);
 
-        GatewayResponse<CreatePresignedDownloadUrlResponse> gatewayResponse = GatewayResponse.fromOutputStream(output);
-        assertEquals(SC_OK, gatewayResponse.getStatusCode());
-        assertTrue(gatewayResponse.getHeaders().containsKey(CONTENT_TYPE));
-        assertTrue(gatewayResponse.getHeaders().containsKey(ACCESS_CONTROL_ALLOW_ORIGIN));
+        GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output);
+        assertBasicRestRequirements(gatewayResponse, SC_NOT_FOUND, APPLICATION_PROBLEM_JSON);
+        assertProblemEquivalence(gatewayResponse,
+                getNotFoundPublicationServiceResponse(RESOURCE_NOT_FOUND + PUBLICATION_IDENTIFIER));
+    }
+
+    @ParameterizedTest
+    @MethodSource("badRequestProvider")
+    void shouldReturnBadRequestWhenRequestIsBad(InputStream request, String detail) throws IOException,
+            InterruptedException {
+        var publicationService = mockSuccessfulPublicationRequest(
+                getPublication(DRAFT));
+        AwsS3Service s3Service = getAwsS3ServiceReturningPresignedUrl();
+
+        var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment());
+
+        handler.handleRequest(request, output, context);
+
+        GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output);
+        assertBasicRestRequirements(gatewayResponse, SC_BAD_REQUEST, APPLICATION_PROBLEM_JSON);
+        assertProblemEquivalence(gatewayResponse, getBadRequestPublicationServiceResponse(detail));
     }
 
     @Test
-    @DisplayName("handler Returns Not Found Response On Unknown Identifier")
-    public void handlerReturnsNotFoundResponseOnUnknownIdentifier() throws IOException, ApiGatewayException {
-        when(publicationService.getPublication(any(String.class)))
-                .thenThrow(new NotFoundException(ERROR_PUBLICATION_NOT_FOUND_FOR_IDENTIFIER + IDENTIFIER_VALUE));
+    void shouldReturnNotFoundWhenPublicationServiceResponseIsNotUnderstood() throws IOException, InterruptedException {
+        var publicationService = mockPublicationServiceReturningStrangeResponse();
+        AwsS3Service s3Service = getAwsS3ServiceReturningPresignedUrl();
 
-        createPresignedDownloadUrlHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE),
-                output, context);
+        var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment());
 
-        GatewayResponse<CreatePresignedDownloadUrlResponse> gatewayResponse = GatewayResponse.fromOutputStream(output);
-        assertEquals(SC_NOT_FOUND, gatewayResponse.getStatusCode());
-        assertTrue(gatewayResponse.getHeaders().containsKey(CONTENT_TYPE));
-        assertTrue(gatewayResponse.getHeaders().containsKey(ACCESS_CONTROL_ALLOW_ORIGIN));
+        handler.handleRequest(createAnonymousRequest(), output, context);
+
+        GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output);
+        assertBasicRestRequirements(gatewayResponse, SC_NOT_FOUND, APPLICATION_PROBLEM_JSON);
+        assertProblemEquivalence(gatewayResponse,
+                getNotFoundPublicationServiceResponse(EXTERNAL_ERROR_MESSAGE_DECORATION + PUBLICATION_IDENTIFIER
+                        + " " + ERROR_PUBLICATION_NOT_FOUND_FOR_IDENTIFIER + PUBLICATION_IDENTIFIER));
     }
 
     @Test
-    @DisplayName("handler Returns Not Found Response On Malformed Resource Identifier")
-    public void handlerReturnsNotFoundResponseOnMalformedIdentifier() throws IOException, ApiGatewayException {
-        when(publicationService.getPublication(any(String.class)))
-            .thenThrow(new NotFoundException(ERROR_PUBLICATION_NOT_FOUND_FOR_IDENTIFIER + IDENTIFIER_VALUE));
-        createPresignedDownloadUrlHandler.handleRequest(inputStream(IDENTIFIER, IDENTIFIER_FILE_VALUE), output,
-                context);
+    void shouldReturnNotFoundWhenPublicationServiceResponseIsUnderstood() throws IOException, InterruptedException {
+        var publicationService = mockNotFoundPublicationService();
+        AwsS3Service s3Service = getAwsS3ServiceReturningPresignedUrl();
 
-        GatewayResponse<CreatePresignedDownloadUrlResponse> gatewayResponse = GatewayResponse.fromOutputStream(output);
-        assertEquals(HttpURLConnection.HTTP_NOT_FOUND, gatewayResponse.getStatusCode());
-        assertTrue(gatewayResponse.getHeaders().containsKey(CONTENT_TYPE));
-        assertTrue(gatewayResponse.getHeaders().containsKey(ACCESS_CONTROL_ALLOW_ORIGIN));
+        var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment());
 
+        handler.handleRequest(createAnonymousRequest(), output, context);
+
+        GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output);
+        assertBasicRestRequirements(gatewayResponse, SC_NOT_FOUND, APPLICATION_PROBLEM_JSON);
+        assertProblemEquivalence(gatewayResponse,
+                getNotFoundPublicationServiceResponse(EXTERNAL_ERROR_MESSAGE_DECORATION + PUBLICATION_IDENTIFIER
+                        + " " + EASY_TO_SEE + PUBLICATION_IDENTIFIER));
     }
 
-    @Test
-    @DisplayName("handler Returns Service Unavailable Response On No Response From Publication Service")
-    public void handlerReturnsServiceUnavailableResponseOnNoResponseFromPublicationService() throws IOException,
-            ApiGatewayException {
-
-        when(publicationService.getPublication(any(String.class)))
-                .thenThrow(new NoResponseException(ERROR_COMMUNICATING_WITH_REMOTE_SERVICE,
-                        new Exception()));
-        createPresignedDownloadUrlHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE),
-                output, context);
-
-        GatewayResponse<CreatePresignedDownloadUrlResponse> gatewayResponse = GatewayResponse.fromOutputStream(output);
-        assertEquals(SC_SERVICE_UNAVAILABLE, gatewayResponse.getStatusCode());
-        assertTrue(gatewayResponse.getHeaders().containsKey(CONTENT_TYPE));
-        assertTrue(gatewayResponse.getHeaders().containsKey(ACCESS_CONTROL_ALLOW_ORIGIN));
+    private RestPublicationService mockPublicationServiceReturningStrangeResponse() throws IOException,
+            InterruptedException {
+        @SuppressWarnings("unchecked")
+        var response = (HttpResponse<String>) mock(HttpResponse.class);
+        when(response.statusCode()).thenAnswer(i -> 404);
+        when(response.body()).thenAnswer(i -> getStrangeResponse());
+        when(httpClient.<String>send(any(), any())).thenAnswer((Answer<HttpResponse<String>>) invocation -> response);
+        return new RestPublicationService(httpClient, dtoObjectMapper, API_SCHEME, API_HOST);
     }
 
-    @Test
-    @DisplayName("handler Returns Not Found Response On Unknown File Identifier")
-    public void handlerReturnsBadRequestResponseOnUnknownFileIdentifier() throws ApiGatewayException, IOException {
-        var publication = createPublishedPublication(IDENTIFIER_VALUE, IDENTIFIER_VALUE);
-        when(publicationService.getPublication(any(String.class)))
-                .thenReturn(publication);
-
-        createPresignedDownloadUrlHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE),
-                output, context);
-
-        GatewayResponse<CreatePresignedDownloadUrlResponse> gatewayResponse = GatewayResponse.fromOutputStream(output);
-        assertEquals(SC_NOT_FOUND, gatewayResponse.getStatusCode());
-        assertTrue(gatewayResponse.getHeaders().containsKey(CONTENT_TYPE));
-        assertTrue(gatewayResponse.getHeaders().containsKey(ACCESS_CONTROL_ALLOW_ORIGIN));
+    private String getStrangeResponse() {
+        return "Cowboys code with strings";
     }
 
-    @Test
-    @DisplayName("handler Returns Internal Server Error Response On Duplicate File Identifier In Publication")
-    public void handlerReturnsInternalServerErrorResponseOnDuplicateFileIdentifierInPublication()
-            throws ApiGatewayException, IOException {
-        var publication = createPublishedPublicationDuplicateFile(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE);
-        when(publicationService.getPublication(any(String.class)))
-                .thenReturn(publication);
-
-        createPresignedDownloadUrlHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE),
-                output, context);
-
-        GatewayResponse<CreatePresignedDownloadUrlResponse> gatewayResponse = GatewayResponse.fromOutputStream(output);
-        assertEquals(SC_INTERNAL_SERVER_ERROR, gatewayResponse.getStatusCode());
-        assertTrue(gatewayResponse.getHeaders().containsKey(CONTENT_TYPE));
-        assertTrue(gatewayResponse.getHeaders().containsKey(ACCESS_CONTROL_ALLOW_ORIGIN));
-    }
-
-    @Test
-    @DisplayName("handler Returns Not Found Response On Publication Without Files")
-    public void handlerReturnsBadRequestResponseOnPublicationWithoutFile() throws IOException,
-            ApiGatewayException {
-        PublicationResponse publication = createPublicationWithoutFileSetFile(IDENTIFIER_VALUE);
-        when(publicationService.getPublication(any(String.class)))
-                .thenReturn(publication);
-
-        createPresignedDownloadUrlHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE),
-                output, context);
-
-        GatewayResponse<CreatePresignedDownloadUrlResponse> gatewayResponse = GatewayResponse.fromOutputStream(output);
-        assertEquals(SC_NOT_FOUND, gatewayResponse.getStatusCode());
-        assertTrue(gatewayResponse.getHeaders().containsKey(CONTENT_TYPE));
-        assertTrue(gatewayResponse.getHeaders().containsKey(ACCESS_CONTROL_ALLOW_ORIGIN));
-    }
-
-    @Test
-    @DisplayName("handler Returns Service Unavailable Response on S3 Exception")
-    public void handlerReturnsServiceUnavailableResponseOnS3ServiceException() throws IOException,
-            ApiGatewayException {
-        var publication = createPublishedPublication(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE);
-        when(publicationService.getPublication(any(String.class)))
-                .thenReturn(publication);
-        when(awsS3Service.createPresignedDownloadUrl(IDENTIFIER_FILE_VALUE, MIME_TYPE_APPLICATION_PDF))
-                .thenThrow(new S3ServiceException("message", new SdkClientException("message")));
-
-        createPresignedDownloadUrlHandler.handleRequest(inputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE),
-                output, context);
-
-        GatewayResponse<CreatePresignedDownloadUrlResponse> gatewayResponse = GatewayResponse.fromOutputStream(output);
-        assertEquals(SC_SERVICE_UNAVAILABLE, gatewayResponse.getStatusCode());
-        assertTrue(gatewayResponse.getHeaders().containsKey(CONTENT_TYPE));
-        assertTrue(gatewayResponse.getHeaders().containsKey(ACCESS_CONTROL_ALLOW_ORIGIN));
-    }
-
-    @Test
-    @DisplayName("handler Returns NotFound On Anonymous Request For Not Published Publication")
-    public void handlerReturnsNotFoundOnAnonymousRequestForNotPublishedPublication()
-            throws ApiGatewayException, IOException {
-        var publication = createUnpublishedPublication(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE);
-        when(publicationService.getPublication(any(String.class)))
-                .thenReturn(publication);
-
-        createPresignedDownloadUrlHandler.handleRequest(anonymousInputStream(IDENTIFIER_VALUE, IDENTIFIER_FILE_VALUE),
-                output, context);
-
-        GatewayResponse<CreatePresignedDownloadUrlResponse> gatewayResponse = GatewayResponse.fromOutputStream(output);
-        assertEquals(SC_NOT_FOUND, gatewayResponse.getStatusCode());
-    }
-
-
-    private PublicationResponse createPublicationWithoutFileSetFile(String identifier) {
-        var publication = new Publication.Builder()
-                .withIdentifier(new SortableIdentifier(identifier))
-                .withModifiedDate(Instant.now())
-                .withOwner(OWNER_USER_ID)
-                .withFileSet(new FileSet.Builder().build())
-                .withStatus(PublicationStatus.PUBLISHED)
+    private Problem getBadRequestPublicationServiceResponse(String detail) {
+        return Problem.builder()
+                .withStatus(BAD_REQUEST)
+                .withTitle(BAD_REQUEST.getReasonPhrase())
+                .withDetail(detail)
                 .build();
-        return PublicationResponse.fromPublication(publication);
     }
 
-    private PublicationResponse createUnpublishedPublication(String identifier, String fileIdentifier) {
-        FileSet fileSet = new FileSet.Builder()
-                .withFiles(Collections.singletonList(
-                        new File.Builder()
-                                .withIdentifier(UUID.fromString(fileIdentifier))
-                                .withMimeType(MIME_TYPE_APPLICATION_PDF)
-                                .withLicense(new License.Builder().build())
-                                .build())
-                ).build();
-
-        var publication = new Publication.Builder()
-                .withIdentifier(new SortableIdentifier(identifier))
-                .withModifiedDate(Instant.now())
+    private String createPublishedPublicationWithoutFileSetFile() {
+        return new PublicationBuilder("publication_with_no_files_template.json")
+                .withStatus(PUBLISHED)
                 .withOwner(OWNER_USER_ID)
-                .withStatus(PublicationStatus.NEW)
-                .withFileSet(fileSet).build();
-        return PublicationResponse.fromPublication(publication);
+                .withOrganization(OWNER_ORGANIZATION)
+                .withIdentifier(PUBLICATION_IDENTIFIER)
+                .withFileIdentifier(null)
+                .withMimeType(APPLICATION_PDF)
+                .build();
     }
 
-    private PublicationResponse createPublishedPublication(String identifier, String fileIdentifier) {
-        FileSet fileSet = new FileSet.Builder()
-                .withFiles(Collections.singletonList(
-                        new File.Builder()
-                                .withIdentifier(UUID.fromString(fileIdentifier))
-                                .withMimeType(MIME_TYPE_APPLICATION_PDF)
-                                .withLicense(new License.Builder().build())
-                                .build())
-                ).build();
+    private Problem getInternalServerError() {
+        return Problem.builder()
+                .withStatus(INTERNAL_SERVER_ERROR)
+                .withTitle(INTERNAL_SERVER_ERROR.getReasonPhrase())
+                .withDetail("Internal server error. Contact application administrator.")
+                .build();
+    }
 
-        var publication = new Publication.Builder()
-                .withIdentifier(new SortableIdentifier(identifier))
-                .withCreatedDate(Instant.now())
-                .withModifiedDate(Instant.now())
-                .withOwner(OWNER_USER_ID)
-                .withPublisher(new Organization.Builder()
-                        .withId(URI.create("http://example.org/publisher/1"))
-                        .build()
-                )
+    private String getPublishedPublicationWithDuplicateFileInFileSet() {
+        return new PublicationBuilder("publication_with_duplicate_file_template.json")
                 .withStatus(PublicationStatus.PUBLISHED)
-                .withFileSet(fileSet).build();
-        return PublicationResponse.fromPublication(publication);
-    }
-
-    private PublicationResponse createPublishedPublicationDuplicateFile(String identifier, String fileIdentifier) {
-        FileSet fileSet = new FileSet.Builder()
-                .withFiles(Collections.nCopies(2,
-                        new File.Builder()
-                                .withIdentifier(UUID.fromString(fileIdentifier))
-                                .withMimeType(MIME_TYPE_APPLICATION_PDF)
-                                .withLicense(new License.Builder().build())
-                                .build())
-                ).build();
-
-        var publication = new Publication.Builder()
-                .withIdentifier(new SortableIdentifier(identifier))
-                .withCreatedDate(Instant.now())
-                .withModifiedDate(Instant.now())
                 .withOwner(OWNER_USER_ID)
-                .withPublisher(new Organization.Builder()
-                        .withId(URI.create("http://example.org/publisher/1"))
-                        .build()
-                )
-                .withStatus(PublicationStatus.PUBLISHED)
-                .withFileSet(fileSet).build();
-        return PublicationResponse.fromPublication(publication);
+                .withOrganization(OWNER_ORGANIZATION)
+                .withIdentifier(PUBLICATION_IDENTIFIER)
+                .withFileIdentifier(FILE_IDENTIFIER)
+                .withMimeType(APPLICATION_PDF)
+                .build();
     }
 
-    private InputStream anonymousInputStream(String identifier, String identifierFile) throws IOException {
-        Map<String, Object> event = new ConcurrentHashMap<>();
-        Map<String, String> headers = new ConcurrentHashMap<>();
-        // not authorization header
-        event.put(HEADERS, headers);
-        Map<String, String> pathParameters = new ConcurrentHashMap<>();
-        pathParameters.put(IDENTIFIER, identifier);
-        pathParameters.put(IDENTIFIER_FILE, identifierFile);
-        event.put(PATH_PARAMETERS, pathParameters);
-        // no authorizer claims
-        return new ByteArrayInputStream(dtoObjectMapper.writeValueAsBytes(event));
+    private AwsS3Service getAwsS3ServiceReturningNotFound() {
+        var amazonS3 = mock(AmazonS3.class);
+        when(amazonS3.generatePresignedUrl(any())).thenThrow(notFoundException());
+        return new AwsS3Service(amazonS3, ANY_BUCKET);
     }
 
-    private InputStream inputStream(String identifier, String identifierFile) throws IOException {
-        Map<String, Object> event = new ConcurrentHashMap<>();
-        Map<String, String> headers = new ConcurrentHashMap<>();
-        headers.put(AUTHORIZATION, SOME_API_KEY);
-        event.put(HEADERS, headers);
-        Map<String, String> pathParameters = new ConcurrentHashMap<>();
-        pathParameters.put(IDENTIFIER, identifier);
-        pathParameters.put(IDENTIFIER_FILE, identifierFile);
-        event.put(PATH_PARAMETERS, pathParameters);
-        return new ByteArrayInputStream(dtoObjectMapper.writeValueAsBytes(event));
+    private SdkClientException notFoundException() {
+        return new NotFoundException("Not Found");
     }
 
-    private InputStream inputStream(String identifier, String identifierFile, String userId) throws IOException {
-        Map<String, Object> event = new ConcurrentHashMap<>();
-        Map<String, String> headers = new ConcurrentHashMap<>();
-        headers.put(AUTHORIZATION, SOME_API_KEY);
-        event.put(HEADERS, headers);
-        Map<String, String> pathParameters = new ConcurrentHashMap<>();
-        pathParameters.put(IDENTIFIER, identifier);
-        pathParameters.put(IDENTIFIER_FILE, identifierFile);
-        event.put(PATH_PARAMETERS, pathParameters);
-        Map<String, String> claimsValue = new ConcurrentHashMap<>();
-        claimsValue.put(CUSTOM_FEIDE_ID, userId);
-        Map<String, Object> claims = new ConcurrentHashMap<>();
-        claims.put(CLAIMS_NODE, claimsValue);
-        Map<String, Object> authorizer = new ConcurrentHashMap<>();
-        authorizer.put(AUTHORIZER_NODE, claims);
-        event.put(REQUEST_CONTEXT_NODE, authorizer);
+    private Problem getServiceUnavailableProblem(UUID identifier) {
+        return Problem.builder()
+                .withStatus(SERVICE_UNAVAILABLE)
+                .withTitle(SERVICE_UNAVAILABLE.getReasonPhrase())
+                .withDetail(ERROR_COMMUNICATING_WITH_REMOTE_SERVICE
+                        + HTTP_EXAMPLE_ORG_PUBLICATION
+                        + identifier.toString())
+                .build();
+    }
 
-        return new ByteArrayInputStream(dtoObjectMapper.writeValueAsBytes(event));
+    private RestPublicationService mockUnresponsivePublicationService() throws IOException, InterruptedException {
+        var publicationService = new RestPublicationService(httpClient, dtoObjectMapper, API_SCHEME, API_HOST);
+        @SuppressWarnings("unchecked")
+        var response = (HttpResponse<String>) mock(HttpResponse.class);
+        when(response.statusCode()).thenAnswer(i -> 500);
+        when(httpClient.<String>send(any(), any())).thenAnswer((Answer<HttpResponse<String>>) invocation -> response);
+        return publicationService;
+    }
+
+    private RestPublicationService mockNotFoundPublicationService() throws IOException, InterruptedException {
+        @SuppressWarnings("unchecked")
+        var response = (HttpResponse<String>) mock(HttpResponse.class);
+        when(response.statusCode()).thenAnswer(i -> 404);
+        when(response.body()).thenAnswer(i -> notFoundProblem());
+        when(httpClient.<String>send(any(), any())).thenAnswer((Answer<HttpResponse<String>>) invocation -> response);
+        return new RestPublicationService(httpClient, dtoObjectMapper, API_SCHEME, API_HOST);
+    }
+
+    private String notFoundProblem() throws JsonProcessingException {
+        return dtoObjectMapper
+                .writeValueAsString(getNotFoundPublicationServiceResponse(EASY_TO_SEE + PUBLICATION_IDENTIFIER));
+    }
+
+
+    private Problem getNotFoundPublicationServiceResponse(String message) {
+        return Problem.builder()
+                .withStatus(NOT_FOUND)
+                .withTitle(NOT_FOUND.getReasonPhrase())
+                .withDetail(message)
+                .build();
+    }
+
+    private String getPublication(PublicationStatus status) {
+        return getPublication(status, APPLICATION_PDF);
+    }
+
+    private String getPublication(PublicationStatus publicationStatus,
+                                  String mimeType) {
+        return new PublicationBuilder("publication_template.json")
+                .withStatus(publicationStatus)
+                .withOwner(OWNER_USER_ID)
+                .withOrganization(OWNER_ORGANIZATION)
+                .withIdentifier(PUBLICATION_IDENTIFIER)
+                .withFileIdentifier(FILE_IDENTIFIER)
+                .withMimeType(mimeType)
+                .build();
+    }
+
+    private void assertBasicRestRequirements(GatewayResponse<?> gatewayResponse,
+                                             int expectedStatusCode,
+                                             String expectedContentType) {
+        assertThat(gatewayResponse.getStatusCode(), equalTo(expectedStatusCode));
+        assertTrue(gatewayResponse.getHeaders().containsKey(CONTENT_TYPE));
+        assertThat(gatewayResponse.getHeaders().get(CONTENT_TYPE), equalTo(expectedContentType));
+        assertTrue(gatewayResponse.getHeaders().containsKey(ACCESS_CONTROL_ALLOW_ORIGIN));
+        assertThat(gatewayResponse.getHeaders().get(ACCESS_CONTROL_ALLOW_ORIGIN), equalTo(ANY_ORIGIN));
+    }
+
+    private void assertPresignedUriIsPresent(GatewayResponse<PresignedUriResponse> gatewayResponse) throws
+            JsonProcessingException {
+        var presignedDownloadUrl = gatewayResponse.getBodyObject(PresignedUriResponse.class).getPresignedDownloadUrl();
+        assertThat(presignedDownloadUrl, is(notNullValue()));
+    }
+
+    private AwsS3Service getAwsS3ServiceReturningPresignedUrl() throws MalformedURLException {
+        var amazonS3 = mock(AmazonS3.class);
+        when(amazonS3.generatePresignedUrl(any())).thenReturn(new URL(PRESIGNED_DOWNLOAD_URL));
+        return new AwsS3Service(amazonS3, ANY_BUCKET);
+    }
+
+    private Environment mockEnvironment() {
+        Environment environment = mock(Environment.class);
+        when(environment.readEnv(ALLOWED_ORIGIN_ENV)).thenReturn(ANY_ORIGIN);
+        return environment;
+    }
+
+    private RestPublicationService mockSuccessfulPublicationRequest(String responseBody)
+            throws IOException, InterruptedException {
+        var publicationService = new RestPublicationService(httpClient, dtoObjectMapper, API_SCHEME, API_HOST);
+        @SuppressWarnings("unchecked")
+        var response = (HttpResponse<String>) mock(HttpResponse.class);
+        when((response.body())).thenAnswer(i -> responseBody);
+        when(httpClient.<String>send(any(), any())).thenAnswer((Answer<HttpResponse<String>>) invocation -> response);
+        return publicationService;
+    }
+
+    private InputStream createRequest(String user, UUID identifier, UUID fileIdentifier) throws IOException {
+        return new HandlerRequestBuilder<Void>(dtoObjectMapper)
+                .withHeaders(Map.of(AUTHORIZATION, SOME_API_KEY))
+                .withFeideId(user)
+                .withPathParameters(Map.of(IDENTIFIER, identifier.toString(),
+                        IDENTIFIER_FILE, fileIdentifier.toString()))
+                .build();
+    }
+
+    private InputStream createAnonymousRequest() throws IOException {
+        return new HandlerRequestBuilder<Void>(dtoObjectMapper)
+                .withPathParameters(Map.of(IDENTIFIER, PUBLICATION_IDENTIFIER.toString(),
+                        IDENTIFIER_FILE, FILE_IDENTIFIER.toString()))
+                .build();
+    }
+
+    private static InputStream createBadRequestNoIdentifier() throws IOException {
+        return new HandlerRequestBuilder<Void>(dtoObjectMapper)
+                .withPathParameters(Map.of(IDENTIFIER_FILE, FILE_IDENTIFIER.toString()))
+                .build();
+    }
+
+    private static InputStream createBadRequestNoFileIdentifier() throws JsonProcessingException {
+        return new HandlerRequestBuilder<Void>(dtoObjectMapper)
+                .withPathParameters(Map.of(IDENTIFIER, PUBLICATION_IDENTIFIER.toString()))
+                .build();
+    }
+
+    private static InputStream createBadRequestNonUuidFileIdentifier() throws JsonProcessingException {
+        return new HandlerRequestBuilder<Void>(dtoObjectMapper)
+                .withPathParameters(Map.of(IDENTIFIER, PUBLICATION_IDENTIFIER.toString(),
+                        RequestUtil.FILE_IDENTIFIER, NOT_A_UUID))
+                .build();
+    }
+
+    private AwsS3Service getS3ServiceThrowingSdkClientException() {
+        var amazonS3 = mock(AmazonS3.class);
+        when(amazonS3.generatePresignedUrl(any()))
+                .thenThrow(new SdkClientException(ERROR_COMMUNICATING_WITH_REMOTE_SERVICE
+                        + HTTP_EXAMPLE_ORG_PUBLICATION
+                        + PUBLICATION_IDENTIFIER));
+        return new AwsS3Service(amazonS3, ANY_BUCKET);
     }
 }
