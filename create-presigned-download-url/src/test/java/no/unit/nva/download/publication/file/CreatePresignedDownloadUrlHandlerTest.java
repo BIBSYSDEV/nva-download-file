@@ -204,14 +204,6 @@ public class CreatePresignedDownloadUrlHandlerTest {
         assertProblemEquivalence(gatewayResponse, getServiceUnavailableProblem(SOME_RANDOM_IDENTIFIER));
     }
 
-    private void assertProblemEquivalence(GatewayResponse<Problem> gatewayResponse, Problem expected)
-            throws JsonProcessingException {
-        var actual = gatewayResponse.getBodyObject(Problem.class);
-        assertThat(actual.getStatus(), equalTo(expected.getStatus()));
-        assertThat(actual.getTitle(), equalTo(expected.getTitle()));
-        assertThat(actual.getDetail(), equalTo(expected.getDetail()));
-    }
-
     @Test
     void shouldReturnNotFoundResponseOnUnknownFileIdentifier() {
     }
@@ -246,7 +238,6 @@ public class CreatePresignedDownloadUrlHandlerTest {
         assertProblemEquivalence(gatewayResponse,
                 getNotFoundPublicationServiceResponse(ERROR_MISSING_FILE_IN_PUBLICATION_FILE_SET));
     }
-
 
     @Test
     void shouldReturnServiceUnavailableResponseOnS3ServiceException() throws IOException, InterruptedException {
@@ -326,6 +317,15 @@ public class CreatePresignedDownloadUrlHandlerTest {
         assertProblemEquivalence(gatewayResponse,
                 getNotFoundPublicationServiceResponse(EXTERNAL_ERROR_MESSAGE_DECORATION + PUBLICATION_IDENTIFIER
                         + " " + EASY_TO_SEE + PUBLICATION_IDENTIFIER));
+    }
+
+
+    private void assertProblemEquivalence(GatewayResponse<Problem> gatewayResponse, Problem expected)
+            throws JsonProcessingException {
+        var actual = gatewayResponse.getBodyObject(Problem.class);
+        assertThat(actual.getStatus(), equalTo(expected.getStatus()));
+        assertThat(actual.getTitle(), equalTo(expected.getTitle()));
+        assertThat(actual.getDetail(), equalTo(expected.getDetail()));
     }
 
     private RestPublicationService mockPublicationServiceReturningStrangeResponse() throws IOException,
