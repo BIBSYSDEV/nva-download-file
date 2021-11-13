@@ -77,10 +77,14 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, P
     }
 
     private void checkEmbargo(File file, boolean isOwner) throws FileNotFoundException {
-        var embargoDate = file.getEmbargoDate();
-        if (!isOwner && nonNull(embargoDate) && Instant.now().isBefore(file.getEmbargoDate())) {
+        if (!isOwner && isNotForGeneralConsumption(file)) {
             throw new FileNotFoundException(file.getIdentifier());
         }
+    }
+
+    private boolean isNotForGeneralConsumption(File file) {
+        var embargoDate = file.getEmbargoDate();
+        return nonNull(embargoDate) && Instant.now().isBefore(embargoDate) || file.isAdministrativeAgreement();
     }
 
     private PublicationResponse getPublicationResponse(String user, String identifier) throws ApiGatewayException {

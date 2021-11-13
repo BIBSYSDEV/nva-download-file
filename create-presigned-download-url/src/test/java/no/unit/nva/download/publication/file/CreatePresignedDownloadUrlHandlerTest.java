@@ -346,8 +346,30 @@ public class CreatePresignedDownloadUrlHandlerTest {
                 getNotFoundPublicationServiceResponse(fileNotFound()));
     }
 
+    @ParameterizedTest(name = "Should return Not Found when requester is not owner and embargo is in place")
+    @MethodSource("nonOwnerProvider")
+    void shouldDisallowDownloadByNonOwnerWhenFileHasIsAdministrativeAgreement(InputStream request) throws IOException,
+            InterruptedException {
+        var publicationService = mockPublicationServiceReturningAdministrativeAgreement();
+        AwsS3Service s3Service = getAwsS3ServiceReturningPresignedUrl();
+        var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment());
+        handler.handleRequest(request, output, context);
+        GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output);
+        assertBasicRestRequirements(gatewayResponse, SC_NOT_FOUND, APPLICATION_PROBLEM_JSON);
+        assertProblemEquivalence(gatewayResponse,
+                getNotFoundPublicationServiceResponse(fileNotFound()));
+    }
+
     private String fileNotFound() {
         return String.format(ERROR_TEMPLATE, FILE_IDENTIFIER);
+    }
+
+
+    private RestPublicationService mockPublicationServiceReturningAdministrativeAgreement() throws IOException,
+            InterruptedException {
+        Event event = new Event(OWNER_USER_ID, PUBLISHED, new FileSet(List.of(administrativeAgreement())));
+        var eventString = dtoObjectMapper.writeValueAsString(event);
+        return mockSuccessfulPublicationRequest(eventString);
     }
 
     private RestPublicationService mockPublicationServiceReturningEmbargoedFile() throws IOException,
@@ -355,6 +377,18 @@ public class CreatePresignedDownloadUrlHandlerTest {
         Event event = new Event(OWNER_USER_ID, PUBLISHED, new FileSet(List.of(fileWithEmbargo())));
         var eventString = dtoObjectMapper.writeValueAsString(event);
         return mockSuccessfulPublicationRequest(eventString);
+    }
+
+    private File administrativeAgreement() {
+        return new File.Builder()
+                .withAdministrativeAgreement(true)
+                .withIdentifier(FILE_IDENTIFIER)
+                .withLicense(new License.Builder().build())
+                .withMimeType(APPLICATION_PDF)
+                .withName("A file name.txt")
+                .withPublisherAuthority(true)
+                .withSize(200L)
+                .build();
     }
 
     private File fileWithEmbargo() {
