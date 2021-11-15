@@ -42,18 +42,17 @@ import static java.util.Collections.emptyList;
 import static no.unit.nva.download.publication.file.RequestUtil.IDENTIFIER_IS_NOT_A_VALID_UUID;
 import static no.unit.nva.download.publication.file.RequestUtil.MISSING_FILE_IDENTIFIER;
 import static no.unit.nva.download.publication.file.RequestUtil.MISSING_RESOURCE_IDENTIFIER;
+import static no.unit.nva.download.publication.file.exception.NotFoundException.ERROR_TEMPLATE;
 import static no.unit.nva.download.publication.file.publication.PublicationStatus.DRAFT;
 import static no.unit.nva.download.publication.file.publication.PublicationStatus.PUBLISHED;
 import static no.unit.nva.download.publication.file.publication.RestPublicationService.ERROR_COMMUNICATING_WITH_REMOTE_SERVICE;
 import static no.unit.nva.download.publication.file.publication.RestPublicationService.ERROR_PUBLICATION_NOT_FOUND_FOR_IDENTIFIER;
 import static no.unit.nva.download.publication.file.publication.RestPublicationService.EXTERNAL_ERROR_MESSAGE_DECORATION;
-import static no.unit.nva.download.publication.file.exception.NotFoundException.ERROR_TEMPLATE;
 import static nva.commons.apigateway.ApiGatewayHandler.ALLOWED_ORIGIN_ENV;
 import static nva.commons.core.JsonUtils.dtoObjectMapper;
 import static org.apache.http.HttpHeaders.AUTHORIZATION;
 import static org.apache.http.HttpHeaders.CONTENT_TYPE;
 import static org.apache.http.HttpStatus.SC_BAD_REQUEST;
-import static org.apache.http.HttpStatus.SC_INTERNAL_SERVER_ERROR;
 import static org.apache.http.HttpStatus.SC_NOT_FOUND;
 import static org.apache.http.HttpStatus.SC_OK;
 import static org.apache.http.HttpStatus.SC_SERVICE_UNAVAILABLE;
@@ -67,7 +66,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.zalando.problem.Status.BAD_REQUEST;
-import static org.zalando.problem.Status.INTERNAL_SERVER_ERROR;
 import static org.zalando.problem.Status.NOT_FOUND;
 import static org.zalando.problem.Status.SERVICE_UNAVAILABLE;
 
@@ -221,21 +219,6 @@ public class CreatePresignedDownloadUrlHandlerTest {
     }
 
     @Test
-    void shouldReturnInternalServerErrorResponseOnDuplicateFileIdentifierInPublication() throws IOException,
-            InterruptedException {
-        var publication = getPublishedPublicationWithDuplicateFileInFileSet();
-        var publicationService = mockSuccessfulPublicationRequest(publication);
-        var handler = new CreatePresignedDownloadUrlHandler(publicationService, getAwsS3ServiceReturningNotFound(),
-                mockEnvironment());
-
-        handler.handleRequest(createRequest(OWNER_USER_ID, PUBLICATION_IDENTIFIER, FILE_IDENTIFIER), output, context);
-
-        GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output);
-        assertBasicRestRequirements(gatewayResponse, SC_INTERNAL_SERVER_ERROR, APPLICATION_PROBLEM_JSON);
-        assertProblemEquivalence(gatewayResponse, getInternalServerError());
-    }
-
-    @Test
     void handlerReturnsNotFoundOnPublicationWithoutFile() throws IOException, InterruptedException {
         var publication = createPublishedPublicationWithoutFileSetFile();
         var publicationService = mockSuccessfulPublicationRequest(publication);
@@ -250,10 +233,6 @@ public class CreatePresignedDownloadUrlHandlerTest {
         assertProblemEquivalence(gatewayResponse,
                 getNotFoundPublicationServiceResponse(
                         notFoundError(SOME_RANDOM_IDENTIFIER)));
-    }
-
-    private String notFoundError(UUID someRandomIdentifier) {
-        return String.format(ERROR_TEMPLATE, PUBLICATION_IDENTIFIER, someRandomIdentifier);
     }
 
     @Test
@@ -364,6 +343,10 @@ public class CreatePresignedDownloadUrlHandlerTest {
                 getNotFoundPublicationServiceResponse(notFoundError(FILE_IDENTIFIER)));
     }
 
+    private String notFoundError(UUID someRandomIdentifier) {
+        return String.format(ERROR_TEMPLATE, PUBLICATION_IDENTIFIER, someRandomIdentifier);
+    }
+
     private RestPublicationService mockPublicationServiceReturningAdministrativeAgreement() throws IOException,
             InterruptedException {
         var event = new Event(OWNER_USER_ID, PUBLICATION_IDENTIFIER, PUBLISHED,
@@ -396,18 +379,6 @@ public class CreatePresignedDownloadUrlHandlerTest {
         return new File.Builder()
                 .withAdministrativeAgreement(false)
                 .withEmbargoDate(Instant.now().plus(Duration.ofDays(3L)))
-                .withIdentifier(FILE_IDENTIFIER)
-                .withLicense(new License.Builder().build())
-                .withMimeType(APPLICATION_PDF)
-                .withName("A file name.txt")
-                .withPublisherAuthority(true)
-                .withSize(200L)
-                .build();
-    }
-
-    private File fileWithoutEmbargo() {
-        return new File.Builder()
-                .withAdministrativeAgreement(false)
                 .withIdentifier(FILE_IDENTIFIER)
                 .withLicense(new License.Builder().build())
                 .withMimeType(APPLICATION_PDF)
@@ -462,20 +433,6 @@ public class CreatePresignedDownloadUrlHandlerTest {
     private String createPublishedPublicationWithoutFileSetFile() throws JsonProcessingException {
         return dtoObjectMapper.writeValueAsString(
                 new Event(OWNER_USER_ID, PUBLICATION_IDENTIFIER, PUBLISHED, new FileSet(emptyList())));
-    }
-
-    private Problem getInternalServerError() {
-        return Problem.builder()
-                .withStatus(INTERNAL_SERVER_ERROR)
-                .withTitle(INTERNAL_SERVER_ERROR.getReasonPhrase())
-                .withDetail("Internal server error. Contact application administrator.")
-                .build();
-    }
-
-    private String getPublishedPublicationWithDuplicateFileInFileSet() throws JsonProcessingException {
-        var file = fileWithoutEmbargo();
-        var fileSet = new FileSet(List.of(file, file));
-        return dtoObjectMapper.writeValueAsString(new Event(OWNER_USER_ID, PUBLICATION_IDENTIFIER, PUBLISHED, fileSet));
     }
 
     private AwsS3Service getAwsS3ServiceReturningNotFound() {

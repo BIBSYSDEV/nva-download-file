@@ -15,14 +15,13 @@ import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
+import nva.commons.core.SingletonCollector;
 
 import static java.net.HttpURLConnection.HTTP_OK;
 import static no.unit.nva.download.publication.file.RequestUtil.getFileIdentifier;
 import static no.unit.nva.download.publication.file.RequestUtil.getUser;
 
 public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, PresignedUriResponse> {
-
-    public static final String ERROR_DUPLICATE_FILES_IN_PUBLICATION = "Publication contains duplicate files";
 
     private final RestPublicationService publicationService;
     private final AwsS3Service awsS3Service;
@@ -59,13 +58,19 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, P
 
     private File getFileInformation(String user, UUID fileIdentifier, PublicationResponse publication) throws
             NotFoundException {
+        if (publication.getFileSet().getFiles().isEmpty()) {
+            throw new NotFoundException(publication.getIdentifier(), fileIdentifier);
+        }
+
         return publication.getFileSet().getFiles().stream()
-                .filter(element -> fileIdentifier.equals(element.getIdentifier()))
-                .reduce(this::checkForDuplicates)
-                .map(file -> getFile(file, user, publication))
-                .filter(Optional::isPresent)
-                .map(Optional::get)
+                .filter(element -> findByIdentifier(fileIdentifier, element))
+                .map(element -> getFile(element, user, publication))
+                .collect(SingletonCollector.collect())
                 .orElseThrow(() -> new NotFoundException(publication.getIdentifier(), fileIdentifier));
+    }
+
+    private boolean findByIdentifier(UUID fileIdentifier, File element) {
+        return fileIdentifier.equals(element.getIdentifier());
     }
 
     private boolean isFindable(String user, File file, PublicationResponse publicationResponse) {
@@ -83,9 +88,5 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, P
 
     private String getPresignedDownloadUrl(File file) throws ApiGatewayException {
         return awsS3Service.createPresignedDownloadUrl(file.getIdentifier().toString(), file.getMimeType());
-    }
-
-    private File checkForDuplicates(File first, File second) {
-        throw new IllegalStateException(ERROR_DUPLICATE_FILES_IN_PUBLICATION);
     }
 }
