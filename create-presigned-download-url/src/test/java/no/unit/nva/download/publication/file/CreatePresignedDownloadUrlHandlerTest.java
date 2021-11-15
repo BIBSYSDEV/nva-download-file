@@ -42,13 +42,12 @@ import static java.util.Collections.emptyList;
 import static no.unit.nva.download.publication.file.RequestUtil.IDENTIFIER_IS_NOT_A_VALID_UUID;
 import static no.unit.nva.download.publication.file.RequestUtil.MISSING_FILE_IDENTIFIER;
 import static no.unit.nva.download.publication.file.RequestUtil.MISSING_RESOURCE_IDENTIFIER;
-import static no.unit.nva.download.publication.file.exception.NotFoundException.RESOURCE_NOT_FOUND;
 import static no.unit.nva.download.publication.file.publication.PublicationStatus.DRAFT;
 import static no.unit.nva.download.publication.file.publication.PublicationStatus.PUBLISHED;
 import static no.unit.nva.download.publication.file.publication.RestPublicationService.ERROR_COMMUNICATING_WITH_REMOTE_SERVICE;
 import static no.unit.nva.download.publication.file.publication.RestPublicationService.ERROR_PUBLICATION_NOT_FOUND_FOR_IDENTIFIER;
 import static no.unit.nva.download.publication.file.publication.RestPublicationService.EXTERNAL_ERROR_MESSAGE_DECORATION;
-import static no.unit.nva.download.publication.file.publication.exception.FileNotFoundException.ERROR_TEMPLATE;
+import static no.unit.nva.download.publication.file.exception.NotFoundException.ERROR_TEMPLATE;
 import static nva.commons.apigateway.ApiGatewayHandler.ALLOWED_ORIGIN_ENV;
 import static nva.commons.core.JsonUtils.dtoObjectMapper;
 import static org.apache.http.HttpHeaders.AUTHORIZATION;
@@ -249,7 +248,12 @@ public class CreatePresignedDownloadUrlHandlerTest {
         GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output);
         assertBasicRestRequirements(gatewayResponse, SC_NOT_FOUND, APPLICATION_PROBLEM_JSON);
         assertProblemEquivalence(gatewayResponse,
-                getNotFoundPublicationServiceResponse(String.format(ERROR_TEMPLATE, SOME_RANDOM_IDENTIFIER)));
+                getNotFoundPublicationServiceResponse(
+                        notFoundError(SOME_RANDOM_IDENTIFIER)));
+    }
+
+    private String notFoundError(UUID someRandomIdentifier) {
+        return String.format(ERROR_TEMPLATE, PUBLICATION_IDENTIFIER, someRandomIdentifier);
     }
 
     @Test
@@ -280,7 +284,7 @@ public class CreatePresignedDownloadUrlHandlerTest {
         GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output);
         assertBasicRestRequirements(gatewayResponse, SC_NOT_FOUND, APPLICATION_PROBLEM_JSON);
         assertProblemEquivalence(gatewayResponse,
-                getNotFoundPublicationServiceResponse(RESOURCE_NOT_FOUND + PUBLICATION_IDENTIFIER));
+                getNotFoundPublicationServiceResponse(notFoundError(FILE_IDENTIFIER)));
     }
 
     @ParameterizedTest
@@ -343,7 +347,7 @@ public class CreatePresignedDownloadUrlHandlerTest {
         GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output);
         assertBasicRestRequirements(gatewayResponse, SC_NOT_FOUND, APPLICATION_PROBLEM_JSON);
         assertProblemEquivalence(gatewayResponse,
-                getNotFoundPublicationServiceResponse(fileNotFound()));
+                getNotFoundPublicationServiceResponse(notFoundError(FILE_IDENTIFIER)));
     }
 
     @ParameterizedTest(name = "Should return Not Found when requester is not owner and embargo is in place")
@@ -357,24 +361,21 @@ public class CreatePresignedDownloadUrlHandlerTest {
         GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output);
         assertBasicRestRequirements(gatewayResponse, SC_NOT_FOUND, APPLICATION_PROBLEM_JSON);
         assertProblemEquivalence(gatewayResponse,
-                getNotFoundPublicationServiceResponse(fileNotFound()));
+                getNotFoundPublicationServiceResponse(notFoundError(FILE_IDENTIFIER)));
     }
-
-    private String fileNotFound() {
-        return String.format(ERROR_TEMPLATE, FILE_IDENTIFIER);
-    }
-
 
     private RestPublicationService mockPublicationServiceReturningAdministrativeAgreement() throws IOException,
             InterruptedException {
-        Event event = new Event(OWNER_USER_ID, PUBLISHED, new FileSet(List.of(administrativeAgreement())));
+        var event = new Event(OWNER_USER_ID, PUBLICATION_IDENTIFIER, PUBLISHED,
+                new FileSet(List.of(administrativeAgreement())));
         var eventString = dtoObjectMapper.writeValueAsString(event);
         return mockSuccessfulPublicationRequest(eventString);
     }
 
     private RestPublicationService mockPublicationServiceReturningEmbargoedFile() throws IOException,
             InterruptedException {
-        Event event = new Event(OWNER_USER_ID, PUBLISHED, new FileSet(List.of(fileWithEmbargo())));
+        var event = new Event(OWNER_USER_ID, PUBLICATION_IDENTIFIER, PUBLISHED,
+                new FileSet(List.of(fileWithEmbargo())));
         var eventString = dtoObjectMapper.writeValueAsString(event);
         return mockSuccessfulPublicationRequest(eventString);
     }
@@ -459,7 +460,8 @@ public class CreatePresignedDownloadUrlHandlerTest {
     }
 
     private String createPublishedPublicationWithoutFileSetFile() throws JsonProcessingException {
-        return dtoObjectMapper.writeValueAsString(new Event(OWNER_USER_ID, PUBLISHED, new FileSet(emptyList())));
+        return dtoObjectMapper.writeValueAsString(
+                new Event(OWNER_USER_ID, PUBLICATION_IDENTIFIER, PUBLISHED, new FileSet(emptyList())));
     }
 
     private Problem getInternalServerError() {
@@ -473,7 +475,7 @@ public class CreatePresignedDownloadUrlHandlerTest {
     private String getPublishedPublicationWithDuplicateFileInFileSet() throws JsonProcessingException {
         var file = fileWithoutEmbargo();
         var fileSet = new FileSet(List.of(file, file));
-        return dtoObjectMapper.writeValueAsString(new Event(OWNER_USER_ID, PUBLISHED, fileSet));
+        return dtoObjectMapper.writeValueAsString(new Event(OWNER_USER_ID, PUBLICATION_IDENTIFIER, PUBLISHED, fileSet));
     }
 
     private AwsS3Service getAwsS3ServiceReturningNotFound() {
@@ -533,7 +535,8 @@ public class CreatePresignedDownloadUrlHandlerTest {
     }
 
     private String getPublication(PublicationStatus publicationStatus, String mimeType) throws JsonProcessingException {
-        var event = new Event(OWNER_USER_ID, publicationStatus, new FileSet(List.of(fileWithoutEmbargo(mimeType))));
+        var event = new Event(OWNER_USER_ID, PUBLICATION_IDENTIFIER, publicationStatus,
+                new FileSet(List.of(fileWithoutEmbargo(mimeType))));
         return dtoObjectMapper.writeValueAsString(event);
     }
 

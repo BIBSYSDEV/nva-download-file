@@ -4,9 +4,15 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import no.unit.nva.file.model.FileSet;
 
+import java.util.UUID;
+
+import static java.util.Objects.nonNull;
+import static no.unit.nva.download.publication.file.publication.PublicationStatus.PUBLISHED;
+
 public class PublicationResponse {
 
     private final PublicationStatus status;
+    private final UUID identifier;
     private final String owner;
     private final FileSet fileSet;
 
@@ -18,22 +24,28 @@ public class PublicationResponse {
      */
     @JsonCreator
     public PublicationResponse(@JsonProperty("status") PublicationStatus status,
+                               @JsonProperty("identifier") UUID identifier,
                                @JsonProperty("owner") String owner,
                                @JsonProperty("fileSet") FileSet fileSet) {
         this.status = status;
+        this.identifier = identifier;
         this.owner = owner;
         this.fileSet = fileSet;
     }
 
-    public PublicationStatus getStatus() {
-        return status;
-    }
-
-    public String getOwner() {
-        return owner;
+    public UUID getIdentifier() {
+        return identifier;
     }
 
     public FileSet getFileSet() {
         return fileSet;
+    }
+
+    public boolean isOwner(String user) {
+        return nonNull(user) && owner.equals(user);
+    }
+
+    public boolean isPublished() {
+        return PUBLISHED.equals(status);
     }
 }

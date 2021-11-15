@@ -2,16 +2,13 @@ package no.unit.nva.download.publication.file;
 
 import com.amazonaws.services.lambda.runtime.Context;
 
-import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
-import java.util.function.BinaryOperator;
 
 import no.unit.nva.download.publication.file.aws.s3.AwsS3Service;
-import no.unit.nva.download.publication.file.exception.NotFoundException;
 import no.unit.nva.download.publication.file.publication.PublicationResponse;
-import no.unit.nva.download.publication.file.publication.PublicationStatus;
 import no.unit.nva.download.publication.file.publication.RestPublicationService;
-import no.unit.nva.download.publication.file.publication.exception.FileNotFoundException;
+import no.unit.nva.download.publication.file.exception.NotFoundException;
 import no.unit.nva.file.model.File;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
@@ -20,7 +17,8 @@ import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 
 import static java.net.HttpURLConnection.HTTP_OK;
-import static java.util.Objects.nonNull;
+import static no.unit.nva.download.publication.file.RequestUtil.getFileIdentifier;
+import static no.unit.nva.download.publication.file.RequestUtil.getUser;
 
 public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, PresignedUriResponse> {
 
@@ -54,50 +52,28 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, P
     @Override
     protected PresignedUriResponse processInput(Void input, RequestInfo requestInfo, Context context)
         throws ApiGatewayException {
-        var user = RequestUtil.getUser(requestInfo);
-        var identifier = RequestUtil.getIdentifier(requestInfo);
-        var fileIdentifier = RequestUtil.getFileIdentifier(requestInfo);
-        PublicationResponse publication = getPublicationResponse(user, identifier);
-        var file = getFileInformation(user, fileIdentifier, publication);
+        var publication = publicationService.getPublication(RequestUtil.getIdentifier(requestInfo));
+        var file = getFileInformation(getUser(requestInfo), getFileIdentifier(requestInfo), publication);
         return new PresignedUriResponse(getPresignedDownloadUrl(file));
     }
 
     private File getFileInformation(String user, UUID fileIdentifier, PublicationResponse publication) throws
-            FileNotFoundException {
-        var file = publication.getFileSet().getFiles().stream()
+            NotFoundException {
+        return publication.getFileSet().getFiles().stream()
                 .filter(element -> fileIdentifier.equals(element.getIdentifier()))
-                .reduce(checkForDuplicates())
-                .orElseThrow(() -> new FileNotFoundException(fileIdentifier));
-        checkEmbargo(file, isOwner(user, publication));
-        return file;
+                .reduce(this::checkForDuplicates)
+                .map(file -> getFile(file, user, publication))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .orElseThrow(() -> new NotFoundException(publication.getIdentifier(), fileIdentifier));
     }
 
-    private boolean isOwner(String user, PublicationResponse publication) {
-        return nonNull(user) && user.equals(publication.getOwner());
+    private boolean isFindable(String user, File file, PublicationResponse publicationResponse) {
+        return publicationResponse.isOwner(user) || publicationResponse.isPublished() && file.isVisibleForNonOwner();
     }
 
-    private void checkEmbargo(File file, boolean isOwner) throws FileNotFoundException {
-        if (!isOwner && isNotForGeneralConsumption(file)) {
-            throw new FileNotFoundException(file.getIdentifier());
-        }
-    }
-
-    private boolean isNotForGeneralConsumption(File file) {
-        var embargoDate = file.getEmbargoDate();
-        return nonNull(embargoDate) && Instant.now().isBefore(embargoDate) || file.isAdministrativeAgreement();
-    }
-
-    private PublicationResponse getPublicationResponse(String user, String identifier) throws ApiGatewayException {
-        PublicationResponse publication = publicationService.getPublication(identifier);
-        authorizeIfNotPublished(user, identifier, publication);
-        return publication;
-    }
-
-    private void authorizeIfNotPublished(String user, String identifier, PublicationResponse publication)
-            throws ApiGatewayException {
-        if (!isPublished(publication)) {
-            authorize(identifier, user, publication);
-        }
+    private Optional<File> getFile(File file, String user, PublicationResponse publicationResponse) {
+        return isFindable(user, file, publicationResponse) ? Optional.of(file) : Optional.empty();
     }
 
     @Override
@@ -109,25 +85,7 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, P
         return awsS3Service.createPresignedDownloadUrl(file.getIdentifier().toString(), file.getMimeType());
     }
 
-    private BinaryOperator<File> checkForDuplicates() {
-        return (a, b) -> {
-            throw new IllegalStateException(ERROR_DUPLICATE_FILES_IN_PUBLICATION);
-        };
-    }
-
-    private void authorize(String identifier, String user, PublicationResponse publication)
-            throws ApiGatewayException {
-        if (userIsOwner(user, publication)) {
-            return;
-        }
-        throw new NotFoundException(identifier);
-    }
-
-    private boolean userIsOwner(String user, PublicationResponse publication) {
-        return publication.getOwner().equals(user);
-    }
-
-    private boolean isPublished(PublicationResponse publication) {
-        return publication.getStatus().equals(PublicationStatus.PUBLISHED);
+    private File checkForDuplicates(File first, File second) {
+        throw new IllegalStateException(ERROR_DUPLICATE_FILES_IN_PUBLICATION);
     }
 }

@@ -39,7 +39,7 @@ subprojects {
     gradleLint.rules = ['unused-dependency']
 
     dependencies {
-        implementation group: 'com.github.bibsysdev', name: 'nva-file-model', version: '1.0.0'
+        implementation group: 'com.github.bibsysdev', name: 'nva-file-model', version: '1.0.2'
 
         implementation group: 'com.github.bibsysdev', name: 'core', version: nvaCommonsVersion
         implementation group: 'com.github.bibsysdev', name: 'nvatestutils', version: nvaCommonsVersion
