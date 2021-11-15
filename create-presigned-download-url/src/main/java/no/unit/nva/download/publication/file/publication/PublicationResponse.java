@@ -6,6 +6,7 @@ import no.unit.nva.file.model.FileSet;
 
 import java.util.UUID;
 
+import static java.util.Collections.emptyList;
 import static java.util.Objects.nonNull;
 import static no.unit.nva.download.publication.file.publication.PublicationStatus.PUBLISHED;
 
@@ -38,7 +39,7 @@ public class PublicationResponse {
     }
 
     public FileSet getFileSet() {
-        return fileSet;
+        return nonNull(fileSet) ? fileSet : new FileSet(emptyList());
     }
 
     public boolean isOwner(String user) {
