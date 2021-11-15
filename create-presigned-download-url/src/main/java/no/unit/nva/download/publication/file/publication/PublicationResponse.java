@@ -3,8 +3,7 @@ package no.unit.nva.download.publication.file.publication;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import no.unit.nva.file.model.FileSet;
-
-import java.util.UUID;
+import no.unit.nva.identifiers.SortableIdentifier;
 
 import static java.util.Collections.emptyList;
 import static java.util.Objects.nonNull;
@@ -13,7 +12,7 @@ import static no.unit.nva.download.publication.file.publication.PublicationStatu
 public class PublicationResponse {
 
     private final PublicationStatus status;
-    private final UUID identifier;
+    private final SortableIdentifier identifier;
     private final String owner;
     private final FileSet fileSet;
 
@@ -25,7 +24,7 @@ public class PublicationResponse {
      */
     @JsonCreator
     public PublicationResponse(@JsonProperty("status") PublicationStatus status,
-                               @JsonProperty("identifier") UUID identifier,
+                               @JsonProperty("identifier") SortableIdentifier identifier,
                                @JsonProperty("owner") String owner,
                                @JsonProperty("fileSet") FileSet fileSet) {
         this.status = status;
@@ -34,7 +33,7 @@ public class PublicationResponse {
         this.fileSet = fileSet;
     }
 
-    public UUID getIdentifier() {
+    public SortableIdentifier getIdentifier() {
         return identifier;
     }
 

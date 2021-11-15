@@ -1,6 +1,7 @@
 package no.unit.nva.download.publication.file.exception;
 
 
+import no.unit.nva.identifiers.SortableIdentifier;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
 import org.apache.http.HttpStatus;
 
@@ -10,7 +11,7 @@ public class NotFoundException extends ApiGatewayException {
 
     public static final String ERROR_TEMPLATE = "Requested resource \"%s/files/%s\" was found";
 
-    public NotFoundException(UUID resource, UUID file)  {
+    public NotFoundException(SortableIdentifier resource, UUID file)  {
         super(String.format(ERROR_TEMPLATE, resource, file));
     }
 
