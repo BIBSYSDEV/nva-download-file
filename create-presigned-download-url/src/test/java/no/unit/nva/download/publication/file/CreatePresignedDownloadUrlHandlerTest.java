@@ -512,8 +512,12 @@ public class CreatePresignedDownloadUrlHandlerTest {
         var body = gatewayResponse.getBodyObject(PresignedUri.class);
         assertThat(body.getPresignedDownloadUrl(), is(notNullValue()));
         assertThat(body.getId(), is(notNullValue()));
-        assertThat(body.getExpires(), is(notNullValue()));
+        assertTrue(greaterThanNow(body.getExpires()));
         assertThat(body.getContext(), is(notNullValue()));
+    }
+
+    private boolean greaterThanNow(Instant instant) {
+        return Instant.now().isBefore(instant);
     }
 
     private AwsS3Service getAwsS3ServiceReturningPresignedUrl() throws MalformedURLException {

@@ -2,6 +2,8 @@ package no.unit.nva.download.publication.file;
 
 import com.amazonaws.services.lambda.runtime.Context;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.Optional;
 import java.util.UUID;
@@ -95,10 +97,6 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, P
     }
 
     private Date defaultExpiration() {
-        Date expiration = new Date();
-        long msec = expiration.getTime();
-        msec += 1000 * DEFAULT_EXPIRATION_SECONDS;
-        expiration.setTime(msec);
-        return expiration;
+        return Date.from(Instant.now().plus(DEFAULT_EXPIRATION_SECONDS, ChronoUnit.SECONDS));
     }
 }
