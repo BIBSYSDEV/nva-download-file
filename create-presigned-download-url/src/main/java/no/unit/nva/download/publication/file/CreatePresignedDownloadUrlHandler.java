@@ -2,6 +2,7 @@ package no.unit.nva.download.publication.file;
 
 import com.amazonaws.services.lambda.runtime.Context;
 
+import java.util.Date;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -21,7 +22,9 @@ import static java.net.HttpURLConnection.HTTP_OK;
 import static no.unit.nva.download.publication.file.RequestUtil.getFileIdentifier;
 import static no.unit.nva.download.publication.file.RequestUtil.getUser;
 
-public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, PresignedUriResponse> {
+public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, PresignedUri> {
+
+    public static final int DEFAULT_EXPIRATION_SECONDS = 10;
 
     private final RestPublicationService publicationService;
     private final AwsS3Service awsS3Service;
@@ -49,11 +52,12 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, P
     }
 
     @Override
-    protected PresignedUriResponse processInput(Void input, RequestInfo requestInfo, Context context)
+    protected PresignedUri processInput(Void input, RequestInfo requestInfo, Context context)
         throws ApiGatewayException {
         var publication = publicationService.getPublication(RequestUtil.getIdentifier(requestInfo));
         var file = getFileInformation(getUser(requestInfo), getFileIdentifier(requestInfo), publication);
-        return new PresignedUriResponse(getPresignedDownloadUrl(file));
+        var expiration = defaultExpiration();
+        return new PresignedUri(getPresignedDownloadUrl(file, expiration), expiration);
     }
 
     private File getFileInformation(String user, UUID fileIdentifier, PublicationResponse publication) throws
@@ -82,11 +86,19 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, P
     }
 
     @Override
-    protected Integer getSuccessStatusCode(Void input, PresignedUriResponse output) {
+    protected Integer getSuccessStatusCode(Void input, PresignedUri output) {
         return HTTP_OK;
     }
 
-    private String getPresignedDownloadUrl(File file) throws ApiGatewayException {
-        return awsS3Service.createPresignedDownloadUrl(file.getIdentifier().toString(), file.getMimeType());
+    private String getPresignedDownloadUrl(File file, Date expiration) throws ApiGatewayException {
+        return awsS3Service.createPresignedDownloadUrl(file.getIdentifier().toString(), file.getMimeType(), expiration);
+    }
+
+    private Date defaultExpiration() {
+        Date expiration = new Date();
+        long msec = expiration.getTime();
+        msec += 1000 * DEFAULT_EXPIRATION_SECONDS;
+        expiration.setTime(msec);
+        return expiration;
     }
 }
