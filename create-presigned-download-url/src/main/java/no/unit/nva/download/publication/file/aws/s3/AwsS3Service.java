@@ -8,6 +8,7 @@ import no.unit.nva.download.publication.file.aws.s3.exception.S3ServiceException
 import nva.commons.apigateway.exceptions.ApiGatewayException;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
+import org.apache.http.HttpHeaders;
 
 import java.util.Date;
 
@@ -73,7 +74,7 @@ public class AwsS3Service {
         generatePresignedUrlRequest.setExpiration(expiration);
 
         if (nonNull(mimeType)) {
-            generatePresignedUrlRequest.setContentType(mimeType);
+            generatePresignedUrlRequest.addRequestParameter(HttpHeaders.CONTENT_TYPE, mimeType);
         }
 
         return generatePresignedUrlRequest;
