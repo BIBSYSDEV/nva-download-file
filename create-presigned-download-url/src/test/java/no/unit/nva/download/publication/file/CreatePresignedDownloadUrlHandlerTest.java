@@ -149,9 +149,9 @@ public class CreatePresignedDownloadUrlHandlerTest {
 
         handler.handleRequest(createRequest(user, PUBLICATION_IDENTIFIER, FILE_IDENTIFIER), output, context);
 
-        GatewayResponse<PresignedUriResponse> gatewayResponse = GatewayResponse.fromString(output.toString());
+        GatewayResponse<PresignedUri> gatewayResponse = GatewayResponse.fromString(output.toString());
         assertBasicRestRequirements(gatewayResponse, SC_OK, APPLICATION_JSON);
-        assertPresignedUriIsPresent(gatewayResponse);
+        assertExpectedResponseBody(gatewayResponse);
     }
 
     @Test
@@ -163,9 +163,9 @@ public class CreatePresignedDownloadUrlHandlerTest {
 
         handler.handleRequest(createRequest(OWNER_USER_ID, PUBLICATION_IDENTIFIER, FILE_IDENTIFIER), output, context);
 
-        GatewayResponse<PresignedUriResponse> gatewayResponse = GatewayResponse.fromString(output.toString());
+        GatewayResponse<PresignedUri> gatewayResponse = GatewayResponse.fromString(output.toString());
         assertBasicRestRequirements(gatewayResponse, SC_OK, APPLICATION_JSON);
-        assertPresignedUriIsPresent(gatewayResponse);
+        assertExpectedResponseBody(gatewayResponse);
     }
 
     @ParameterizedTest(name = "Should return presigned URI when mime-type of file is {0}")
@@ -179,9 +179,9 @@ public class CreatePresignedDownloadUrlHandlerTest {
 
         handler.handleRequest(createRequest(OWNER_USER_ID, PUBLICATION_IDENTIFIER, FILE_IDENTIFIER), output, context);
 
-        GatewayResponse<PresignedUriResponse> gatewayResponse = GatewayResponse.fromString(output.toString());
+        GatewayResponse<PresignedUri> gatewayResponse = GatewayResponse.fromString(output.toString());
         assertBasicRestRequirements(gatewayResponse, SC_OK, APPLICATION_JSON);
-        assertPresignedUriIsPresent(gatewayResponse);
+        assertExpectedResponseBody(gatewayResponse);
     }
 
     // Error message here is odd
@@ -507,10 +507,17 @@ public class CreatePresignedDownloadUrlHandlerTest {
         assertThat(gatewayResponse.getHeaders().get(ACCESS_CONTROL_ALLOW_ORIGIN), equalTo(ANY_ORIGIN));
     }
 
-    private void assertPresignedUriIsPresent(GatewayResponse<PresignedUriResponse> gatewayResponse) throws
-            JsonProcessingException {
-        var presignedDownloadUrl = gatewayResponse.getBodyObject(PresignedUriResponse.class).getPresignedDownloadUrl();
-        assertThat(presignedDownloadUrl, is(notNullValue()));
+    private void assertExpectedResponseBody(GatewayResponse<PresignedUri> gatewayResponse)
+            throws JsonProcessingException {
+        var body = gatewayResponse.getBodyObject(PresignedUri.class);
+        assertThat(body.getPresignedDownloadUrl(), is(notNullValue()));
+        assertThat(body.getId(), is(notNullValue()));
+        assertTrue(greaterThanNow(body.getExpires()));
+        assertThat(body.getContext(), is(notNullValue()));
+    }
+
+    private boolean greaterThanNow(Instant instant) {
+        return Instant.now().isBefore(instant);
     }
 
     private AwsS3Service getAwsS3ServiceReturningPresignedUrl() throws MalformedURLException {

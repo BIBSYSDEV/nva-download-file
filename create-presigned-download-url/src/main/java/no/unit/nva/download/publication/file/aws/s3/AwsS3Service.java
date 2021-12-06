@@ -8,16 +8,13 @@ import no.unit.nva.download.publication.file.aws.s3.exception.S3ServiceException
 import nva.commons.apigateway.exceptions.ApiGatewayException;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
-import org.apache.http.HttpHeaders;
 
 import java.util.Date;
 
-import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 
 
 public class AwsS3Service {
-
-    public static final int DEFAULT_EXPIRATION_SECONDS = 10;
 
     public static final String AWS_REGION_ENV = "AWS_REGION";
     public static final String BUCKET_NAME_ENV = "BUCKET_NAME";
@@ -56,9 +53,10 @@ public class AwsS3Service {
      * @return A presigned download URL
      * @throws ApiGatewayException exception thrown if value is missing
      */
-    public String createPresignedDownloadUrl(String key, String mimeType) throws ApiGatewayException {
+    public String createPresignedDownloadUrl(String key, String mimeType, Date expiration) throws ApiGatewayException {
         try {
-            GeneratePresignedUrlRequest generatePresignedUrlRequest = createGeneratePresignedUrlRequest(key, mimeType);
+            GeneratePresignedUrlRequest generatePresignedUrlRequest =
+                    createGeneratePresignedUrlRequest(key, mimeType, expiration);
 
             return s3Client.generatePresignedUrl(generatePresignedUrlRequest).toExternalForm();
         } catch (Exception e) {
@@ -67,22 +65,17 @@ public class AwsS3Service {
         }
     }
 
-    private GeneratePresignedUrlRequest createGeneratePresignedUrlRequest(String key, String mimeType) {
+    private GeneratePresignedUrlRequest createGeneratePresignedUrlRequest(String key,
+                                                                          String mimeType,
+                                                                          Date expiration) {
         GeneratePresignedUrlRequest generatePresignedUrlRequest = new GeneratePresignedUrlRequest(bucketName, key,
                 HttpMethod.GET);
-        generatePresignedUrlRequest.setExpiration(defaultExpiration());
+        generatePresignedUrlRequest.setExpiration(expiration);
 
-        if (!isNull(mimeType)) {
-            generatePresignedUrlRequest.addRequestParameter(HttpHeaders.CONTENT_TYPE, mimeType);
+        if (nonNull(mimeType)) {
+            generatePresignedUrlRequest.setContentType(mimeType);
         }
-        return generatePresignedUrlRequest;
-    }
 
-    private Date defaultExpiration() {
-        Date expiration = new Date();
-        long msec = expiration.getTime();
-        msec += 1000 * DEFAULT_EXPIRATION_SECONDS;
-        expiration.setTime(msec);
-        return expiration;
+        return generatePresignedUrlRequest;
     }
 }
