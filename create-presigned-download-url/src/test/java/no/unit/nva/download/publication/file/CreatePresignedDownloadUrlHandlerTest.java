@@ -15,6 +15,7 @@ import no.unit.nva.file.model.License;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.GatewayResponse;
 import nva.commons.core.Environment;
+import org.apache.http.HttpStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -166,6 +167,18 @@ public class CreatePresignedDownloadUrlHandlerTest {
         GatewayResponse<PresignedUri> gatewayResponse = GatewayResponse.fromString(output.toString());
         assertBasicRestRequirements(gatewayResponse, SC_OK, APPLICATION_JSON);
         assertExpectedResponseBody(gatewayResponse);
+    }
+
+    @Test
+    void shouldReturnBadGatewayWhenPublicationCanNotBeParsed() throws IOException, InterruptedException {
+        AwsS3Service s3Service = getAwsS3ServiceReturningPresignedUrl();
+        var publicationService = mockSuccessfulPublicationRequest("<</>");
+        var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment());
+
+        handler.handleRequest(createRequest(OWNER_USER_ID, PUBLICATION_IDENTIFIER, FILE_IDENTIFIER), output, context);
+
+        GatewayResponse<PresignedUri> gatewayResponse = GatewayResponse.fromString(output.toString());
+        assertBasicRestRequirements(gatewayResponse, HttpStatus.SC_BAD_GATEWAY, APPLICATION_PROBLEM_JSON);
     }
 
     @ParameterizedTest(name = "Should return presigned URI when mime-type of file is {0}")
