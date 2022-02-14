@@ -11,6 +11,6 @@ public class S3ServiceException extends ApiGatewayException {
 
     @Override
     protected Integer statusCode() {
-        return HttpStatus.SC_SERVICE_UNAVAILABLE;
+        return HttpStatus.SC_BAD_GATEWAY;
     }
 }

@@ -53,6 +53,7 @@ import static nva.commons.apigateway.ApiGatewayHandler.ALLOWED_ORIGIN_ENV;
 import static nva.commons.core.JsonUtils.dtoObjectMapper;
 import static org.apache.http.HttpHeaders.AUTHORIZATION;
 import static org.apache.http.HttpHeaders.CONTENT_TYPE;
+import static org.apache.http.HttpStatus.SC_BAD_GATEWAY;
 import static org.apache.http.HttpStatus.SC_BAD_REQUEST;
 import static org.apache.http.HttpStatus.SC_NOT_FOUND;
 import static org.apache.http.HttpStatus.SC_OK;
@@ -66,6 +67,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.zalando.problem.Status.BAD_GATEWAY;
 import static org.zalando.problem.Status.BAD_REQUEST;
 import static org.zalando.problem.Status.NOT_FOUND;
 import static org.zalando.problem.Status.SERVICE_UNAVAILABLE;
@@ -223,8 +225,18 @@ public class CreatePresignedDownloadUrlHandlerTest {
         handler.handleRequest(createRequest(OWNER_USER_ID, SOME_RANDOM_IDENTIFIER, FILE_IDENTIFIER), output, context);
 
         GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output);
-        assertBasicRestRequirements(gatewayResponse, SC_SERVICE_UNAVAILABLE, APPLICATION_PROBLEM_JSON);
-        assertProblemEquivalence(gatewayResponse, getServiceUnavailableProblem(SOME_RANDOM_IDENTIFIER));
+        assertBasicRestRequirements(gatewayResponse, SC_BAD_GATEWAY, APPLICATION_PROBLEM_JSON);
+        assertProblemEquivalence(gatewayResponse, getBadGatewayProblem(SOME_RANDOM_IDENTIFIER));
+    }
+
+    private Problem getBadGatewayProblem(UUID identifier) {
+        return Problem.builder()
+                .withStatus(BAD_GATEWAY)
+                .withTitle(BAD_GATEWAY.getReasonPhrase())
+                .withDetail(ERROR_COMMUNICATING_WITH_REMOTE_SERVICE
+                        + HTTP_EXAMPLE_ORG_PUBLICATION
+                        + identifier.toString())
+                .build();
     }
 
     @Test
@@ -258,8 +270,8 @@ public class CreatePresignedDownloadUrlHandlerTest {
         handler.handleRequest(createRequest(OWNER_USER_ID, PUBLICATION_IDENTIFIER, FILE_IDENTIFIER), output, context);
 
         GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output);
-        assertBasicRestRequirements(gatewayResponse, SC_SERVICE_UNAVAILABLE, APPLICATION_PROBLEM_JSON);
-        assertProblemEquivalence(gatewayResponse, getServiceUnavailableProblem(PUBLICATION_IDENTIFIER));
+        assertBasicRestRequirements(gatewayResponse, SC_BAD_GATEWAY, APPLICATION_PROBLEM_JSON);
+        assertProblemEquivalence(gatewayResponse, getBadGatewayProblem(PUBLICATION_IDENTIFIER));
     }
 
     @Test
@@ -458,22 +470,9 @@ public class CreatePresignedDownloadUrlHandlerTest {
         return new NotFoundException("Not Found");
     }
 
-    private Problem getServiceUnavailableProblem(UUID identifier) {
-        return Problem.builder()
-                .withStatus(SERVICE_UNAVAILABLE)
-                .withTitle(SERVICE_UNAVAILABLE.getReasonPhrase())
-                .withDetail(ERROR_COMMUNICATING_WITH_REMOTE_SERVICE
-                        + HTTP_EXAMPLE_ORG_PUBLICATION
-                        + identifier.toString())
-                .build();
-    }
-
     private RestPublicationService mockUnresponsivePublicationService() throws IOException, InterruptedException {
         var publicationService = new RestPublicationService(httpClient, dtoObjectMapper, API_SCHEME, API_HOST);
-        @SuppressWarnings("unchecked")
-        var response = (HttpResponse<String>) mock(HttpResponse.class);
-        when(response.statusCode()).thenAnswer(i -> 500);
-        when(httpClient.<String>send(any(), any())).thenAnswer((Answer<HttpResponse<String>>) invocation -> response);
+        when(httpClient.<String>send(any(), any())).thenThrow(IOException.class);
         return publicationService;
     }
 

@@ -5,14 +5,12 @@ import static org.apache.http.HttpStatus.SC_NOT_FOUND;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.mikael.urlbuilder.UrlBuilder;
 
-import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Optional;
 
-import no.unit.nva.download.publication.file.publication.exception.NoResponseException;
 import no.unit.nva.download.publication.file.publication.exception.NotFoundException;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
 import nva.commons.apigateway.exceptions.BadGatewayException;
@@ -78,21 +76,11 @@ public class RestPublicationService {
 
         URI uri = buildUriToPublicationService(identifier);
         HttpRequest httpRequest = buildHttpRequest(uri);
-        return fetchPublicationFromService(identifier, uri, httpRequest);
-    }
-
-    private PublicationResponse fetchPublicationFromService(String identifier, URI uri, HttpRequest httpRequest)
-        throws ApiGatewayException {
-
-        try {
-            return fetchPublicationFromService(identifier, httpRequest);
-        } catch (Exception e) {
-            throw handleException(uri, e);
-        }
+        return fetchPublicationFromService(identifier, httpRequest);
     }
 
     private PublicationResponse fetchPublicationFromService(String identifier, HttpRequest httpRequest)
-            throws IOException, InterruptedException, NotFoundException, BadGatewayException {
+            throws NotFoundException, BadGatewayException {
 
         HttpResponse<String> httpResponse = sendHttpRequest(httpRequest);
         if (httpResponse.statusCode() == SC_NOT_FOUND) {
@@ -100,16 +88,6 @@ public class RestPublicationService {
             throw new NotFoundException(externalErrorMessage);
         }
         return parseJsonObjectToPublication(httpResponse);
-    }
-
-    // TODO: this can potentially hide other ApigatewayExceptions in the future
-    private ApiGatewayException handleException(URI uri, Exception exception) {
-        if (exception instanceof NotFoundException) {
-            return (NotFoundException) exception;
-        } else if (exception instanceof BadGatewayException) {
-            return (BadGatewayException) exception;
-        }
-        return new NoResponseException(ERROR_COMMUNICATING_WITH_REMOTE_SERVICE + uri.toString(), exception);
     }
 
     private String extractExternalErrorMessage(String identifier, HttpResponse<String> httpResponse) {
@@ -133,8 +111,12 @@ public class RestPublicationService {
     }
 
     private HttpResponse<String> sendHttpRequest(HttpRequest httpRequest)
-        throws IOException, InterruptedException {
-        return client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+        throws BadGatewayException {
+        try {
+            return client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+        } catch (Exception e) {
+            throw new BadGatewayException(ERROR_COMMUNICATING_WITH_REMOTE_SERVICE + httpRequest.uri().toString());
+        }
     }
 
     private PublicationResponse parseJsonObjectToPublication(HttpResponse<String> httpResponse)
