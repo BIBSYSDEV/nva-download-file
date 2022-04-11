@@ -58,7 +58,7 @@ Resources:
               produces:
                 - application/json
               security:
-                - CognitoUserPool: []
+                - CognitoUserPool: ["https://api.nva.unit.no/scopes/frontend"]
               parameters:
                 - in: path
                   name: identifier
