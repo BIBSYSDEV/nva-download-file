@@ -13,7 +13,10 @@ import no.unit.nva.file.model.File;
 import no.unit.nva.file.model.FileSet;
 import no.unit.nva.file.model.License;
 import no.unit.nva.testutils.HandlerRequestBuilder;
+import nva.commons.apigateway.AccessRight;
+import nva.commons.apigateway.AccessRightEntry;
 import nva.commons.apigateway.GatewayResponse;
+import nva.commons.apigateway.RequestInfo;
 import nva.commons.core.Environment;
 import org.apache.http.HttpStatus;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,6 +24,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.stubbing.Answer;
 import org.zalando.problem.Problem;
 
@@ -28,17 +33,20 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.net.http.HttpClient;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
 
 import static java.util.Collections.emptyList;
+import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.download.publication.file.RequestUtil.IDENTIFIER_IS_NOT_A_VALID_UUID;
 import static no.unit.nva.download.publication.file.RequestUtil.MISSING_FILE_IDENTIFIER;
 import static no.unit.nva.download.publication.file.RequestUtil.MISSING_RESOURCE_IDENTIFIER;
@@ -48,9 +56,10 @@ import static no.unit.nva.download.publication.file.publication.PublicationStatu
 import static no.unit.nva.download.publication.file.publication.RestPublicationService.ERROR_COMMUNICATING_WITH_REMOTE_SERVICE;
 import static no.unit.nva.download.publication.file.publication.RestPublicationService.ERROR_PUBLICATION_NOT_FOUND_FOR_IDENTIFIER;
 import static no.unit.nva.download.publication.file.publication.RestPublicationService.EXTERNAL_ERROR_MESSAGE_DECORATION;
+import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static no.unit.nva.testutils.TestHeaders.ACCESS_CONTROL_ALLOW_ORIGIN;
+import static nva.commons.apigateway.AccessRight.EDIT_OWN_INSTITUTION_RESOURCES;
 import static nva.commons.apigateway.ApiGatewayHandler.ALLOWED_ORIGIN_ENV;
-import static nva.commons.core.JsonUtils.dtoObjectMapper;
 import static org.apache.http.HttpHeaders.AUTHORIZATION;
 import static org.apache.http.HttpHeaders.CONTENT_TYPE;
 import static org.apache.http.HttpStatus.SC_BAD_GATEWAY;
@@ -58,6 +67,7 @@ import static org.apache.http.HttpStatus.SC_BAD_REQUEST;
 import static org.apache.http.HttpStatus.SC_NOT_FOUND;
 import static org.apache.http.HttpStatus.SC_OK;
 import static org.apache.http.HttpStatus.SC_SERVICE_UNAVAILABLE;
+import static org.apache.http.HttpStatus.SC_UNAUTHORIZED;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -79,6 +89,7 @@ public class CreatePresignedDownloadUrlHandlerTest {
     public static final String IDENTIFIER_FILE = "fileIdentifier";
     public static final String OWNER_USER_ID = "owner@unit.no";
     public static final String NON_ONWER = "non.owner@unit.no";
+    public static final String CURATOR = "curator@unit.no";
     public static final String ANY_BUCKET = "aBucket";
     public static final String APPLICATION_PROBLEM_JSON = "application/problem+json";
     public static final String PRESIGNED_DOWNLOAD_URL = "https://example.com/download/12345";
@@ -102,7 +113,8 @@ public class CreatePresignedDownloadUrlHandlerTest {
         return Stream.of(
                 OWNER_USER_ID,
                 null,
-                NON_ONWER
+                NON_ONWER,
+                CURATOR
         );
     }
 
@@ -152,7 +164,7 @@ public class CreatePresignedDownloadUrlHandlerTest {
 
         handler.handleRequest(createRequest(user, PUBLICATION_IDENTIFIER, FILE_IDENTIFIER), output, context);
 
-        GatewayResponse<PresignedUri> gatewayResponse = GatewayResponse.fromString(output.toString());
+        GatewayResponse<PresignedUri> gatewayResponse = GatewayResponse.fromString(output.toString(), PresignedUri.class);
         assertBasicRestRequirements(gatewayResponse, SC_OK, APPLICATION_JSON);
         assertExpectedResponseBody(gatewayResponse);
     }
@@ -166,10 +178,25 @@ public class CreatePresignedDownloadUrlHandlerTest {
 
         handler.handleRequest(createRequest(OWNER_USER_ID, PUBLICATION_IDENTIFIER, FILE_IDENTIFIER), output, context);
 
-        GatewayResponse<PresignedUri> gatewayResponse = GatewayResponse.fromString(output.toString());
+        GatewayResponse<PresignedUri> gatewayResponse = GatewayResponse.fromString(output.toString(), PresignedUri.class);
         assertBasicRestRequirements(gatewayResponse, SC_OK, APPLICATION_JSON);
         assertExpectedResponseBody(gatewayResponse);
     }
+
+    @Test
+    void shouldReturnOkWhenPublicationUnpublishedAndUserHasAccessRightEditOwnInstitutionResources() throws IOException, InterruptedException {
+        AwsS3Service s3Service = getAwsS3ServiceReturningPresignedUrl();
+        var publicationService = mockSuccessfulPublicationRequest(
+                getPublication(DRAFT));
+        var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment());
+        var customer = randomUri();
+        handler.handleRequest(createRequestWithAccessRight(PUBLICATION_IDENTIFIER, FILE_IDENTIFIER, customer, EDIT_OWN_INSTITUTION_RESOURCES.toString()), output, context);
+
+        GatewayResponse<PresignedUri> gatewayResponse = GatewayResponse.fromString(output.toString(), PresignedUri.class);
+        assertBasicRestRequirements(gatewayResponse, SC_OK, APPLICATION_JSON);
+        assertExpectedResponseBody(gatewayResponse);
+    }
+
 
     @Test
     void shouldReturnBadGatewayWhenPublicationCanNotBeParsed() throws IOException, InterruptedException {
@@ -179,7 +206,7 @@ public class CreatePresignedDownloadUrlHandlerTest {
 
         handler.handleRequest(createRequest(OWNER_USER_ID, PUBLICATION_IDENTIFIER, FILE_IDENTIFIER), output, context);
 
-        GatewayResponse<PresignedUri> gatewayResponse = GatewayResponse.fromString(output.toString());
+        GatewayResponse<PresignedUri> gatewayResponse = GatewayResponse.fromString(output.toString(), PresignedUri.class);
         assertBasicRestRequirements(gatewayResponse, HttpStatus.SC_BAD_GATEWAY, APPLICATION_PROBLEM_JSON);
     }
 
@@ -194,7 +221,7 @@ public class CreatePresignedDownloadUrlHandlerTest {
 
         handler.handleRequest(createRequest(OWNER_USER_ID, PUBLICATION_IDENTIFIER, FILE_IDENTIFIER), output, context);
 
-        GatewayResponse<PresignedUri> gatewayResponse = GatewayResponse.fromString(output.toString());
+        GatewayResponse<PresignedUri> gatewayResponse = GatewayResponse.fromString(output.toString(), PresignedUri.class);
         assertBasicRestRequirements(gatewayResponse, SC_OK, APPLICATION_JSON);
         assertExpectedResponseBody(gatewayResponse);
     }
@@ -208,7 +235,7 @@ public class CreatePresignedDownloadUrlHandlerTest {
 
         handler.handleRequest(createRequest(OWNER_USER_ID, PUBLICATION_IDENTIFIER, FILE_IDENTIFIER), output, context);
 
-        GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output);
+        GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output, Problem.class);
         assertBasicRestRequirements(gatewayResponse, SC_NOT_FOUND, APPLICATION_PROBLEM_JSON);
         assertProblemEquivalence(gatewayResponse,
                 getNotFoundPublicationServiceResponse(EXTERNAL_ERROR_MESSAGE_DECORATION + PUBLICATION_IDENTIFIER
@@ -224,7 +251,7 @@ public class CreatePresignedDownloadUrlHandlerTest {
 
         handler.handleRequest(createRequest(OWNER_USER_ID, SOME_RANDOM_IDENTIFIER, FILE_IDENTIFIER), output, context);
 
-        GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output);
+        GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output, Problem.class);
         assertBasicRestRequirements(gatewayResponse, SC_BAD_GATEWAY, APPLICATION_PROBLEM_JSON);
         assertProblemEquivalence(gatewayResponse, getBadGatewayProblem(SOME_RANDOM_IDENTIFIER));
     }
@@ -253,7 +280,7 @@ public class CreatePresignedDownloadUrlHandlerTest {
         handler.handleRequest(createRequest(OWNER_USER_ID, PUBLICATION_IDENTIFIER, SOME_RANDOM_IDENTIFIER),
                 output, context);
 
-        GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output);
+        GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output, Problem.class);
         assertBasicRestRequirements(gatewayResponse, SC_NOT_FOUND, APPLICATION_PROBLEM_JSON);
         assertProblemEquivalence(gatewayResponse,
                 getNotFoundPublicationServiceResponse(
@@ -269,7 +296,7 @@ public class CreatePresignedDownloadUrlHandlerTest {
 
         handler.handleRequest(createRequest(OWNER_USER_ID, PUBLICATION_IDENTIFIER, FILE_IDENTIFIER), output, context);
 
-        GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output);
+        GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output, Problem.class);
         assertBasicRestRequirements(gatewayResponse, SC_BAD_GATEWAY, APPLICATION_PROBLEM_JSON);
         assertProblemEquivalence(gatewayResponse, getBadGatewayProblem(PUBLICATION_IDENTIFIER));
     }
@@ -285,7 +312,7 @@ public class CreatePresignedDownloadUrlHandlerTest {
 
         handler.handleRequest(createAnonymousRequest(), output, context);
 
-        GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output);
+        GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output, Problem.class);
         assertBasicRestRequirements(gatewayResponse, SC_NOT_FOUND, APPLICATION_PROBLEM_JSON);
         assertProblemEquivalence(gatewayResponse,
                 getNotFoundPublicationServiceResponse(notFoundError(FILE_IDENTIFIER)));
@@ -303,7 +330,7 @@ public class CreatePresignedDownloadUrlHandlerTest {
 
         handler.handleRequest(request, output, context);
 
-        GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output);
+        GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output, Problem.class);
         assertBasicRestRequirements(gatewayResponse, SC_BAD_REQUEST, APPLICATION_PROBLEM_JSON);
         assertProblemEquivalence(gatewayResponse, getBadRequestPublicationServiceResponse(detail));
     }
@@ -317,7 +344,7 @@ public class CreatePresignedDownloadUrlHandlerTest {
 
         handler.handleRequest(createAnonymousRequest(), output, context);
 
-        GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output);
+        GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output, Problem.class);
         assertBasicRestRequirements(gatewayResponse, SC_NOT_FOUND, APPLICATION_PROBLEM_JSON);
         assertProblemEquivalence(gatewayResponse,
                 getNotFoundPublicationServiceResponse(EXTERNAL_ERROR_MESSAGE_DECORATION + PUBLICATION_IDENTIFIER
@@ -333,7 +360,7 @@ public class CreatePresignedDownloadUrlHandlerTest {
 
         handler.handleRequest(createAnonymousRequest(), output, context);
 
-        GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output);
+        GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output, Problem.class);
         assertBasicRestRequirements(gatewayResponse, SC_NOT_FOUND, APPLICATION_PROBLEM_JSON);
         assertProblemEquivalence(gatewayResponse,
                 getNotFoundPublicationServiceResponse(EXTERNAL_ERROR_MESSAGE_DECORATION + PUBLICATION_IDENTIFIER
@@ -348,7 +375,7 @@ public class CreatePresignedDownloadUrlHandlerTest {
         AwsS3Service s3Service = getAwsS3ServiceReturningPresignedUrl();
         var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment());
         handler.handleRequest(request, output, context);
-        GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output);
+        GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output, Problem.class);
         assertBasicRestRequirements(gatewayResponse, SC_NOT_FOUND, APPLICATION_PROBLEM_JSON);
         assertProblemEquivalence(gatewayResponse,
                 getNotFoundPublicationServiceResponse(notFoundError(FILE_IDENTIFIER)));
@@ -362,7 +389,7 @@ public class CreatePresignedDownloadUrlHandlerTest {
         AwsS3Service s3Service = getAwsS3ServiceReturningPresignedUrl();
         var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment());
         handler.handleRequest(request, output, context);
-        GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output);
+        GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output, Problem.class);
         assertBasicRestRequirements(gatewayResponse, SC_NOT_FOUND, APPLICATION_PROBLEM_JSON);
         assertProblemEquivalence(gatewayResponse,
                 getNotFoundPublicationServiceResponse(notFoundError(FILE_IDENTIFIER)));
@@ -522,7 +549,6 @@ public class CreatePresignedDownloadUrlHandlerTest {
     private void assertExpectedResponseBody(GatewayResponse<PresignedUri> gatewayResponse)
             throws JsonProcessingException {
         var body = gatewayResponse.getBodyObject(PresignedUri.class);
-        assertThat(body.getPresignedDownloadUrl(), is(notNullValue()));
         assertThat(body.getId(), is(notNullValue()));
         assertTrue(greaterThanNow(body.getExpires()));
         assertThat(body.getContext(), is(notNullValue()));
@@ -557,11 +583,24 @@ public class CreatePresignedDownloadUrlHandlerTest {
     private InputStream createRequest(String user, UUID identifier, UUID fileIdentifier) throws IOException {
         return new HandlerRequestBuilder<Void>(dtoObjectMapper)
                 .withHeaders(Map.of(AUTHORIZATION, SOME_API_KEY))
-                .withFeideId(user)
+                .withCustomerId(randomUri())
+                .withNvaUsername(user)
                 .withPathParameters(Map.of(IDENTIFIER, identifier.toString(),
                         IDENTIFIER_FILE, fileIdentifier.toString()))
                 .build();
     }
+
+    private InputStream createRequestWithAccessRight(UUID identifier, UUID fileIdentifier, URI customer,  String accessRight) throws IOException {
+        return new HandlerRequestBuilder<Void>(dtoObjectMapper)
+                .withHeaders(Map.of(AUTHORIZATION, SOME_API_KEY))
+                .withCustomerId(customer)
+                .withAccessRights(customer, accessRight)
+                .withNvaUsername(NON_ONWER)
+                .withPathParameters(Map.of(IDENTIFIER, identifier.toString(),
+                        IDENTIFIER_FILE, fileIdentifier.toString()))
+                .build();
+    }
+
 
     private static InputStream createAnonymousRequest() throws IOException {
         return new HandlerRequestBuilder<Void>(dtoObjectMapper)
@@ -572,7 +611,8 @@ public class CreatePresignedDownloadUrlHandlerTest {
 
     private static InputStream createNonOwnerRequest() throws JsonProcessingException {
         return new HandlerRequestBuilder<Void>(dtoObjectMapper)
-                .withFeideId(NON_ONWER)
+                .withNvaUsername(NON_ONWER)
+                .withCustomerId(randomUri())
                 .withPathParameters(Map.of(IDENTIFIER, PUBLICATION_IDENTIFIER.toString(),
                         IDENTIFIER_FILE, FILE_IDENTIFIER.toString()))
                 .build();
@@ -580,18 +620,24 @@ public class CreatePresignedDownloadUrlHandlerTest {
 
     private static InputStream createBadRequestNoIdentifier() throws IOException {
         return new HandlerRequestBuilder<Void>(dtoObjectMapper)
+                .withCustomerId(randomUri())
+                .withNvaUsername(OWNER_USER_ID)
                 .withPathParameters(Map.of(IDENTIFIER_FILE, FILE_IDENTIFIER.toString()))
                 .build();
     }
 
     private static InputStream createBadRequestNoFileIdentifier() throws JsonProcessingException {
         return new HandlerRequestBuilder<Void>(dtoObjectMapper)
+                .withCustomerId(randomUri())
+                .withNvaUsername(OWNER_USER_ID)
                 .withPathParameters(Map.of(IDENTIFIER, PUBLICATION_IDENTIFIER.toString()))
                 .build();
     }
 
     private static InputStream createBadRequestNonUuidFileIdentifier() throws JsonProcessingException {
         return new HandlerRequestBuilder<Void>(dtoObjectMapper)
+                .withCustomerId(randomUri())
+                .withNvaUsername(OWNER_USER_ID)
                 .withPathParameters(Map.of(IDENTIFIER, PUBLICATION_IDENTIFIER.toString(),
                         RequestUtil.FILE_IDENTIFIER, NOT_A_UUID))
                 .build();

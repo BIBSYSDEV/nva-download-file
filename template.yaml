@@ -32,6 +32,9 @@ Parameters:
     Type: 'AWS::SSM::Parameter::Value<String>'
     Default: /NVA/PublicationData
     Description: S3 Bucket to access objects
+  CognitoAuthorizationUri:
+    Type: 'AWS::SSM::Parameter::Value<String>'
+    Default: /NVA/CognitoUri
 
 Resources:
   ApiAccessLogGroup:
@@ -180,6 +183,7 @@ Resources:
           API_HOST: !Sub api.${CustomDomain}
           BUCKET_NAME: !Ref S3Bucket
           ID_NAMESPACE: !Sub 'https://api.${CustomDomain}/${CustomDomainBasePath}'
+          COGNITO_HOST: !Ref CognitoAuthorizationUri
       Role: !GetAtt UploadExecutionRole.Arn
       Events:
         AuthorizedGetEvent:

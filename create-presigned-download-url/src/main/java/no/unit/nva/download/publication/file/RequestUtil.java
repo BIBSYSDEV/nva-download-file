@@ -2,6 +2,7 @@ package no.unit.nva.download.publication.file;
 
 import no.unit.nva.download.publication.file.publication.exception.InputException;
 import nva.commons.apigateway.RequestInfo;
+import nva.commons.apigateway.exceptions.UnauthorizedException;
 import nva.commons.core.StringUtils;
 
 import java.util.Optional;
@@ -14,6 +15,9 @@ public final class RequestUtil {
     public static final String IDENTIFIER_IS_NOT_A_VALID_UUID = "Identifier is not a valid UUID: ";
     public static final String MISSING_RESOURCE_IDENTIFIER = "Missing Resource identifier";
     public static final String MISSING_FILE_IDENTIFIER = "Missing file identifier in request";
+
+    public static final String ANONYMOUS = "anonymous";
+
 
     private RequestUtil() {
     }
@@ -64,7 +68,11 @@ public final class RequestUtil {
         return fileIdentifier;
     }
 
-    public static String getUser(RequestInfo requestInfo) {
-        return requestInfo.getFeideId().orElse(null);
+    public static String getUser(RequestInfo requestInfo) throws UnauthorizedException {
+        try {
+            return requestInfo.getNvaUsername();
+        } catch (UnauthorizedException e) {
+            return ANONYMOUS;
+        }
     }
 }

@@ -1,17 +1,10 @@
 package no.unit.nva.download.publication.file;
 
 import com.amazonaws.services.lambda.runtime.Context;
-
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.Date;
-import java.util.Optional;
-import java.util.UUID;
-
 import no.unit.nva.download.publication.file.aws.s3.AwsS3Service;
+import no.unit.nva.download.publication.file.exception.NotFoundException;
 import no.unit.nva.download.publication.file.publication.PublicationResponse;
 import no.unit.nva.download.publication.file.publication.RestPublicationService;
-import no.unit.nva.download.publication.file.exception.NotFoundException;
 import no.unit.nva.file.model.File;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
@@ -20,9 +13,16 @@ import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.SingletonCollector;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.Date;
+import java.util.Optional;
+import java.util.UUID;
+
 import static java.net.HttpURLConnection.HTTP_OK;
 import static no.unit.nva.download.publication.file.RequestUtil.getFileIdentifier;
 import static no.unit.nva.download.publication.file.RequestUtil.getUser;
+import static nva.commons.apigateway.AccessRight.EDIT_OWN_INSTITUTION_RESOURCES;
 
 public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, PresignedUri> {
 
@@ -57,20 +57,25 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, P
     protected PresignedUri processInput(Void input, RequestInfo requestInfo, Context context)
         throws ApiGatewayException {
         var publication = publicationService.getPublication(RequestUtil.getIdentifier(requestInfo));
-        var file = getFileInformation(getUser(requestInfo), getFileIdentifier(requestInfo), publication);
+        var file = getFileInformation(getUser(requestInfo),
+                getFileIdentifier(requestInfo),
+                publication,
+                requestInfo);
         var expiration = defaultExpiration();
         return new PresignedUri(getPresignedDownloadUrl(file, expiration), expiration);
     }
 
-    private File getFileInformation(String user, UUID fileIdentifier, PublicationResponse publication) throws
+    private File getFileInformation(String user,
+                                    UUID fileIdentifier,
+                                    PublicationResponse publication,
+                                    RequestInfo requestInfo) throws
             NotFoundException {
         if (publication.getFileSet().getFiles().isEmpty()) {
             throw new NotFoundException(publication.getIdentifier(), fileIdentifier);
         }
-
         return publication.getFileSet().getFiles().stream()
                 .filter(element -> findByIdentifier(fileIdentifier, element))
-                .map(element -> getFile(element, user, publication))
+                .map(element -> getFile(element, user, publication, requestInfo))
                 .collect(SingletonCollector.collect())
                 .orElseThrow(() -> new NotFoundException(publication.getIdentifier(), fileIdentifier));
     }
@@ -79,12 +84,20 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, P
         return fileIdentifier.equals(element.getIdentifier());
     }
 
-    private boolean isFindable(String user, File file, PublicationResponse publicationResponse) {
-        return publicationResponse.isOwner(user) || publicationResponse.isPublished() && file.isVisibleForNonOwner();
+    private boolean isFindable(String user,
+                               File file,
+                               PublicationResponse publicationResponse,
+                               RequestInfo requestInfo) {
+        return publicationResponse.isOwner(user)
+                || requestInfo.userIsAuthorized(EDIT_OWN_INSTITUTION_RESOURCES.toString())
+                || publicationResponse.isPublished() && file.isVisibleForNonOwner();
     }
 
-    private Optional<File> getFile(File file, String user, PublicationResponse publicationResponse) {
-        return isFindable(user, file, publicationResponse) ? Optional.of(file) : Optional.empty();
+    private Optional<File> getFile(File file,
+                                   String user,
+                                   PublicationResponse publicationResponse,
+                                   RequestInfo requestInfo) {
+        return isFindable(user, file, publicationResponse, requestInfo) ? Optional.of(file) : Optional.empty();
     }
 
     @Override
