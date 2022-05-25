@@ -2,11 +2,12 @@ package no.unit.nva.download.publication.file;
 
 import no.unit.nva.download.publication.file.publication.exception.InputException;
 import nva.commons.apigateway.RequestInfo;
-import nva.commons.apigateway.exceptions.UnauthorizedException;
 import nva.commons.core.StringUtils;
 
 import java.util.Optional;
 import java.util.UUID;
+
+import static nva.commons.core.attempt.Try.attempt;
 
 public final class RequestUtil {
 
@@ -68,11 +69,7 @@ public final class RequestUtil {
         return fileIdentifier;
     }
 
-    public static String getUser(RequestInfo requestInfo) throws UnauthorizedException {
-        try {
-            return requestInfo.getNvaUsername();
-        } catch (UnauthorizedException e) {
-            return ANONYMOUS;
-        }
+    public static String getUser(RequestInfo requestInfo) {
+        return attempt(requestInfo::getNvaUsername).orElse(user -> ANONYMOUS);
     }
 }
