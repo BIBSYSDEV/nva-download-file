@@ -104,29 +104,55 @@ public class CreatePresignedDownloadUrlHandlerTest {
 
     private static Stream<String> userSupplier() {
         return Stream.of(
-                OWNER_USER_ID,
-                null,
-                NON_OWNER,
-                CURATOR
+            OWNER_USER_ID,
+            null,
+            NON_OWNER,
+            CURATOR
         );
+    }
+
+    @ParameterizedTest(name = "Files from Unpublished publication is not downloadable by non owner")
+    @MethodSource("fileTypeSupplier")
+    void handlerReturnsForbiddenResponseOnValidInputPublication(File file) throws IOException,
+                                                                                  InterruptedException {
+
+        AwsS3Service s3Service = getAwsS3ServiceReturningPresignedUrl();
+        var publicationService = mockSuccessfulPublicationRequest(getPublicationWithFile(file));
+        var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment());
+        handler.handleRequest(createRequest(NON_OWNER, PUBLICATION_IDENTIFIER, file.getIdentifier()), output, context);
+
+        GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromString(output.toString(), Problem.class);
+        assertBasicRestRequirements(gatewayResponse, SC_NOT_FOUND, APPLICATION_PROBLEM_JSON);
+        assertProblemEquivalence(gatewayResponse,
+                                 getNotFoundPublicationServiceResponse(notFoundError(file.getIdentifier())));
+    }
+
+    @ParameterizedTest(name = "Files which is not draft but from a type requiring elevated rights is not downloadable "
+                              + "by non owner")
+    @MethodSource("fileTypeSupplierRequiringElevatedRights")
+    void handlerReturnsNotFoundForFilesWhichIsNotDraftButHasTypeRequiringElevationAndIsNonOwner(File file)
+        throws IOException, InterruptedException {
+        AwsS3Service s3Service = getAwsS3ServiceReturningPresignedUrl();
+        var publicationService = mockSuccessfulPublicationRequest(getPublication(PUBLISHED, file));
+        var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment());
+        handler.handleRequest(createRequest(NON_OWNER, PUBLICATION_IDENTIFIER, file.getIdentifier()), output, context);
+
+        GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromString(output.toString(), Problem.class);
+        assertBasicRestRequirements(gatewayResponse, SC_NOT_FOUND, APPLICATION_PROBLEM_JSON);
+        assertProblemEquivalence(gatewayResponse,
+                                 getNotFoundPublicationServiceResponse(notFoundError(file.getIdentifier())));
     }
 
     private static Stream<Arguments> userFileTypeSupplier() {
         return Stream.of(
-                Arguments.of(OWNER_USER_ID, fileWithEmbargo(EMBARGOED_FILE_IDENTIFIER)),
-                Arguments.of(OWNER_USER_ID, fileWithoutEmbargo(APPLICATION_PDF, UNEMBARGOED_FILE_IDENTIFIER)),
-                Arguments.of(OWNER_USER_ID, administrativeAgreement(ADMINISTRATIVE_IDENTIFIER)),
-                Arguments.of(CURATOR, fileWithEmbargo(EMBARGOED_FILE_IDENTIFIER)),
-                Arguments.of(CURATOR, fileWithoutEmbargo(APPLICATION_PDF, UNEMBARGOED_FILE_IDENTIFIER)),
-                Arguments.of(CURATOR, administrativeAgreement(ADMINISTRATIVE_IDENTIFIER))
-        );
-    }
-
-    private static Stream<File> fileTypeSupplier() {
-        return Stream.of(
-                fileWithEmbargo(EMBARGOED_FILE_IDENTIFIER),
-                fileWithoutEmbargo(APPLICATION_PDF, UNEMBARGOED_FILE_IDENTIFIER),
-                administrativeAgreement(ADMINISTRATIVE_IDENTIFIER)
+            Arguments.of(OWNER_USER_ID, fileWithEmbargo(EMBARGOED_FILE_IDENTIFIER)),
+            Arguments.of(OWNER_USER_ID, fileWithoutEmbargo(APPLICATION_PDF, UNEMBARGOED_FILE_IDENTIFIER)),
+            Arguments.of(OWNER_USER_ID, administrativeAgreement(ADMINISTRATIVE_IDENTIFIER)),
+            Arguments.of(OWNER_USER_ID, fileWithTypeUnpublished(FILE_IDENTIFIER)),
+            Arguments.of(CURATOR, fileWithEmbargo(EMBARGOED_FILE_IDENTIFIER)),
+            Arguments.of(CURATOR, fileWithoutEmbargo(APPLICATION_PDF, UNEMBARGOED_FILE_IDENTIFIER)),
+            Arguments.of(CURATOR, administrativeAgreement(ADMINISTRATIVE_IDENTIFIER)),
+            Arguments.of(CURATOR, fileWithTypeUnpublished(FILE_IDENTIFIER))
         );
     }
 
@@ -293,47 +319,45 @@ public class CreatePresignedDownloadUrlHandlerTest {
         var customer = randomUri();
         handler.handleRequest(
                 createRequestWithAccessRight(
-                        user,
-                        PUBLICATION_IDENTIFIER,
-                        file.getIdentifier(),
-                        customer,
-                        EDIT_OWN_INSTITUTION_RESOURCES.name()),
+                    user,
+                    PUBLICATION_IDENTIFIER,
+                    file.getIdentifier(),
+                    customer,
+                    EDIT_OWN_INSTITUTION_RESOURCES.name()),
                 output,
                 context);
 
         GatewayResponse<PresignedUri> gatewayResponse =
-                GatewayResponse.fromString(output.toString(), PresignedUri.class);
+            GatewayResponse.fromString(output.toString(), PresignedUri.class);
         assertBasicRestRequirements(gatewayResponse, SC_OK, APPLICATION_JSON);
         assertExpectedResponseBody(gatewayResponse);
     }
 
-    @ParameterizedTest(name = "Files from Unpublished publication is not downloadable by non owner")
-    @MethodSource("fileTypeSupplier")
-    void handlerReturnsForbiddenResponseOnValidInputPublication(File file) throws IOException,
-            InterruptedException {
+    private static Stream<File> fileTypeSupplier() {
+        return Stream.of(
+            fileWithEmbargo(EMBARGOED_FILE_IDENTIFIER),
+            fileWithoutEmbargo(APPLICATION_PDF, UNEMBARGOED_FILE_IDENTIFIER),
+            administrativeAgreement(ADMINISTRATIVE_IDENTIFIER),
+            fileWithTypeUnpublished(FILE_IDENTIFIER)
+        );
+    }
 
-        AwsS3Service s3Service = getAwsS3ServiceReturningPresignedUrl();
-        var publicationService = mockSuccessfulPublicationRequest(getPublicationWithFile(file));
-        var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment());
-        var customer = randomUri();
-        handler.handleRequest(createRequest(NON_OWNER, PUBLICATION_IDENTIFIER, file.getIdentifier()), output, context);
-
-        GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromString(output.toString(), Problem.class);
-        assertBasicRestRequirements(gatewayResponse, SC_NOT_FOUND, APPLICATION_PROBLEM_JSON);
-        assertProblemEquivalence(gatewayResponse,
-                getNotFoundPublicationServiceResponse(
-                        notFoundError(file.getIdentifier())));
-
+    private static Stream<File> fileTypeSupplierRequiringElevatedRights() {
+        return Stream.of(
+            fileWithEmbargo(EMBARGOED_FILE_IDENTIFIER),
+            administrativeAgreement(ADMINISTRATIVE_IDENTIFIER),
+            fileWithTypeUnpublished(FILE_IDENTIFIER)
+        );
     }
 
     private Problem getBadGatewayProblem(UUID identifier) {
         return Problem.builder()
-                .withStatus(BAD_GATEWAY)
-                .withTitle(BAD_GATEWAY.getReasonPhrase())
-                .withDetail(ERROR_COMMUNICATING_WITH_REMOTE_SERVICE
-                        + HTTP_EXAMPLE_ORG_PUBLICATION
-                        + identifier.toString())
-                .build();
+                   .withStatus(BAD_GATEWAY)
+                   .withTitle(BAD_GATEWAY.getReasonPhrase())
+                   .withDetail(ERROR_COMMUNICATING_WITH_REMOTE_SERVICE
+                               + HTTP_EXAMPLE_ORG_PUBLICATION
+                               + identifier.toString())
+                   .build();
     }
 
 
@@ -512,18 +536,31 @@ public class CreatePresignedDownloadUrlHandlerTest {
     private static File fileWithoutEmbargo(String mimeType, UUID fileIdentifier) {
         return new File.Builder()
                    .withType(FileType.PUBLISHED_FILE)
-                .withAdministrativeAgreement(false)
-                .withIdentifier(fileIdentifier)
-                .withLicense(new License.Builder().build())
-                .withMimeType(mimeType)
-                .withName("A file name.txt")
-                .withPublisherAuthority(true)
-                .withSize(200L)
-                .build();
+                   .withAdministrativeAgreement(false)
+                   .withIdentifier(fileIdentifier)
+                   .withLicense(new License.Builder().build())
+                   .withMimeType(mimeType)
+                   .withName("A file name.txt")
+                   .withPublisherAuthority(true)
+                   .withSize(200L)
+                   .build();
+    }
+
+    private static File fileWithTypeUnpublished(UUID fileIdentifier) {
+        return new File.Builder()
+                   .withType(FileType.UNPUBLISHED_FILE)
+                   .withAdministrativeAgreement(false)
+                   .withIdentifier(fileIdentifier)
+                   .withLicense(new License.Builder().build())
+                   .withMimeType(APPLICATION_PDF)
+                   .withName("A file name.txt")
+                   .withPublisherAuthority(true)
+                   .withSize(200L)
+                   .build();
     }
 
     private void assertProblemEquivalence(GatewayResponse<Problem> gatewayResponse, Problem expected)
-            throws JsonProcessingException {
+        throws JsonProcessingException {
         var actual = gatewayResponse.getBodyObject(Problem.class);
         assertThat(actual.getStatus(), equalTo(expected.getStatus()));
         assertThat(actual.getTitle(), equalTo(expected.getTitle()));
@@ -591,24 +628,28 @@ public class CreatePresignedDownloadUrlHandlerTest {
     private Problem getNotFoundPublicationServiceResponse(String message) {
         return Problem.builder()
                 .withStatus(NOT_FOUND)
-                .withTitle(NOT_FOUND.getReasonPhrase())
-                .withDetail(message)
-                .build();
+                   .withTitle(NOT_FOUND.getReasonPhrase())
+                   .withDetail(message)
+                   .build();
+    }
+
+    private String getPublicationWithFile(File file) throws JsonProcessingException {
+        var event = new Event(OWNER_USER_ID, PUBLICATION_IDENTIFIER, DRAFT, new FileSet(List.of(file)));
+        return dtoObjectMapper.writeValueAsString(event);
     }
 
     private String getPublication(PublicationStatus status) throws JsonProcessingException {
         return getPublication(status, APPLICATION_PDF);
     }
 
-    private String getPublicationWithFile(File file) throws JsonProcessingException {
-        var event = new Event(OWNER_USER_ID, PUBLICATION_IDENTIFIER, DRAFT, new FileSet(List.of(file)));
+    private String getPublication(PublicationStatus status, File file) throws JsonProcessingException {
+        var event = new Event(OWNER_USER_ID, PUBLICATION_IDENTIFIER, status, new FileSet(List.of(file)));
         return dtoObjectMapper.writeValueAsString(event);
-
     }
 
     private String getPublication(PublicationStatus publicationStatus, String mimeType) throws JsonProcessingException {
         var event = new Event(OWNER_USER_ID, PUBLICATION_IDENTIFIER, publicationStatus,
-                new FileSet(List.of(fileWithoutEmbargo(mimeType, FILE_IDENTIFIER))));
+                              new FileSet(List.of(fileWithoutEmbargo(mimeType, FILE_IDENTIFIER))));
         return dtoObjectMapper.writeValueAsString(event);
     }
 
