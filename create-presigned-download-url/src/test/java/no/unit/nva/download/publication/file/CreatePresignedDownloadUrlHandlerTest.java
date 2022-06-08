@@ -1,45 +1,5 @@
 package no.unit.nva.download.publication.file;
 
-import com.amazonaws.SdkClientException;
-import com.amazonaws.services.kms.model.NotFoundException;
-import com.amazonaws.services.lambda.runtime.Context;
-import com.amazonaws.services.s3.AmazonS3;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import no.unit.nva.download.publication.file.aws.s3.AwsS3Service;
-import no.unit.nva.download.publication.file.publication.Event;
-import no.unit.nva.download.publication.file.publication.PublicationStatus;
-import no.unit.nva.download.publication.file.publication.RestPublicationService;
-import no.unit.nva.file.model.File;
-import no.unit.nva.file.model.FileSet;
-import no.unit.nva.file.model.FileType;
-import no.unit.nva.file.model.License;
-import no.unit.nva.testutils.HandlerRequestBuilder;
-import nva.commons.apigateway.GatewayResponse;
-import nva.commons.core.Environment;
-import org.apache.http.HttpStatus;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.stubbing.Answer;
-import org.zalando.problem.Problem;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.MalformedURLException;
-import java.net.URI;
-import java.net.URL;
-import java.net.http.HttpClient;
-import java.net.http.HttpResponse;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.stream.Stream;
-
 import static java.util.Collections.emptyList;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.download.publication.file.RequestUtil.IDENTIFIER_IS_NOT_A_VALID_UUID;
@@ -73,6 +33,44 @@ import static org.mockito.Mockito.when;
 import static org.zalando.problem.Status.BAD_GATEWAY;
 import static org.zalando.problem.Status.BAD_REQUEST;
 import static org.zalando.problem.Status.NOT_FOUND;
+import com.amazonaws.SdkClientException;
+import com.amazonaws.services.kms.model.NotFoundException;
+import com.amazonaws.services.lambda.runtime.Context;
+import com.amazonaws.services.s3.AmazonS3;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URL;
+import java.net.http.HttpClient;
+import java.net.http.HttpResponse;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.stream.Stream;
+import no.unit.nva.download.publication.file.aws.s3.AwsS3Service;
+import no.unit.nva.download.publication.file.publication.Event;
+import no.unit.nva.download.publication.file.publication.PublicationStatus;
+import no.unit.nva.download.publication.file.publication.RestPublicationService;
+import no.unit.nva.file.model.File;
+import no.unit.nva.file.model.FileSet;
+import no.unit.nva.file.model.FileType;
+import no.unit.nva.file.model.License;
+import no.unit.nva.testutils.HandlerRequestBuilder;
+import nva.commons.apigateway.GatewayResponse;
+import nva.commons.core.Environment;
+import org.apache.http.HttpStatus;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.stubbing.Answer;
+import org.zalando.problem.Problem;
 
 public class CreatePresignedDownloadUrlHandlerTest {
 
@@ -486,7 +484,7 @@ public class CreatePresignedDownloadUrlHandlerTest {
 
     private static File administrativeAgreement(UUID fileIdentifier) {
         return new File.Builder()
-                .withType(FileType.UNPUBLISHABLE_FILE)
+                   .withType(FileType.PUBLISHED_FILE)
                 .withAdministrativeAgreement(true)
                 .withIdentifier(fileIdentifier)
                 .withLicense(new License.Builder().build())
@@ -499,7 +497,7 @@ public class CreatePresignedDownloadUrlHandlerTest {
 
     private static File fileWithEmbargo(UUID fileIdentifier) {
         return new File.Builder()
-                .withType(FileType.UNPUBLISHED_FILE)
+                   .withType(FileType.PUBLISHED_FILE)
                 .withAdministrativeAgreement(false)
                 .withEmbargoDate(Instant.now().plus(Duration.ofDays(3L)))
                 .withIdentifier(fileIdentifier)
@@ -513,7 +511,7 @@ public class CreatePresignedDownloadUrlHandlerTest {
 
     private static File fileWithoutEmbargo(String mimeType, UUID fileIdentifier) {
         return new File.Builder()
-                .withType(FileType.UNPUBLISHED_FILE)
+                   .withType(FileType.PUBLISHED_FILE)
                 .withAdministrativeAgreement(false)
                 .withIdentifier(fileIdentifier)
                 .withLicense(new License.Builder().build())
