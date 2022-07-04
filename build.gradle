@@ -10,6 +10,11 @@ plugins {
 group 'no.unit.nva'
 version '1.0-SNAPSHOT'
 
+wrapper{
+    distributionType = Wrapper.DistributionType.ALL
+    gradleVersion = '7.4.2'
+}
+
 allprojects {
     repositories {
         mavenCentral()
@@ -18,7 +23,6 @@ allprojects {
 }
 
 subprojects {
-
     apply plugin: 'java'
     apply plugin: 'jacoco'
     apply plugin: 'checkstyle'
@@ -78,7 +82,7 @@ subprojects {
         testImplementation group: 'org.mockito', name: 'mockito-core', version: mockitoVersion
         testImplementation group: 'org.mockito', name: 'mockito-junit-jupiter', version: mockitoVersion
         testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: junit5Version
-        testCompile group: 'org.junit.jupiter', name: 'junit-jupiter-params', version: junit5Version
+        testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-params', version: junit5Version
         testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-migrationsupport', version: junit5Version
         testImplementation(group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: junit5Version) {
             because('Required by build')
@@ -127,8 +131,8 @@ subprojects {
     }
 
     check.dependsOn jacocoTestCoverageVerification
-    jacocoTestCoverageVerification.dependsOn(jacocoTestReport)
 
+    jacocoTestCoverageVerification.dependsOn(jacocoTestReport)
     jacocoTestCoverageVerification {
         violationRules {
             rule {
