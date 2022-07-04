@@ -132,8 +132,8 @@ subprojects {
     }
 
     check.dependsOn jacocoTestCoverageVerification
-    jacocoTestCoverageVerification.dependsOn(jacocoTestReport)
 
+    jacocoTestCoverageVerification.dependsOn(jacocoTestReport)
     jacocoTestCoverageVerification {
         violationRules {
             rule {
