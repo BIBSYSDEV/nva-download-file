@@ -1,35 +1,37 @@
 package no.unit.nva.download.publication.file.publication;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import no.unit.nva.file.model.FileSet;
-import no.unit.nva.identifiers.SortableIdentifier;
-
 import static java.util.Collections.emptyList;
 import static java.util.Objects.nonNull;
 import static no.unit.nva.download.publication.file.publication.PublicationStatus.PUBLISHED;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.Optional;
+import no.unit.nva.file.model.FileSet;
+import no.unit.nva.identifiers.SortableIdentifier;
 
 public class PublicationResponse {
 
     private final PublicationStatus status;
     private final SortableIdentifier identifier;
-    private final String owner;
+
+    private final ResourceOwner resourceOwner;
     private final FileSet fileSet;
 
     /**
      * Constructs a minimal usable object from a full publication.
-     * @param status The publication status.
-     * @param owner The owner identifier for the publication.
-     * @param fileSet The set of files associated with the publication.
+     *
+     * @param status        The publication status.
+     * @param resourceOwner The owner identifier for the publication.
+     * @param fileSet       The set of files associated with the publication.
      */
     @JsonCreator
     public PublicationResponse(@JsonProperty("status") PublicationStatus status,
                                @JsonProperty("identifier") SortableIdentifier identifier,
-                               @JsonProperty("owner") String owner,
+                               @JsonProperty("resourceOwner") ResourceOwner resourceOwner,
                                @JsonProperty("fileSet") FileSet fileSet) {
         this.status = status;
         this.identifier = identifier;
-        this.owner = owner;
+        this.resourceOwner = resourceOwner;
         this.fileSet = fileSet;
     }
 
@@ -42,7 +44,10 @@ public class PublicationResponse {
     }
 
     public boolean isOwner(String user) {
-        return nonNull(user) && owner.equals(user);
+        return Optional.of(resourceOwner)
+            .map(ResourceOwner::getOwner)
+            .map(owner -> owner.equals(user))
+            .orElse(false);
     }
 
     public boolean isPublished() {
