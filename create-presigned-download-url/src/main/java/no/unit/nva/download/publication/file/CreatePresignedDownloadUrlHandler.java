@@ -3,9 +3,10 @@ package no.unit.nva.download.publication.file;
 import com.amazonaws.services.lambda.runtime.Context;
 import no.unit.nva.download.publication.file.aws.s3.AwsS3Service;
 import no.unit.nva.download.publication.file.exception.NotFoundException;
-import no.unit.nva.download.publication.file.publication.PublicationResponse;
 import no.unit.nva.download.publication.file.publication.RestPublicationService;
-import no.unit.nva.file.model.File;
+import no.unit.nva.model.Publication;
+import no.unit.nva.model.PublicationStatus;
+import no.unit.nva.model.associatedartifacts.file.File;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
@@ -67,13 +68,14 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, P
 
     private File getFileInformation(String user,
                                     UUID fileIdentifier,
-                                    PublicationResponse publication,
-                                    RequestInfo requestInfo) throws
-            NotFoundException {
-        if (publication.getFileSet().getFiles().isEmpty()) {
+                                    Publication publication,
+                                    RequestInfo requestInfo) throws NotFoundException {
+        if (publication.getAssociatedArtifacts().isEmpty()) {
             throw new NotFoundException(publication.getIdentifier(), fileIdentifier);
         }
-        return publication.getFileSet().getFiles().stream()
+        return publication.getAssociatedArtifacts().stream()
+                .filter(File.class::isInstance)
+                .map(File.class::cast)
                 .filter(element -> findByIdentifier(fileIdentifier, element))
                 .map(element -> getFile(element, user, publication, requestInfo))
                 .collect(SingletonCollector.collect())
@@ -86,18 +88,18 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, P
 
     private boolean isFindable(String user,
                                File file,
-                               PublicationResponse publicationResponse,
+                               Publication publication,
                                RequestInfo requestInfo) {
-        return publicationResponse.isOwner(user)
+        return publication.getResourceOwner().getOwner().equals(user)
                 || requestInfo.userIsAuthorized(EDIT_OWN_INSTITUTION_RESOURCES.toString())
-                || publicationResponse.isPublished() && file.isVisibleForNonOwner();
+                || PublicationStatus.PUBLISHED.equals(publication.getStatus()) && file.isVisibleForNonOwner();
     }
 
     private Optional<File> getFile(File file,
                                    String user,
-                                   PublicationResponse publicationResponse,
+                                   Publication publication,
                                    RequestInfo requestInfo) {
-        return isFindable(user, file, publicationResponse, requestInfo) ? Optional.of(file) : Optional.empty();
+        return isFindable(user, file, publication, requestInfo) ? Optional.of(file) : Optional.empty();
     }
 
     @Override
