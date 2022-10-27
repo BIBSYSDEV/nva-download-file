@@ -91,7 +91,6 @@ class CreatePresignedDownloadUrlHandlerTest {
     private static final String PRESIGNED_DOWNLOAD_URL = "https://example.com/download/12345";
     private static final String API_HOST = "example.org";
     private static final String API_SCHEME = "https";
-    private static final SortableIdentifier PUBLICATION_IDENTIFIER = SortableIdentifier.next();
     private static final UUID FILE_IDENTIFIER = UUID.randomUUID();
     private static final UUID UNEMBARGOED_FILE_IDENTIFIER = UUID.randomUUID();
     private static final UUID EMBARGOED_FILE_IDENTIFIER = UUID.randomUUID();
@@ -107,20 +106,23 @@ class CreatePresignedDownloadUrlHandlerTest {
     private Context context;
     private ByteArrayOutputStream output;
 
-    @ParameterizedTest(name = "Files from Unpublished publication is not downloadable by non owner")
+    @ParameterizedTest(name = "Should return not found when user is not owner and publication is unpublished")
     @MethodSource("fileTypeSupplier")
-    void handlerReturnsForbiddenResponseOnValidInputPublication(File file) throws IOException,
+    void shouldReturnNotFoundWhenUserIsNotOwnerAndPublicationIsUnpublished(File file) throws IOException,
                                                                                   InterruptedException {
 
-        AwsS3Service s3Service = getAwsS3ServiceReturningPresignedUrl();
-        var publicationService = mockSuccessfulPublicationRequest(getPublicationWithFile(file));
+        var s3Service = getAwsS3ServiceReturningPresignedUrl();
+        var publication = getPublicationWithFile(file);
+        publication.setStatus(DRAFT);
+        var publicationService = mockSuccessfulPublicationRequest(publication.toString());
         var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment());
-        handler.handleRequest(createRequest(NON_OWNER, PUBLICATION_IDENTIFIER, file.getIdentifier()), output, context);
+        handler.handleRequest(
+                createRequest(NON_OWNER, publication.getIdentifier(), file.getIdentifier()), output, context);
 
-        GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromString(output.toString(), Problem.class);
+        var gatewayResponse = GatewayResponse.fromString(output.toString(), Problem.class);
         assertBasicRestRequirements(gatewayResponse, SC_NOT_FOUND, APPLICATION_PROBLEM_JSON);
-        assertProblemEquivalence(gatewayResponse,
-                                 getNotFoundPublicationServiceResponse(notFoundError(PUBLICATION_IDENTIFIER, file.getIdentifier())));
+        assertProblemEquivalence(gatewayResponse, getNotFoundPublicationServiceResponse(
+                notFoundError(publication.getIdentifier(), file.getIdentifier())));
     }
 
     @ParameterizedTest(name = "Files which is not draft but from a type requiring elevated rights is not downloadable "
@@ -129,15 +131,16 @@ class CreatePresignedDownloadUrlHandlerTest {
     void handlerReturnsNotFoundForFilesWhichIsNotDraftButHasTypeRequiringElevationAndIsNonOwner(File file)
         throws IOException, InterruptedException {
         AwsS3Service s3Service = getAwsS3ServiceReturningPresignedUrl();
-        var publication = getPublication(PUBLICATION_IDENTIFIER, PUBLISHED, file);
+        var publication = getPublication(PUBLISHED, file);
         var publicationService = mockSuccessfulPublicationRequest(publication.toString());
         var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment());
-        handler.handleRequest(createRequest(NON_OWNER, PUBLICATION_IDENTIFIER, file.getIdentifier()), output, context);
+        handler.handleRequest(
+                createRequest(NON_OWNER, publication.getIdentifier(), file.getIdentifier()), output, context);
 
         GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromString(output.toString(), Problem.class);
         assertBasicRestRequirements(gatewayResponse, SC_NOT_FOUND, APPLICATION_PROBLEM_JSON);
         assertProblemEquivalence(gatewayResponse, getNotFoundPublicationServiceResponse(
-                                         notFoundError(PUBLICATION_IDENTIFIER, file.getIdentifier())));
+                                         notFoundError(publication.getIdentifier(), file.getIdentifier())));
     }
 
     @BeforeEach
@@ -157,14 +160,15 @@ class CreatePresignedDownloadUrlHandlerTest {
     void handlerReturnsOkResponseOnValidInputPublishedPublication(String user) throws IOException,
                                                                                       InterruptedException {
 
-        AwsS3Service s3Service = getAwsS3ServiceReturningPresignedUrl();
+        var s3Service = getAwsS3ServiceReturningPresignedUrl();
+        var publication = getPublication(PUBLISHED);
         var publicationService = mockSuccessfulPublicationRequest(
-            getPublication(PUBLISHED).toString());
+            publication.toString());
         var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment());
 
-        handler.handleRequest(createRequest(user, PUBLICATION_IDENTIFIER, FILE_IDENTIFIER), output, context);
+        handler.handleRequest(createRequest(user, publication.getIdentifier(), FILE_IDENTIFIER), output, context);
 
-        GatewayResponse<PresignedUri> gatewayResponse =
+        var gatewayResponse =
             GatewayResponse.fromString(output.toString(), PresignedUri.class);
         assertBasicRestRequirements(gatewayResponse, SC_OK, APPLICATION_JSON);
         assertExpectedResponseBody(gatewayResponse);
@@ -177,7 +181,7 @@ class CreatePresignedDownloadUrlHandlerTest {
         var publicationService = mockSuccessfulPublicationRequest(publication.toString());
         var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment());
 
-        handler.handleRequest(createRequest(publication.getResourceOwner().getOwner(), PUBLICATION_IDENTIFIER,
+        handler.handleRequest(createRequest(publication.getResourceOwner().getOwner(), publication.getIdentifier(),
                 FILE_IDENTIFIER), output, context);
 
         GatewayResponse<PresignedUri> gatewayResponse =
@@ -189,14 +193,15 @@ class CreatePresignedDownloadUrlHandlerTest {
     @Test
     void shouldReturnOkWhenPublicationUnpublishedAndUserHasAccessRightEditOwnInstitutionResources()
         throws IOException, InterruptedException {
-        AwsS3Service s3Service = getAwsS3ServiceReturningPresignedUrl();
+        var s3Service = getAwsS3ServiceReturningPresignedUrl();
+        var publication = getPublication(DRAFT);
         var publicationService = mockSuccessfulPublicationRequest(
-            getPublication(DRAFT).toString());
+            publication.toString());
         var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment());
         var customer = randomUri();
         handler.handleRequest(createRequestWithAccessRight(
                                   NON_OWNER,
-                                  PUBLICATION_IDENTIFIER,
+                                  publication.getIdentifier(),
                                   FILE_IDENTIFIER,
                                   customer,
                                   EDIT_OWN_INSTITUTION_RESOURCES.toString()),
@@ -211,11 +216,12 @@ class CreatePresignedDownloadUrlHandlerTest {
 
     @Test
     void shouldReturnBadGatewayWhenPublicationCanNotBeParsed() throws IOException, InterruptedException {
-        AwsS3Service s3Service = getAwsS3ServiceReturningPresignedUrl();
+        var s3Service = getAwsS3ServiceReturningPresignedUrl();
         var publicationService = mockSuccessfulPublicationRequest("<</>");
         var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment());
 
-        handler.handleRequest(createRequest(OWNER_USER_ID, PUBLICATION_IDENTIFIER, FILE_IDENTIFIER), output, context);
+        handler.handleRequest(createRequest(OWNER_USER_ID, SortableIdentifier.next(), FILE_IDENTIFIER),
+                output, context);
 
         GatewayResponse<PresignedUri> gatewayResponse =
             GatewayResponse.fromString(output.toString(), PresignedUri.class);
@@ -232,7 +238,7 @@ class CreatePresignedDownloadUrlHandlerTest {
         var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment());
 
         handler.handleRequest(createRequest(publication.getResourceOwner().getOwner(),
-                PUBLICATION_IDENTIFIER, FILE_IDENTIFIER), output, context);
+                publication.getIdentifier(), FILE_IDENTIFIER), output, context);
 
         GatewayResponse<PresignedUri> gatewayResponse =
             GatewayResponse.fromString(output.toString(), PresignedUri.class);
@@ -243,18 +249,18 @@ class CreatePresignedDownloadUrlHandlerTest {
     // Error message here is odd
     @Test
     void handlerReturnsNotFoundResponseOnUnknownIdentifier() throws IOException, InterruptedException {
-        var publicationService = mockNotFoundPublicationService();
+        var publicationIdentifier = SortableIdentifier.next();
+        var publicationService = mockNotFoundPublicationService(publicationIdentifier);
         var handler = new CreatePresignedDownloadUrlHandler(publicationService,
                                                             getAwsS3ServiceReturningPresignedUrl(), mockEnvironment());
-
-        handler.handleRequest(createRequest(OWNER_USER_ID, PUBLICATION_IDENTIFIER, FILE_IDENTIFIER), output, context);
+        handler.handleRequest(createRequest(OWNER_USER_ID, publicationIdentifier, FILE_IDENTIFIER), output, context);
 
         GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output, Problem.class);
         assertBasicRestRequirements(gatewayResponse, SC_NOT_FOUND, APPLICATION_PROBLEM_JSON);
         assertProblemEquivalence(gatewayResponse,
                                  getNotFoundPublicationServiceResponse(
-                                     EXTERNAL_ERROR_MESSAGE_DECORATION + PUBLICATION_IDENTIFIER
-                                     + " " + EASY_TO_SEE + PUBLICATION_IDENTIFIER));
+                                     EXTERNAL_ERROR_MESSAGE_DECORATION + publicationIdentifier
+                                     + " " + EASY_TO_SEE + publicationIdentifier));
     }
 
     @Test
@@ -277,13 +283,14 @@ class CreatePresignedDownloadUrlHandlerTest {
                                                                                         InterruptedException {
 
         AwsS3Service s3Service = getAwsS3ServiceReturningPresignedUrl();
-        var publicationService = mockSuccessfulPublicationRequest(getPublicationWithFile(file));
+        var publication = getPublicationWithFile(file);
+        var publicationService = mockSuccessfulPublicationRequest(publication.toString());
         var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment());
         var customer = randomUri();
         handler.handleRequest(
             createRequestWithAccessRight(
                 user,
-                PUBLICATION_IDENTIFIER,
+                publication.getIdentifier(),
                 file.getIdentifier(),
                 customer,
                 EDIT_OWN_INSTITUTION_RESOURCES.name()),
@@ -299,49 +306,52 @@ class CreatePresignedDownloadUrlHandlerTest {
     @Test
     void handlerReturnsNotFoundOnPublicationWithoutFile() throws IOException, InterruptedException {
         var publication = createPublishedPublicationWithoutFileSetFile();
-        var publicationService = mockSuccessfulPublicationRequest(publication);
+        var publicationService = mockSuccessfulPublicationRequest(publication.toString());
         var handler = new CreatePresignedDownloadUrlHandler(publicationService, getAwsS3ServiceReturningNotFound(),
                                                             mockEnvironment());
         var fileIdentifier = UUID.randomUUID();
-        handler.handleRequest(createRequest(OWNER_USER_ID, PUBLICATION_IDENTIFIER, fileIdentifier),
+        var publicationIdentifier = publication.getIdentifier();
+        handler.handleRequest(createRequest(OWNER_USER_ID, publicationIdentifier, fileIdentifier),
                               output, context);
 
         GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output, Problem.class);
         assertBasicRestRequirements(gatewayResponse, SC_NOT_FOUND, APPLICATION_PROBLEM_JSON);
         assertProblemEquivalence(gatewayResponse,
                                  getNotFoundPublicationServiceResponse(
-                                     notFoundError(PUBLICATION_IDENTIFIER, fileIdentifier)));
+                                     notFoundError(publicationIdentifier, fileIdentifier)));
     }
 
     @Test
     void shouldReturnServiceUnavailableResponseOnS3ServiceException() throws IOException, InterruptedException {
-        AwsS3Service s3Service = getS3ServiceThrowingSdkClientException();
         var publication = getPublication(PUBLISHED);
+        var publicationIdentifier = publication.getIdentifier();
+        var s3Service = getS3ServiceThrowingSdkClientException(publicationIdentifier);
         var publicationService = mockSuccessfulPublicationRequest(publication.toString());
         var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment());
 
-        handler.handleRequest(createRequest(publication.getResourceOwner().getOwner(), PUBLICATION_IDENTIFIER,
+        handler.handleRequest(createRequest(publication.getResourceOwner().getOwner(), publicationIdentifier,
                 FILE_IDENTIFIER), output, context);
 
         GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output, Problem.class);
         assertBasicRestRequirements(gatewayResponse, SC_BAD_GATEWAY, APPLICATION_PROBLEM_JSON);
-        assertProblemEquivalence(gatewayResponse, getBadGatewayProblem(PUBLICATION_IDENTIFIER));
+        assertProblemEquivalence(gatewayResponse, getBadGatewayProblem(publicationIdentifier));
     }
 
     @Test
     void shouldReturnNotFoundOnAnonymousRequestForDraftPublication()
         throws IOException, InterruptedException {
-        var publicationService = mockSuccessfulPublicationRequest(getPublication(DRAFT).toString());
+        var publication = getPublication(DRAFT);
+        var publicationService = mockSuccessfulPublicationRequest(publication.toString());
         AwsS3Service s3Service = getAwsS3ServiceReturningPresignedUrl();
 
         var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment());
 
-        handler.handleRequest(createAnonymousRequest(), output, context);
+        handler.handleRequest(createAnonymousRequest(publication.getIdentifier()), output, context);
 
         GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output, Problem.class);
         assertBasicRestRequirements(gatewayResponse, SC_NOT_FOUND, APPLICATION_PROBLEM_JSON);
         assertProblemEquivalence(gatewayResponse, getNotFoundPublicationServiceResponse(
-                                         notFoundError(PUBLICATION_IDENTIFIER, FILE_IDENTIFIER)));
+                                         notFoundError(publication.getIdentifier(), FILE_IDENTIFIER)));
     }
 
     @ParameterizedTest
@@ -366,60 +376,63 @@ class CreatePresignedDownloadUrlHandlerTest {
         AwsS3Service s3Service = getAwsS3ServiceReturningPresignedUrl();
 
         var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment());
-
-        handler.handleRequest(createAnonymousRequest(), output, context);
+        var publicationIdentifier = SortableIdentifier.next();
+        handler.handleRequest(createAnonymousRequest(publicationIdentifier), output, context);
 
         GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output, Problem.class);
         assertBasicRestRequirements(gatewayResponse, SC_NOT_FOUND, APPLICATION_PROBLEM_JSON);
         assertProblemEquivalence(gatewayResponse,
                                  getNotFoundPublicationServiceResponse(
-                                     EXTERNAL_ERROR_MESSAGE_DECORATION + PUBLICATION_IDENTIFIER
-                                     + " " + ERROR_PUBLICATION_NOT_FOUND_FOR_IDENTIFIER + PUBLICATION_IDENTIFIER));
+                                     EXTERNAL_ERROR_MESSAGE_DECORATION + publicationIdentifier
+                                     + " " + ERROR_PUBLICATION_NOT_FOUND_FOR_IDENTIFIER + publicationIdentifier));
     }
 
     @Test
     void shouldReturnNotFoundWhenPublicationServiceResponseIsUnderstood() throws IOException, InterruptedException {
-        var publicationService = mockNotFoundPublicationService();
+        var publicationIdentifier = SortableIdentifier.next();
+        var publicationService = mockNotFoundPublicationService(publicationIdentifier);
         AwsS3Service s3Service = getAwsS3ServiceReturningPresignedUrl();
 
         var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment());
 
-        handler.handleRequest(createAnonymousRequest(), output, context);
+        handler.handleRequest(createAnonymousRequest(publicationIdentifier), output, context);
 
         GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output, Problem.class);
         assertBasicRestRequirements(gatewayResponse, SC_NOT_FOUND, APPLICATION_PROBLEM_JSON);
         assertProblemEquivalence(gatewayResponse,
                                  getNotFoundPublicationServiceResponse(
-                                     EXTERNAL_ERROR_MESSAGE_DECORATION + PUBLICATION_IDENTIFIER
-                                     + " " + EASY_TO_SEE + PUBLICATION_IDENTIFIER));
+                                     EXTERNAL_ERROR_MESSAGE_DECORATION + publicationIdentifier
+                                     + " " + EASY_TO_SEE + publicationIdentifier));
     }
 
     @ParameterizedTest(name = "Should return Not Found when requester is not owner and embargo is in place")
     @MethodSource("nonOwnerProvider")
     void shouldDisallowDownloadByNonOwnerWhenEmbargoDateHasNotPassed(InputStream request) throws IOException,
                                                                                                  InterruptedException {
-        var publicationService = mockPublicationServiceReturningEmbargoedFile();
+        var publication = PublicationGenerator.randomPublication();
+        var publicationService = mockPublicationServiceReturningEmbargoedFile(publication);
         AwsS3Service s3Service = getAwsS3ServiceReturningPresignedUrl();
         var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment());
         handler.handleRequest(request, output, context);
         GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output, Problem.class);
         assertBasicRestRequirements(gatewayResponse, SC_NOT_FOUND, APPLICATION_PROBLEM_JSON);
         assertProblemEquivalence(gatewayResponse, getNotFoundPublicationServiceResponse(
-                                         notFoundError(PUBLICATION_IDENTIFIER, FILE_IDENTIFIER)));
+                                         notFoundError(publication.getIdentifier(), FILE_IDENTIFIER)));
     }
 
     @ParameterizedTest(name = "Should return Not Found when requester is not owner and embargo is in place")
     @MethodSource("nonOwnerProvider")
     void shouldDisallowDownloadByNonOwnerWhenFileHasIsAdministrativeAgreement(InputStream request)
         throws IOException, InterruptedException {
-        var publicationService = mockPublicationServiceReturningAdministrativeAgreement();
+        var publication = PublicationGenerator.randomPublication();
+        var publicationService = mockPublicationServiceReturningAdministrativeAgreement(publication);
         AwsS3Service s3Service = getAwsS3ServiceReturningPresignedUrl();
         var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment());
         handler.handleRequest(request, output, context);
         GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output, Problem.class);
         assertBasicRestRequirements(gatewayResponse, SC_NOT_FOUND, APPLICATION_PROBLEM_JSON);
         assertProblemEquivalence(gatewayResponse, getNotFoundPublicationServiceResponse(
-                notFoundError(PUBLICATION_IDENTIFIER, FILE_IDENTIFIER)));
+                notFoundError(publication.getIdentifier(), FILE_IDENTIFIER)));
     }
 
     private static Stream<String> userSupplier() {
@@ -454,15 +467,16 @@ class CreatePresignedDownloadUrlHandlerTest {
     private static Stream<Arguments> badRequestProvider() throws IOException {
         return Stream.of(
             Arguments.of(createBadRequestNoIdentifier(), MISSING_RESOURCE_IDENTIFIER),
-            Arguments.of(createBadRequestNoFileIdentifier(), MISSING_FILE_IDENTIFIER),
-            Arguments.of(createBadRequestNonUuidFileIdentifier(), IDENTIFIER_IS_NOT_A_VALID_UUID + NOT_A_UUID)
+            Arguments.of(createBadRequestNoFileIdentifier(SortableIdentifier.next()), MISSING_FILE_IDENTIFIER),
+            Arguments.of(createBadRequestNonUuidFileIdentifier(SortableIdentifier.next()),
+                    IDENTIFIER_IS_NOT_A_VALID_UUID + NOT_A_UUID)
         );
     }
 
     private static Stream<InputStream> nonOwnerProvider() throws IOException {
         return Stream.of(
-            createAnonymousRequest(),
-            createNonOwnerRequest()
+            createAnonymousRequest(SortableIdentifier.next()),
+            createNonOwnerRequest(SortableIdentifier.next())
         );
     }
 
@@ -534,18 +548,19 @@ class CreatePresignedDownloadUrlHandlerTest {
 
     }
 
-    private static InputStream createAnonymousRequest() throws IOException {
+    private static InputStream createAnonymousRequest(SortableIdentifier publicationIdentifier) throws IOException {
         return new HandlerRequestBuilder<Void>(dtoObjectMapper)
-            .withPathParameters(Map.of(IDENTIFIER, PUBLICATION_IDENTIFIER.toString(),
+            .withPathParameters(Map.of(IDENTIFIER, publicationIdentifier.toString(),
                                        IDENTIFIER_FILE, FILE_IDENTIFIER.toString()))
             .build();
     }
 
-    private static InputStream createNonOwnerRequest() throws JsonProcessingException {
+    private static InputStream createNonOwnerRequest(SortableIdentifier publicationIdentifier)
+            throws JsonProcessingException {
         return new HandlerRequestBuilder<Void>(dtoObjectMapper)
             .withNvaUsername(NON_OWNER)
             .withCustomerId(randomUri())
-            .withPathParameters(Map.of(IDENTIFIER, PUBLICATION_IDENTIFIER.toString(),
+            .withPathParameters(Map.of(IDENTIFIER, publicationIdentifier.toString(),
                                        IDENTIFIER_FILE, FILE_IDENTIFIER.toString()))
             .build();
     }
@@ -558,19 +573,21 @@ class CreatePresignedDownloadUrlHandlerTest {
             .build();
     }
 
-    private static InputStream createBadRequestNoFileIdentifier() throws JsonProcessingException {
+    private static InputStream createBadRequestNoFileIdentifier(SortableIdentifier publicationIdentifier)
+            throws JsonProcessingException {
         return new HandlerRequestBuilder<Void>(dtoObjectMapper)
             .withCustomerId(randomUri())
             .withNvaUsername(OWNER_USER_ID)
-            .withPathParameters(Map.of(IDENTIFIER, PUBLICATION_IDENTIFIER.toString()))
+            .withPathParameters(Map.of(IDENTIFIER, publicationIdentifier.toString()))
             .build();
     }
 
-    private static InputStream createBadRequestNonUuidFileIdentifier() throws JsonProcessingException {
+    private static InputStream createBadRequestNonUuidFileIdentifier(SortableIdentifier publicationIdentifier)
+            throws JsonProcessingException {
         return new HandlerRequestBuilder<Void>(dtoObjectMapper)
             .withCustomerId(randomUri())
             .withNvaUsername(OWNER_USER_ID)
-            .withPathParameters(Map.of(IDENTIFIER, PUBLICATION_IDENTIFIER.toString(),
+            .withPathParameters(Map.of(IDENTIFIER, publicationIdentifier.toString(),
                                        RequestUtil.FILE_IDENTIFIER, NOT_A_UUID))
             .build();
     }
@@ -589,20 +606,16 @@ class CreatePresignedDownloadUrlHandlerTest {
         return String.format(ERROR_TEMPLATE, publicationIdentifier, someRandomIdentifier);
     }
 
-    private RestPublicationService mockPublicationServiceReturningAdministrativeAgreement()
+    private RestPublicationService mockPublicationServiceReturningAdministrativeAgreement(Publication publication)
         throws IOException, InterruptedException {
-        var publication = PublicationGenerator.randomPublication();
-        publication.setIdentifier(PUBLICATION_IDENTIFIER);
         publication.setAssociatedArtifacts(new AssociatedArtifactList(
                 List.of(administrativeAgreement(FILE_IDENTIFIER))));
         var eventString = dtoObjectMapper.writeValueAsString(publication);
         return mockSuccessfulPublicationRequest(eventString);
     }
 
-    private RestPublicationService mockPublicationServiceReturningEmbargoedFile()
+    private RestPublicationService mockPublicationServiceReturningEmbargoedFile(Publication publication)
         throws IOException, InterruptedException {
-        var publication = PublicationGenerator.randomPublication();
-        publication.setIdentifier(PUBLICATION_IDENTIFIER);
         publication.setAssociatedArtifacts(new AssociatedArtifactList(
                 List.of(fileWithEmbargo(FILE_IDENTIFIER))));
         var eventString = dtoObjectMapper.writeValueAsString(publication);
@@ -639,11 +652,10 @@ class CreatePresignedDownloadUrlHandlerTest {
             .build();
     }
 
-    private String createPublishedPublicationWithoutFileSetFile() throws JsonProcessingException {
+    private Publication createPublishedPublicationWithoutFileSetFile() {
         var publication = PublicationGenerator.randomPublication();
-        publication.setIdentifier(PUBLICATION_IDENTIFIER);
         publication.setAssociatedArtifacts(new AssociatedArtifactList(emptyList()));
-        return dtoObjectMapper.writeValueAsString(publication);
+        return publication;
     }
 
     private AwsS3Service getAwsS3ServiceReturningNotFound() {
@@ -662,18 +674,19 @@ class CreatePresignedDownloadUrlHandlerTest {
         return publicationService;
     }
 
-    private RestPublicationService mockNotFoundPublicationService() throws IOException, InterruptedException {
+    private RestPublicationService mockNotFoundPublicationService(SortableIdentifier publicationIdentifier)
+            throws IOException, InterruptedException {
         @SuppressWarnings("unchecked")
         var response = (HttpResponse<String>) mock(HttpResponse.class);
         when(response.statusCode()).thenAnswer(i -> 404);
-        when(response.body()).thenAnswer(i -> notFoundProblem());
+        when(response.body()).thenAnswer(i -> notFoundProblem(publicationIdentifier));
         when(httpClient.<String>send(any(), any())).thenAnswer((Answer<HttpResponse<String>>) invocation -> response);
         return new RestPublicationService(httpClient, dtoObjectMapper, API_SCHEME, API_HOST);
     }
 
-    private String notFoundProblem() throws JsonProcessingException {
+    private String notFoundProblem(SortableIdentifier publicationIdentifier) throws JsonProcessingException {
         return dtoObjectMapper
-            .writeValueAsString(getNotFoundPublicationServiceResponse(EASY_TO_SEE + PUBLICATION_IDENTIFIER));
+            .writeValueAsString(getNotFoundPublicationServiceResponse(EASY_TO_SEE + publicationIdentifier));
     }
 
     private Problem getNotFoundPublicationServiceResponse(String message) {
@@ -684,20 +697,18 @@ class CreatePresignedDownloadUrlHandlerTest {
             .build();
     }
 
-    private String getPublicationWithFile(File file) throws JsonProcessingException {
+    private Publication getPublicationWithFile(File file) {
         var publication = PublicationGenerator.randomPublication();
-        publication.setIdentifier(PUBLICATION_IDENTIFIER);
         publication.setAssociatedArtifacts(new AssociatedArtifactList(file));
-        return dtoObjectMapper.writeValueAsString(publication);
+        return publication;
     }
 
-    private Publication getPublication(PublicationStatus status) throws JsonProcessingException {
+    private Publication getPublication(PublicationStatus status) {
         return getPublication(status, APPLICATION_PDF);
     }
 
-    private Publication getPublication(SortableIdentifier identifier, PublicationStatus status, File file) {
+    private Publication getPublication(PublicationStatus status, File file) {
         var publication = PublicationGenerator.randomPublication();
-        publication.setIdentifier(identifier);
         publication.setStatus(status);
         publication.setAssociatedArtifacts(new AssociatedArtifactList(List.of(file)));
         return publication;
@@ -705,7 +716,6 @@ class CreatePresignedDownloadUrlHandlerTest {
 
     private Publication getPublication(PublicationStatus publicationStatus, String mimeType) {
         var publication = PublicationGenerator.randomPublication();
-        publication.setIdentifier(PUBLICATION_IDENTIFIER);
         publication.setStatus(publicationStatus);
         publication.setAssociatedArtifacts(new AssociatedArtifactList(
                 List.of(fileWithoutEmbargo(mimeType, FILE_IDENTIFIER))));
@@ -756,7 +766,8 @@ class CreatePresignedDownloadUrlHandlerTest {
         return publicationService;
     }
 
-    private InputStream createRequest(String user, SortableIdentifier identifier, UUID fileIdentifier) throws IOException {
+    private InputStream createRequest(String user, SortableIdentifier identifier, UUID fileIdentifier)
+            throws IOException {
         return new HandlerRequestBuilder<Void>(dtoObjectMapper)
             .withHeaders(Map.of(AUTHORIZATION, SOME_API_KEY))
             .withCustomerId(randomUri())
@@ -781,12 +792,12 @@ class CreatePresignedDownloadUrlHandlerTest {
             .build();
     }
 
-    private AwsS3Service getS3ServiceThrowingSdkClientException() {
+    private AwsS3Service getS3ServiceThrowingSdkClientException(SortableIdentifier publicationIdentifier) {
         var amazonS3 = mock(AmazonS3.class);
         when(amazonS3.generatePresignedUrl(any()))
             .thenThrow(new SdkClientException(ERROR_COMMUNICATING_WITH_REMOTE_SERVICE
                                               + HTTP_EXAMPLE_ORG_PUBLICATION
-                                              + PUBLICATION_IDENTIFIER));
+                                              + publicationIdentifier));
         return new AwsS3Service(amazonS3, ANY_BUCKET);
     }
 }
