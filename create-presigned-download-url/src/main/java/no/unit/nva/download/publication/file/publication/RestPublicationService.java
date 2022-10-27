@@ -13,6 +13,7 @@ import java.util.Optional;
 
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.download.publication.file.publication.exception.NotFoundException;
+import no.unit.nva.model.Publication;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
 import nva.commons.apigateway.exceptions.BadGatewayException;
 import nva.commons.core.Environment;
@@ -71,7 +72,7 @@ public class RestPublicationService {
      * @return A publication
      * @throws ApiGatewayException exception thrown if value is missing
      */
-    public PublicationResponse getPublication(String identifier)
+    public Publication getPublication(String identifier)
         throws ApiGatewayException {
 
         URI uri = buildUriToPublicationService(identifier);
@@ -79,7 +80,7 @@ public class RestPublicationService {
         return fetchPublicationFromService(identifier, httpRequest);
     }
 
-    private PublicationResponse fetchPublicationFromService(String identifier, HttpRequest httpRequest)
+    private Publication fetchPublicationFromService(String identifier, HttpRequest httpRequest)
             throws NotFoundException, BadGatewayException {
 
         HttpResponse<String> httpResponse = sendHttpRequest(httpRequest);
@@ -119,9 +120,9 @@ public class RestPublicationService {
         }
     }
 
-    private PublicationResponse parseJsonObjectToPublication(HttpResponse<String> httpResponse)
+    private Publication parseJsonObjectToPublication(HttpResponse<String> httpResponse)
             throws BadGatewayException {
-        return attempt(() -> objectMapper.readValue(httpResponse.body(), PublicationResponse.class))
+        return attempt(() -> objectMapper.readValue(httpResponse.body(), Publication.class))
                 .orElseThrow(fail -> handleParsingError(httpResponse.body()));
     }
 
