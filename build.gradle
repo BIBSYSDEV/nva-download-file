@@ -33,13 +33,12 @@ subprojects {
     targetCompatibility = JavaVersion.VERSION_11 // bytecode target version
 
     def junit5Version = '5.8.2'
-    def jacksonVersion = '2.13.3'
     def awsSdkVersion = '1.12.255'
     def zalandoVersion = '0.27.1'
     def mockitoVersion = '4.5.1'
     def nvaCommonsVersion = '1.24.18'
     def hamcrestVersion = '2.2'
-    def nvaDataModelVersion = '0.19.8'
+    def nvaDataModelVersion = '0.19.9'
 
     gradleLint.rules = ['unused-dependency']
 
