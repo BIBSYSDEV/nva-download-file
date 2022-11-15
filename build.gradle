@@ -36,9 +36,9 @@ subprojects {
     def awsSdkVersion = '1.12.255'
     def zalandoVersion = '0.27.1'
     def mockitoVersion = '4.5.1'
-    def nvaCommonsVersion = '1.24.18'
+    def nvaCommonsVersion = '1.25.17'
     def hamcrestVersion = '2.2'
-    def nvaDataModelVersion = '0.19.9'
+    def nvaDataModelVersion = '0.19.16'
 
     gradleLint.rules = ['unused-dependency']
 
