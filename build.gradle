@@ -39,12 +39,17 @@ subprojects {
     def nvaCommonsVersion = '1.27.2'
     def hamcrestVersion = '2.2'
     def nvaDataModelVersion = '0.19.42'
+    def jacksonVersion = '2.13.1'
 
     gradleLint.rules = ['unused-dependency']
 
     dependencies {
         implementation group: 'com.github.bibsysdev', name: 'nva-datamodel-java', version: nvaDataModelVersion
         implementation group: 'com.github.bibsysdev', name: 'nva-datamodel-testutils', version: nvaDataModelVersion
+
+        implementation group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: jacksonVersion
+        implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: jacksonVersion
+        implementation group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: jacksonVersion
 
 
         implementation group: 'com.github.bibsysdev', name: 'core', version: nvaCommonsVersion
