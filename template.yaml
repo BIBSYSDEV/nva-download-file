@@ -48,7 +48,7 @@ Resources:
       StageName: Prod
       EndpointConfiguration: REGIONAL
       DefinitionBody:
-        swagger: '2.0'
+        swagger: '3.0'
         info:
           title: NVA Download Publication File API
           version: '1.0'
@@ -89,19 +89,19 @@ Resources:
                 '400':
                   description: BAD REQUEST
                   schema:
-                    $ref: '#/definitions/Problem'
+                    $ref: '#components/schemas/Problem'
                 '401':
                   description: UNAUTHORIZED
                   schema:
-                    $ref: '#/definitions/Problem'
+                    $ref: '#components/schemas/Problem'
                 '500':
                   description: INTERNAL SERVER ERROR
                   schema:
-                    $ref: '#/definitions/Problem'
+                    $ref: '#components/schemas/Problem'
                 '503':
                   description: SERVICE UNAVAILABLE
                   schema:
-                    $ref: '#/definitions/Problem'
+                    $ref: '#components/schemas/Problem'
           /public/{identifier}/files/{fileIdentifier}:
             get:
               summary: Returns an S3 presigned download URL to a publication file (within json response body)
@@ -136,29 +136,47 @@ Resources:
                 '400':
                   description: BAD REQUEST
                   schema:
-                    $ref: '#/definitions/Problem'
+                    $ref: '#components/schemas/Problem'
                 '404':
                   description: NOT FOUND
                   schema:
-                    $ref: '#/definitions/Problem'
+                    $ref: '#components/schemas/Problem'
                 '500':
                   description: INTERNAL SERVER ERROR
                   schema:
-                    $ref: '#/definitions/Problem'
+                    $ref: '#components/schemas/Problem'
                 '503':
                   description: SERVICE UNAVAILABLE
                   schema:
-                    $ref: '#/definitions/Problem'
-        definitions:
-          Problem:
-            type: object
-            properties:
-              title:
-                type: string
-              status:
-                type: integer
-              detail:
-                type: string
+                    $ref: '#components/schemas/Problem'
+        components:
+          schemas:
+            Problem:
+              type: object
+              description: NVA error reporting object
+              required:
+                - title
+                - detail
+                - status
+              properties:
+                title:
+                  type: string
+                  description: Human-readable description of the error status
+                detail:
+                  type: string
+                  description: A more detailed error message describing the error and potential mitigations
+                status:
+                  type: integer
+                  description: The HTTP status code associated with the problem
+                requestId:
+                  type: string
+                  description: Identifier of the request causing the problem
+                instance:
+                  type: string
+                  description: The requested path associated with the error
+                type:
+                  type: string
+                  description: A URI describing the error and mitigations, in generic cases, this is about:blank
         securityDefinitions:
           CognitoUserPool:
             type: apiKey
