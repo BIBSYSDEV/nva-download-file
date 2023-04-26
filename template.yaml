@@ -149,9 +149,8 @@ Resources:
                   description: SERVICE UNAVAILABLE
                   schema:
                     $ref: '#/definitions/Problem'
-        components:
-          schemas:
-            Problem:
+        definitions:
+          Problem:
               type: object
               description: NVA error reporting object
               required:
