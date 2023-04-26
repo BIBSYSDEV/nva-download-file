@@ -48,7 +48,7 @@ Resources:
       StageName: Prod
       EndpointConfiguration: REGIONAL
       DefinitionBody:
-        swagger: '3.0'
+        swagger: '2.0'
         info:
           title: NVA Download Publication File API
           version: '1.0'
@@ -89,19 +89,19 @@ Resources:
                 '400':
                   description: BAD REQUEST
                   schema:
-                    $ref: '#components/schemas/Problem'
+                    $ref: '#/definitions/Problem'
                 '401':
                   description: UNAUTHORIZED
                   schema:
-                    $ref: '#components/schemas/Problem'
+                    $ref: '#/definitions/Problem'
                 '500':
                   description: INTERNAL SERVER ERROR
                   schema:
-                    $ref: '#components/schemas/Problem'
+                    $ref: '#/definitions/Problem'
                 '503':
                   description: SERVICE UNAVAILABLE
                   schema:
-                    $ref: '#components/schemas/Problem'
+                    $ref: '#/definitions/Problem'
           /public/{identifier}/files/{fileIdentifier}:
             get:
               summary: Returns an S3 presigned download URL to a publication file (within json response body)
@@ -136,19 +136,19 @@ Resources:
                 '400':
                   description: BAD REQUEST
                   schema:
-                    $ref: '#components/schemas/Problem'
+                    $ref: '#/definitions/Problem'
                 '404':
                   description: NOT FOUND
                   schema:
-                    $ref: '#components/schemas/Problem'
+                    $ref: '#/definitions/Problem'
                 '500':
                   description: INTERNAL SERVER ERROR
                   schema:
-                    $ref: '#components/schemas/Problem'
+                    $ref: '#/definitions/Problem'
                 '503':
                   description: SERVICE UNAVAILABLE
                   schema:
-                    $ref: '#components/schemas/Problem'
+                    $ref: '#/definitions/Problem'
         components:
           schemas:
             Problem:
