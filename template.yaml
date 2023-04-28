@@ -85,7 +85,7 @@ Resources:
                 '200':
                   description: OK
                   schema:
-                    type: object
+                    $ref: '#/definitions/PreSignedUri'
                 '400':
                   description: BAD REQUEST
                   schema:
@@ -132,7 +132,7 @@ Resources:
                 '200':
                   description: OK
                   schema:
-                    type: object
+                    $ref: '#/definitions/PreSignedUri'
                 '400':
                   description: BAD REQUEST
                   schema:
@@ -176,6 +176,19 @@ Resources:
                 type:
                   type: string
                   description: A URI describing the error and mitigations, in generic cases, this is about:blank
+          PreSignedUri:
+            type: object
+            description: NVA error reporting object
+            required:
+              - id
+              - expires
+            properties:
+              id:
+                type: string
+                description: URI to time constrained downloadable link
+              expires:
+                type: string
+                description: DateTime that link expires
         securityDefinitions:
           CognitoUserPool:
             type: apiKey
