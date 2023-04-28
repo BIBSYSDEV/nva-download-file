@@ -55,7 +55,7 @@ Resources:
         paths:
           /{identifier}/files/{fileIdentifier}:
             get:
-              summary: Returns an S3 presigned download URL to a publication file (within json response body)
+              summary: Get a URI to fetch the requested file
               consumes:
                 - application/json
               produces:
@@ -85,7 +85,7 @@ Resources:
                 '200':
                   description: OK
                   schema:
-                    $ref: '#/definitions/PreSignedUri'
+                    $ref: '#/definitions/DownloadUrl'
                 '400':
                   description: BAD REQUEST
                   schema:
@@ -104,7 +104,7 @@ Resources:
                     $ref: '#/definitions/Problem'
           /public/{identifier}/files/{fileIdentifier}:
             get:
-              summary: Returns an S3 presigned download URL to a publication file (within json response body)
+              summary: Get a URI to fetch the requested file
               consumes:
                 - application/json
               produces:
@@ -132,7 +132,7 @@ Resources:
                 '200':
                   description: OK
                   schema:
-                    $ref: '#/definitions/PreSignedUri'
+                    $ref: '#/definitions/DownloadUrl'
                 '400':
                   description: BAD REQUEST
                   schema:
@@ -176,19 +176,16 @@ Resources:
                 type:
                   type: string
                   description: A URI describing the error and mitigations, in generic cases, this is about:blank
-          PreSignedUri:
+          DownloadUrl:
             type: object
-            description: NVA error reporting object
-            required:
-              - id
-              - expires
+            description: Details of downloadable file
             properties:
               id:
                 type: string
-                description: URI to time constrained downloadable link
+                description: URI of downloadable publication
               expires:
                 type: string
-                description: DateTime that link expires
+                description: DateTime for expiration of URI
         securityDefinitions:
           CognitoUserPool:
             type: apiKey
