@@ -19,7 +19,7 @@ externalDocs:
 paths:
   /{identifier}/files/{fileIdentifier}:
     get:
-      summary: Pre signed download link
+      summary: Private pre signed download link for publication file
       description: Returns an S3 pre signed and temporal download URL to a publication file
       x-amazon-apigateway-integration:
         uri:
@@ -65,7 +65,7 @@ paths:
           $ref: '#/components/responses/503'
   /public/{identifier}/files/{fileIdentifier}:
     get:
-      summary: Pre signed download link
+      summary: Public pre signed download link for publication file
       description: Returns an S3 pre signed and temporal download URL to a publication file
       x-amazon-apigateway-integration:
         uri:
