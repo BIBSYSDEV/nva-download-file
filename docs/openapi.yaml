@@ -1,0 +1,187 @@
+openapi: 3.0.3
+
+info:
+  title: NVA Download API
+  description: >
+    The NVA Download API.
+  termsOfService: https://nva.unit.no/terms/
+  contact:
+    email: nva@unit.no
+  license:
+    name: MIT/NLOD 2.0
+    url: https://link.to.license
+  version: 1.0.0
+
+externalDocs:
+  description: Find out more about NVA
+  url: https://nva.unit.no
+
+paths:
+  /{identifier}/files/{fileIdentifier}:
+    get:
+      summary: Private pre signed download link for publication file
+      description: Returns an S3 pre signed and temporal download URL to a publication file
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${NvaDownloadPublicationFileFunction.Arn}/invocations
+        httpMethod: POST
+        type: AWS_PROXY
+      security:
+        - CognitoUserPool: [
+          "https://api.nva.unit.no/scopes/frontend",
+          "aws.cognito.signin.user.admin"
+        ]
+      parameters:
+        - in: path
+          name: identifier
+          description: UUID identifier of the Publication.
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: path
+          name: fileIdentifier
+          description: UUID identifier of the Publication File.
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PreSignedUri'
+        400:
+          $ref: '#/components/responses/400'
+        401:
+          $ref: '#/components/responses/401'
+        404:
+          $ref: '#/components/responses/404'
+        500:
+          $ref: '#/components/responses/500'
+        503:
+          $ref: '#/components/responses/503'
+  /public/{identifier}/files/{fileIdentifier}:
+    get:
+      summary: Public pre signed download link for publication file
+      description: Returns an S3 pre signed and temporal download URL to a publication file
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${NvaDownloadPublicationFileFunction.Arn}/invocations
+        httpMethod: POST
+        type: AWS_PROXY
+      parameters:
+        - in: path
+          name: identifier
+          description: UUID identifier of the Publication.
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: path
+          name: fileIdentifier
+          description: UUID identifier of the Publication File.
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PreSignedUri'
+        400:
+          $ref: '#/components/responses/400'
+        404:
+          $ref: '#/components/responses/404'
+        500:
+          $ref: '#/components/responses/500'
+        503:
+          $ref: '#/components/responses/503'
+
+components:
+  responses:
+    400:
+      description: Bad Request
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    401:
+      description: Unauthorized
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    404:
+      description: Not found
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    500:
+      description: Internal Server Error
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    503:
+      description: Bad Gateway
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+  schemas:
+    Problem:
+      type: object
+      description: NVA error reporting object
+      required:
+        - title
+        - detail
+        - status
+      properties:
+        title:
+          type: string
+          description: Human-readable description of the error status
+        detail:
+          type: string
+          description: A more detailed error message describing the error and potential mitigations
+        status:
+          type: integer
+          description: The HTTP status code associated with the problem
+        requestId:
+          type: string
+          description: Identifier of the request causing the problem
+        instance:
+          type: string
+          description: The requested path associated with the error
+        type:
+          type: string
+          description: A URI describing the error and mitigations, in generic cases, this is about:blank
+    PreSignedUri:
+      type: object
+      description: NVA error reporting object
+      required:
+        - id
+        - expires
+      properties:
+        id:
+          type: string
+          description: URI to time constrained downloadable link
+        expires:
+          type: string
+          description: DateTime that link expires
+  securitySchemes:
+    CognitoUserPool:
+      type: apiKey
+      name: Authorization
+      in: header
+      x-amazon-apigateway-authtype: cognito_user_pools
+      x-amazon-apigateway-authorizer:
+        type: cognito_user_pools
+        providerARNs:
+           Ref: CognitoAuthorizerArn
