@@ -93,7 +93,6 @@ paths:
         503:
           $ref: '#/components/responses/503'
 
-
 components:
   responses:
     200:
@@ -181,5 +180,4 @@ components:
       x-amazon-apigateway-authorizer:
         type: cognito_user_pools
         providerARNs:
-          - Ref: CognitoAuthorizerArn
-          - Ref: ExternalCognitoAuthorizerArn
+           Ref: CognitoAuthorizerArn
