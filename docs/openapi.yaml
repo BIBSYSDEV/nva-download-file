@@ -72,6 +72,11 @@ paths:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${NvaDownloadPublicationFileFunction.Arn}/invocations
         httpMethod: POST
         type: AWS_PROXY
+      security:
+        - CognitoUserPool: [
+          "https://api.nva.unit.no/scopes/frontend",
+          "aws.cognito.signin.user.admin"
+        ]
       parameters:
         - in: path
           name: identifier
@@ -184,4 +189,5 @@ components:
       x-amazon-apigateway-authorizer:
         type: cognito_user_pools
         providerARNs:
-           Ref: CognitoAuthorizerArn
+          - Ref:
+              CognitoAuthorizerArn
