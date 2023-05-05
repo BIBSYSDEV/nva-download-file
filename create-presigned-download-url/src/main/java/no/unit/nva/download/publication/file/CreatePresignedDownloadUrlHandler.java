@@ -90,7 +90,7 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, P
                                File file,
                                Publication publication,
                                RequestInfo requestInfo) {
-        return publication.getResourceOwner().getOwner().equals(user)
+        return publication.getResourceOwner().getOwner().getValue().equals(user)
                 || requestInfo.userIsAuthorized(EDIT_OWN_INSTITUTION_RESOURCES.toString())
                 || PublicationStatus.PUBLISHED.equals(publication.getStatus()) && file.isVisibleForNonOwner();
     }
