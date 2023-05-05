@@ -181,7 +181,7 @@ class CreatePresignedDownloadUrlHandlerTest {
         var publicationService = mockSuccessfulPublicationRequest(publication.toString());
         var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment());
 
-        handler.handleRequest(createRequest(publication.getResourceOwner().getOwner(), publication.getIdentifier(),
+        handler.handleRequest(createRequest(publication.getResourceOwner().getOwner().getValue(), publication.getIdentifier(),
                 FILE_IDENTIFIER), output, context);
 
         GatewayResponse<PresignedUri> gatewayResponse =
@@ -237,7 +237,7 @@ class CreatePresignedDownloadUrlHandlerTest {
         var publicationService = mockSuccessfulPublicationRequest(publication.toString());
         var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment());
 
-        handler.handleRequest(createRequest(publication.getResourceOwner().getOwner(),
+        handler.handleRequest(createRequest(publication.getResourceOwner().getOwner().getValue(),
                 publication.getIdentifier(), FILE_IDENTIFIER), output, context);
 
         GatewayResponse<PresignedUri> gatewayResponse =
@@ -329,7 +329,7 @@ class CreatePresignedDownloadUrlHandlerTest {
         var publicationService = mockSuccessfulPublicationRequest(publication.toString());
         var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment());
 
-        handler.handleRequest(createRequest(publication.getResourceOwner().getOwner(), publicationIdentifier,
+        handler.handleRequest(createRequest(publication.getResourceOwner().getOwner().getValue(), publicationIdentifier,
                 FILE_IDENTIFIER), output, context);
 
         GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output, Problem.class);
@@ -512,6 +512,7 @@ class CreatePresignedDownloadUrlHandlerTest {
 
     private static File fileWithEmbargo(UUID fileIdentifier) {
         var embargo = Instant.now().plus(Duration.ofDays(3L));
+        var publishedDate = Instant.now();
         return new PublishedFile(
                 fileIdentifier,
                 randomString(),
@@ -520,10 +521,12 @@ class CreatePresignedDownloadUrlHandlerTest {
                 new License(),
                 false,
                 true,
-                embargo);
+                embargo,
+                publishedDate);
     }
 
     private static File fileWithoutEmbargo(String mimeType, UUID fileIdentifier) {
+        var publishedDate = Instant.now();
         return new PublishedFile(
                 fileIdentifier,
                 randomString(),
@@ -532,7 +535,8 @@ class CreatePresignedDownloadUrlHandlerTest {
                 new License(),
                 false,
                 true,
-                null);
+                null,
+                publishedDate);
     }
 
     private static File fileWithTypeUnpublished(UUID fileIdentifier) {
@@ -558,8 +562,8 @@ class CreatePresignedDownloadUrlHandlerTest {
     private static InputStream createNonOwnerRequest(SortableIdentifier publicationIdentifier)
             throws JsonProcessingException {
         return new HandlerRequestBuilder<Void>(dtoObjectMapper)
-            .withNvaUsername(NON_OWNER)
-            .withCustomerId(randomUri())
+            .withUserName(NON_OWNER)
+            .withCurrentCustomer(randomUri())
             .withPathParameters(Map.of(IDENTIFIER, publicationIdentifier.toString(),
                                        IDENTIFIER_FILE, FILE_IDENTIFIER.toString()))
             .build();
@@ -567,8 +571,8 @@ class CreatePresignedDownloadUrlHandlerTest {
 
     private static InputStream createBadRequestNoIdentifier() throws IOException {
         return new HandlerRequestBuilder<Void>(dtoObjectMapper)
-            .withCustomerId(randomUri())
-            .withNvaUsername(OWNER_USER_ID)
+            .withCurrentCustomer(randomUri())
+            .withUserName(OWNER_USER_ID)
             .withPathParameters(Map.of(IDENTIFIER_FILE, FILE_IDENTIFIER.toString()))
             .build();
     }
@@ -576,8 +580,8 @@ class CreatePresignedDownloadUrlHandlerTest {
     private static InputStream createBadRequestNoFileIdentifier(SortableIdentifier publicationIdentifier)
             throws JsonProcessingException {
         return new HandlerRequestBuilder<Void>(dtoObjectMapper)
-            .withCustomerId(randomUri())
-            .withNvaUsername(OWNER_USER_ID)
+            .withCurrentCustomer(randomUri())
+            .withUserName(OWNER_USER_ID)
             .withPathParameters(Map.of(IDENTIFIER, publicationIdentifier.toString()))
             .build();
     }
@@ -585,8 +589,8 @@ class CreatePresignedDownloadUrlHandlerTest {
     private static InputStream createBadRequestNonUuidFileIdentifier(SortableIdentifier publicationIdentifier)
             throws JsonProcessingException {
         return new HandlerRequestBuilder<Void>(dtoObjectMapper)
-            .withCustomerId(randomUri())
-            .withNvaUsername(OWNER_USER_ID)
+            .withCurrentCustomer(randomUri())
+            .withUserName(OWNER_USER_ID)
             .withPathParameters(Map.of(IDENTIFIER, publicationIdentifier.toString(),
                                        RequestUtil.FILE_IDENTIFIER, NOT_A_UUID))
             .build();
@@ -770,8 +774,8 @@ class CreatePresignedDownloadUrlHandlerTest {
             throws IOException {
         return new HandlerRequestBuilder<Void>(dtoObjectMapper)
             .withHeaders(Map.of(AUTHORIZATION, SOME_API_KEY))
-            .withCustomerId(randomUri())
-            .withNvaUsername(user)
+            .withCurrentCustomer(randomUri())
+            .withUserName(user)
             .withPathParameters(Map.of(IDENTIFIER, identifier.toString(),
                                        IDENTIFIER_FILE, fileIdentifier.toString()))
             .build();
@@ -784,9 +788,9 @@ class CreatePresignedDownloadUrlHandlerTest {
                                                      String accessRight) throws IOException {
         return new HandlerRequestBuilder<Void>(dtoObjectMapper)
             .withHeaders(Map.of(AUTHORIZATION, SOME_API_KEY))
-            .withCustomerId(customer)
+            .withCurrentCustomer(customer)
             .withAccessRights(customer, accessRight)
-            .withNvaUsername(user)
+            .withUserName(user)
             .withPathParameters(Map.of(IDENTIFIER, identifier.toString(),
                                        IDENTIFIER_FILE, fileIdentifier.toString()))
             .build();
