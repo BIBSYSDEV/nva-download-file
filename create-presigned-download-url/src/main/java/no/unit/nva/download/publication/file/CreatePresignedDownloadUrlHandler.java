@@ -1,29 +1,29 @@
 package no.unit.nva.download.publication.file;
 
+import static java.net.HttpURLConnection.HTTP_OK;
+import static java.util.Objects.nonNull;
+import static no.unit.nva.download.publication.file.RequestUtil.getFileIdentifier;
+import static no.unit.nva.download.publication.file.RequestUtil.getUser;
+import static nva.commons.apigateway.AccessRight.EDIT_OWN_INSTITUTION_RESOURCES;
 import com.amazonaws.services.lambda.runtime.Context;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.Date;
+import java.util.Optional;
+import java.util.UUID;
 import no.unit.nva.download.publication.file.aws.s3.AwsS3Service;
 import no.unit.nva.download.publication.file.exception.NotFoundException;
 import no.unit.nva.download.publication.file.publication.RestPublicationService;
 import no.unit.nva.model.Publication;
 import no.unit.nva.model.PublicationStatus;
 import no.unit.nva.model.associatedartifacts.file.File;
+import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.SingletonCollector;
-
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.Date;
-import java.util.Optional;
-import java.util.UUID;
-
-import static java.net.HttpURLConnection.HTTP_OK;
-import static no.unit.nva.download.publication.file.RequestUtil.getFileIdentifier;
-import static no.unit.nva.download.publication.file.RequestUtil.getUser;
-import static nva.commons.apigateway.AccessRight.EDIT_OWN_INSTITUTION_RESOURCES;
 
 public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, PresignedUri> {
 
@@ -90,9 +90,18 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, P
                                File file,
                                Publication publication,
                                RequestInfo requestInfo) {
-        return publication.getResourceOwner().getOwner().getValue().equals(user)
-                || requestInfo.userIsAuthorized(EDIT_OWN_INSTITUTION_RESOURCES.toString())
-                || PublicationStatus.PUBLISHED.equals(publication.getStatus()) && file.isVisibleForNonOwner();
+        var isOwner = publication.getResourceOwner().getOwner().getValue().equals(user);
+        if (file.getEmbargoDate().isPresent() &&
+            !file.fileDoesNotHaveActiveEmbargo()) {
+            return
+                isOwner ||
+                requestInfo.userIsAuthorized(AccessRight.PUBLISH_THESIS_EMBARGO_READ.toString());
+        }
+
+        return isOwner
+               || file.isVisibleForNonOwner()
+               || requestInfo.userIsAuthorized(EDIT_OWN_INSTITUTION_RESOURCES.toString())
+               || PublicationStatus.PUBLISHED.equals(publication.getStatus()) && file.isVisibleForNonOwner();
     }
 
     private Optional<File> getFile(File file,

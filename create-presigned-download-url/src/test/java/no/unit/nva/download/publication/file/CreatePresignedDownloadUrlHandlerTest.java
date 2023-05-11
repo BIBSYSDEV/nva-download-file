@@ -181,8 +181,12 @@ class CreatePresignedDownloadUrlHandlerTest {
         var publicationService = mockSuccessfulPublicationRequest(publication.toString());
         var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment());
 
-        handler.handleRequest(createRequest(publication.getResourceOwner().getOwner().getValue(), publication.getIdentifier(),
-                FILE_IDENTIFIER), output, context);
+        handler.handleRequest(
+            createRequest(
+                publication.getResourceOwner().getOwner().getValue(),
+                publication.getIdentifier(),
+                FILE_IDENTIFIER),
+            output, context);
 
         GatewayResponse<PresignedUri> gatewayResponse =
             GatewayResponse.fromString(output.toString(), PresignedUri.class);
@@ -329,8 +333,12 @@ class CreatePresignedDownloadUrlHandlerTest {
         var publicationService = mockSuccessfulPublicationRequest(publication.toString());
         var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment());
 
-        handler.handleRequest(createRequest(publication.getResourceOwner().getOwner().getValue(), publicationIdentifier,
-                FILE_IDENTIFIER), output, context);
+        handler.handleRequest(
+            createRequest(
+                publication.getResourceOwner().getOwner().getValue(),
+                publicationIdentifier,
+                FILE_IDENTIFIER),
+            output, context);
 
         GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output, Problem.class);
         assertBasicRestRequirements(gatewayResponse, SC_BAD_GATEWAY, APPLICATION_PROBLEM_JSON);
