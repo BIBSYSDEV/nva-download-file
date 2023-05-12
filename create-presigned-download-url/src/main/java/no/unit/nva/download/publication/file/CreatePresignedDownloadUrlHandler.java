@@ -13,6 +13,7 @@ import java.util.UUID;
 import no.unit.nva.download.publication.file.aws.s3.AwsS3Service;
 import no.unit.nva.download.publication.file.exception.NotFoundException;
 import no.unit.nva.download.publication.file.publication.RestPublicationService;
+import no.unit.nva.download.publication.file.publication.exception.InputException;
 import no.unit.nva.model.Publication;
 import no.unit.nva.model.PublicationStatus;
 import no.unit.nva.model.associatedartifacts.file.File;
@@ -56,27 +57,26 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, P
     @Override
     protected PresignedUri processInput(Void input, RequestInfo requestInfo, Context context)
         throws ApiGatewayException {
+
         var publication = publicationService.getPublication(RequestUtil.getIdentifier(requestInfo));
-        var file = getFileInformation(getUser(requestInfo),
-                getFileIdentifier(requestInfo),
-                publication,
-                requestInfo);
+        var file = getFileInformation(publication, requestInfo);
         var expiration = defaultExpiration();
         return new PresignedUri(getPresignedDownloadUrl(file, expiration), expiration);
     }
 
-    private File getFileInformation(String user,
-                                    UUID fileIdentifier,
-                                    Publication publication,
-                                    RequestInfo requestInfo) throws NotFoundException {
+    private File getFileInformation(Publication publication, RequestInfo requestInfo)
+        throws NotFoundException, InputException {
+
+        var fileIdentifier = getFileIdentifier(requestInfo);
         if (publication.getAssociatedArtifacts().isEmpty()) {
             throw new NotFoundException(publication.getIdentifier(), fileIdentifier);
         }
-        return publication.getAssociatedArtifacts().stream()
+        return
+            publication.getAssociatedArtifacts().stream()
                 .filter(File.class::isInstance)
                 .map(File.class::cast)
                 .filter(element -> findByIdentifier(fileIdentifier, element))
-                .map(element -> getFile(element, user, publication, requestInfo))
+                .map(element -> getFile(element, publication, requestInfo))
                 .collect(SingletonCollector.collect())
                 .orElseThrow(() -> new NotFoundException(publication.getIdentifier(), fileIdentifier));
     }
@@ -85,15 +85,13 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, P
         return fileIdentifier.equals(element.getIdentifier());
     }
 
-    private boolean isFindable(String user,
-                               File file,
-                               Publication publication,
-                               RequestInfo requestInfo) {
+    private boolean isFindable(File file, Publication publication, RequestInfo requestInfo) {
 
         var isEmbargoReader = requestInfo.userIsAuthorized(AccessRight.PUBLISH_THESIS_EMBARGO_READ.toString());
-        var isOwner = publication.getResourceOwner().getOwner().getValue().equals(user);
+        var isOwner = publication.getResourceOwner().getOwner().getValue().equals(getUser(requestInfo));
+        var hasActiveEmbargo = !file.fileDoesNotHaveActiveEmbargo();
 
-        if (!file.fileDoesNotHaveActiveEmbargo()) {
+        if (hasActiveEmbargo) {
             return isOwner || isEmbargoReader;
         }
 
@@ -104,10 +102,9 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, P
     }
 
     private Optional<File> getFile(File file,
-                                   String user,
                                    Publication publication,
                                    RequestInfo requestInfo) {
-        return isFindable(user, file, publication, requestInfo) ? Optional.of(file) : Optional.empty();
+        return isFindable(file, publication, requestInfo) ? Optional.of(file) : Optional.empty();
     }
 
     @Override

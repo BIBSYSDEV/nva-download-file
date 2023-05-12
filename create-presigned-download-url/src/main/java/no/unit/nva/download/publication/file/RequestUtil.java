@@ -70,6 +70,6 @@ public final class RequestUtil {
     }
 
     public static String getUser(RequestInfo requestInfo) {
-        return attempt(requestInfo::getNvaUsername).orElse(user -> ANONYMOUS);
+        return attempt(requestInfo::getUserName).orElse(user -> ANONYMOUS);
     }
 }
