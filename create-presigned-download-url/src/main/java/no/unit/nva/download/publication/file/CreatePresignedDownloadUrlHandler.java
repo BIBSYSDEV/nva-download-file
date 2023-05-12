@@ -100,7 +100,7 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, P
         var isPublished = PublicationStatus.PUBLISHED.equals(publication.getStatus());
         var isEditor = requestInfo.userIsAuthorized(EDIT_OWN_INSTITUTION_RESOURCES.toString());
 
-        return isOwner || isEditor || (isPublished && file.isVisibleForNonOwner());
+        return isOwner || isEditor || isPublished && file.isVisibleForNonOwner();
     }
 
     private Optional<File> getFile(File file,
