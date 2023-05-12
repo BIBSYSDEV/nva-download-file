@@ -16,6 +16,7 @@ import no.unit.nva.download.publication.file.publication.RestPublicationService;
 import no.unit.nva.download.publication.file.publication.exception.InputException;
 import no.unit.nva.model.Publication;
 import no.unit.nva.model.PublicationStatus;
+import no.unit.nva.model.Username;
 import no.unit.nva.model.associatedartifacts.file.File;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
@@ -85,26 +86,27 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, P
         return fileIdentifier.equals(element.getIdentifier());
     }
 
-    private boolean isFindable(File file, Publication publication, RequestInfo requestInfo) {
+    private boolean userCanDownload(File file, Username owner, PublicationStatus status, RequestInfo requestInfo) {
 
         var isEmbargoReader = requestInfo.userIsAuthorized(AccessRight.PUBLISH_THESIS_EMBARGO_READ.toString());
-        var isOwner = publication.getResourceOwner().getOwner().getValue().equals(getUser(requestInfo));
+        var isOwner = owner.getValue().equals(getUser(requestInfo));
         var hasActiveEmbargo = !file.fileDoesNotHaveActiveEmbargo();
 
         if (hasActiveEmbargo) {
             return isOwner || isEmbargoReader;
         }
 
-        var isPublished = PublicationStatus.PUBLISHED.equals(publication.getStatus());
+        var isPublished = PublicationStatus.PUBLISHED.equals(status);
         var isEditor = requestInfo.userIsAuthorized(EDIT_OWN_INSTITUTION_RESOURCES.toString());
 
         return isOwner || isEditor || isPublished && file.isVisibleForNonOwner();
     }
 
-    private Optional<File> getFile(File file,
-                                   Publication publication,
-                                   RequestInfo requestInfo) {
-        return isFindable(file, publication, requestInfo) ? Optional.of(file) : Optional.empty();
+    private Optional<File> getFile(File file, Publication publication, RequestInfo requestInfo) {
+        return
+            userCanDownload(file, publication.getResourceOwner().getOwner(), publication.getStatus(), requestInfo)
+                ? Optional.of(file)
+                : Optional.empty();
     }
 
     @Override
