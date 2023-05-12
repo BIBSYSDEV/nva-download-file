@@ -4,6 +4,7 @@ import static java.net.HttpURLConnection.HTTP_OK;
 import static no.unit.nva.download.publication.file.RequestUtil.getFileIdentifier;
 import static no.unit.nva.download.publication.file.RequestUtil.getUser;
 import static nva.commons.apigateway.AccessRight.EDIT_OWN_INSTITUTION_RESOURCES;
+import static nva.commons.apigateway.AccessRight.PUBLISH_THESIS_EMBARGO_READ;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -18,7 +19,6 @@ import no.unit.nva.model.Publication;
 import no.unit.nva.model.PublicationStatus;
 import no.unit.nva.model.Username;
 import no.unit.nva.model.associatedartifacts.file.File;
-import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
@@ -88,7 +88,7 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, P
 
     private boolean hasReadAccess(File file, Username owner, PublicationStatus status, RequestInfo requestInfo) {
 
-        var isEmbargoReader = requestInfo.userIsAuthorized(AccessRight.PUBLISH_THESIS_EMBARGO_READ.toString());
+        var isEmbargoReader = requestInfo.userIsAuthorized(PUBLISH_THESIS_EMBARGO_READ.toString());
         var isOwner = owner.equals(getUser(requestInfo));
         var hasActiveEmbargo = !file.fileDoesNotHaveActiveEmbargo();
 
