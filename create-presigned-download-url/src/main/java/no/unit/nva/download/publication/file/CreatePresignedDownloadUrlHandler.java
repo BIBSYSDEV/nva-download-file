@@ -86,10 +86,10 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, P
         return fileIdentifier.equals(element.getIdentifier());
     }
 
-    private boolean userCanDownload(File file, Username owner, PublicationStatus status, RequestInfo requestInfo) {
+    private boolean hasReadAccess(File file, Username owner, PublicationStatus status, RequestInfo requestInfo) {
 
         var isEmbargoReader = requestInfo.userIsAuthorized(AccessRight.PUBLISH_THESIS_EMBARGO_READ.toString());
-        var isOwner = owner.getValue().equals(getUser(requestInfo));
+        var isOwner = owner.equals(getUser(requestInfo));
         var hasActiveEmbargo = !file.fileDoesNotHaveActiveEmbargo();
 
         if (hasActiveEmbargo) {
@@ -104,7 +104,7 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, P
 
     private Optional<File> getFile(File file, Publication publication, RequestInfo requestInfo) {
         return
-            userCanDownload(file, publication.getResourceOwner().getOwner(), publication.getStatus(), requestInfo)
+            hasReadAccess(file, publication.getResourceOwner().getOwner(), publication.getStatus(), requestInfo)
                 ? Optional.of(file)
                 : Optional.empty();
     }
