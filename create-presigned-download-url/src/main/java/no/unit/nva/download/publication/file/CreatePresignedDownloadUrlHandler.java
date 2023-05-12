@@ -1,7 +1,6 @@
 package no.unit.nva.download.publication.file;
 
 import static java.net.HttpURLConnection.HTTP_OK;
-import static java.util.Objects.nonNull;
 import static no.unit.nva.download.publication.file.RequestUtil.getFileIdentifier;
 import static no.unit.nva.download.publication.file.RequestUtil.getUser;
 import static nva.commons.apigateway.AccessRight.EDIT_OWN_INSTITUTION_RESOURCES;
@@ -90,18 +89,18 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, P
                                File file,
                                Publication publication,
                                RequestInfo requestInfo) {
+
+        var isEmbargoReader = requestInfo.userIsAuthorized(AccessRight.PUBLISH_THESIS_EMBARGO_READ.toString());
         var isOwner = publication.getResourceOwner().getOwner().getValue().equals(user);
-        if (file.getEmbargoDate().isPresent() &&
-            !file.fileDoesNotHaveActiveEmbargo()) {
-            return
-                isOwner ||
-                requestInfo.userIsAuthorized(AccessRight.PUBLISH_THESIS_EMBARGO_READ.toString());
+
+        if (!file.fileDoesNotHaveActiveEmbargo()) {
+            return isOwner || isEmbargoReader;
         }
 
-        return isOwner
-               || file.isVisibleForNonOwner()
-               || requestInfo.userIsAuthorized(EDIT_OWN_INSTITUTION_RESOURCES.toString())
-               || PublicationStatus.PUBLISHED.equals(publication.getStatus()) && file.isVisibleForNonOwner();
+        var isPublished = PublicationStatus.PUBLISHED.equals(publication.getStatus());
+        var isEditor = requestInfo.userIsAuthorized(EDIT_OWN_INSTITUTION_RESOURCES.toString());
+
+        return isOwner || isEditor || (isPublished && file.isVisibleForNonOwner());
     }
 
     private Optional<File> getFile(File file,

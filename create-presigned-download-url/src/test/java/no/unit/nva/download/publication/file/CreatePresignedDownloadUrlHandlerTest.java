@@ -16,6 +16,7 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static no.unit.nva.testutils.TestHeaders.ACCESS_CONTROL_ALLOW_ORIGIN;
 import static nva.commons.apigateway.AccessRight.EDIT_OWN_INSTITUTION_RESOURCES;
+import static nva.commons.apigateway.AccessRight.PUBLISH_THESIS_EMBARGO_READ;
 import static nva.commons.apigateway.ApiGatewayHandler.ALLOWED_ORIGIN_ENV;
 import static org.apache.http.HttpHeaders.AUTHORIZATION;
 import static org.apache.http.HttpHeaders.CONTENT_TYPE;
@@ -208,7 +209,7 @@ class CreatePresignedDownloadUrlHandlerTest {
                                   publication.getIdentifier(),
                                   FILE_IDENTIFIER,
                                   customer,
-                                  EDIT_OWN_INSTITUTION_RESOURCES.toString()),
+                                  PUBLISH_THESIS_EMBARGO_READ.name(),EDIT_OWN_INSTITUTION_RESOURCES.name()),
                               output,
                               context);
 
@@ -297,7 +298,7 @@ class CreatePresignedDownloadUrlHandlerTest {
                 publication.getIdentifier(),
                 file.getIdentifier(),
                 customer,
-                EDIT_OWN_INSTITUTION_RESOURCES.name()),
+                PUBLISH_THESIS_EMBARGO_READ.name(),EDIT_OWN_INSTITUTION_RESOURCES.name()),
             output,
             context);
 
@@ -793,7 +794,7 @@ class CreatePresignedDownloadUrlHandlerTest {
                                                      SortableIdentifier identifier,
                                                      UUID fileIdentifier,
                                                      URI customer,
-                                                     String accessRight) throws IOException {
+                                                     String... accessRight) throws IOException {
         return new HandlerRequestBuilder<Void>(dtoObjectMapper)
             .withHeaders(Map.of(AUTHORIZATION, SOME_API_KEY))
             .withCurrentCustomer(customer)
