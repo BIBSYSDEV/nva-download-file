@@ -3,12 +3,14 @@ package no.unit.nva.download.publication.file;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static no.unit.nva.download.publication.file.RequestUtil.getFileIdentifier;
 import static no.unit.nva.download.publication.file.RequestUtil.getUser;
-import static nva.commons.apigateway.AccessRight.EDIT_OWN_INSTITUTION_RESOURCES;
-import static nva.commons.apigateway.AccessRight.PUBLISH_THESIS_EMBARGO_READ;
+import static nva.commons.apigateway.AccessRight.*;
+import static nva.commons.core.attempt.Try.attempt;
+
 import com.amazonaws.services.lambda.runtime.Context;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import no.unit.nva.download.publication.file.aws.s3.AwsS3Service;
@@ -17,8 +19,10 @@ import no.unit.nva.download.publication.file.publication.RestPublicationService;
 import no.unit.nva.download.publication.file.publication.exception.InputException;
 import no.unit.nva.model.Publication;
 import no.unit.nva.model.PublicationStatus;
-import no.unit.nva.model.Username;
 import no.unit.nva.model.associatedartifacts.file.File;
+import no.unit.nva.model.instancetypes.degree.DegreeBachelor;
+import no.unit.nva.model.instancetypes.degree.DegreeMaster;
+import no.unit.nva.model.instancetypes.degree.DegreePhd;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
@@ -86,25 +90,31 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, P
         return fileIdentifier.equals(element.getIdentifier());
     }
 
-    private boolean hasReadAccess(File file, Username owner, PublicationStatus status, RequestInfo requestInfo) {
+    private boolean hasReadAccess(File file, Publication publication, RequestInfo requestInfo) {
 
-        var isEmbargoReader = requestInfo.userIsAuthorized(PUBLISH_THESIS_EMBARGO_READ.toString());
-        var isOwner = owner.equals(getUser(requestInfo));
-        var hasActiveEmbargo = !file.fileDoesNotHaveActiveEmbargo();
+        var isThesisAndEmbargoThesisReader =
+            isThesis(publication)
+            && requestInfo.userIsAuthorized(PUBLISH_THESIS_EMBARGO_READ.name());
+        var isOwner =
+            publication.getResourceOwner().getOwner().equals(getUser(requestInfo));
+        var hasActiveEmbargo =
+            !file.fileDoesNotHaveActiveEmbargo();
 
         if (hasActiveEmbargo) {
-            return isOwner || isEmbargoReader;
+            return isOwner || isThesisAndEmbargoThesisReader ;
         }
 
-        var isPublished = PublicationStatus.PUBLISHED.equals(status);
-        var isEditor = requestInfo.userIsAuthorized(EDIT_OWN_INSTITUTION_RESOURCES.toString());
+        var isPublished =
+            PublicationStatus.PUBLISHED.equals(publication.getStatus());
+        var isEditor =
+            requestInfo.userIsAuthorized(EDIT_OWN_INSTITUTION_RESOURCES.name());
 
         return isOwner || isEditor || isPublished && file.isVisibleForNonOwner();
     }
 
     private Optional<File> getFile(File file, Publication publication, RequestInfo requestInfo) {
         return
-            hasReadAccess(file, publication.getResourceOwner().getOwner(), publication.getStatus(), requestInfo)
+            hasReadAccess(file,publication, requestInfo)
                 ? Optional.of(file)
                 : Optional.empty();
     }
@@ -112,6 +122,16 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, P
     @Override
     protected Integer getSuccessStatusCode(Void input, PresignedUri output) {
         return HTTP_OK;
+    }
+
+
+    private boolean isThesis(Publication publication) {
+        var kind =
+            attempt(() -> publication.getEntityDescription().getReference().getPublicationInstance())
+                .toOptional();
+        return kind.isPresent() && (kind.get() instanceof DegreeBachelor
+            || kind.get() instanceof DegreeMaster
+            || kind.get() instanceof DegreePhd);
     }
 
     private String getPresignedDownloadUrl(File file, Date expiration) throws ApiGatewayException {
