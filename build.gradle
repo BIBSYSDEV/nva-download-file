@@ -38,7 +38,7 @@ subprojects {
     def mockitoVersion = '4.5.1'
     def nvaCommonsVersion = '1.27.2'
     def hamcrestVersion = '2.2'
-    def nvaDataModelVersion = '0.20.17'
+    def nvaDataModelVersion = '0.20.20'
     def jacksonVersion = '2.13.1'
 
     gradleLint.rules = ['unused-dependency']
