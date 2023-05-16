@@ -1,18 +1,6 @@
 package no.unit.nva.download.publication.file;
 
-import static java.net.HttpURLConnection.HTTP_OK;
-import static no.unit.nva.download.publication.file.RequestUtil.getFileIdentifier;
-import static no.unit.nva.download.publication.file.RequestUtil.getUser;
-import static nva.commons.apigateway.AccessRight.*;
-import static nva.commons.core.attempt.Try.attempt;
-
 import com.amazonaws.services.lambda.runtime.Context;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
 import no.unit.nva.download.publication.file.aws.s3.AwsS3Service;
 import no.unit.nva.download.publication.file.exception.NotFoundException;
 import no.unit.nva.download.publication.file.publication.RestPublicationService;
@@ -29,6 +17,19 @@ import nva.commons.apigateway.exceptions.ApiGatewayException;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.SingletonCollector;
+
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.Date;
+import java.util.Optional;
+import java.util.UUID;
+
+import static java.net.HttpURLConnection.HTTP_OK;
+import static no.unit.nva.download.publication.file.RequestUtil.getFileIdentifier;
+import static no.unit.nva.download.publication.file.RequestUtil.getUser;
+import static nva.commons.apigateway.AccessRight.EDIT_OWN_INSTITUTION_RESOURCES;
+import static nva.commons.apigateway.AccessRight.PUBLISH_THESIS_EMBARGO_READ;
+import static nva.commons.core.attempt.Try.attempt;
 
 public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, PresignedUri> {
 
