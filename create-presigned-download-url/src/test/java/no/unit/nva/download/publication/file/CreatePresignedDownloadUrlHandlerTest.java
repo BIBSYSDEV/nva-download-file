@@ -66,7 +66,9 @@ import no.unit.nva.model.associatedartifacts.file.File;
 import no.unit.nva.model.associatedartifacts.file.License;
 import no.unit.nva.model.associatedartifacts.file.PublishedFile;
 import no.unit.nva.model.associatedartifacts.file.UnpublishedFile;
+import no.unit.nva.model.instancetypes.degree.DegreeMaster;
 import no.unit.nva.model.testing.PublicationGenerator;
+import no.unit.nva.model.testing.PublicationInstanceBuilder;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.GatewayResponse;
 import nva.commons.core.Environment;
@@ -284,8 +286,8 @@ class CreatePresignedDownloadUrlHandlerTest {
 
     @ParameterizedTest(name = "Unpublished publication with filetype {1} is downloadable by user {0}")
     @MethodSource("userFileTypeSupplier")
-    void handlerReturnsOkResponseOnValidInputPublication(String user, File file) throws IOException,
-                                                                                        InterruptedException {
+    void handlerReturnsOkResponseOnValidInputPublication(String user, File file)
+        throws IOException, InterruptedException {
 
         AwsS3Service s3Service = getAwsS3ServiceReturningPresignedUrl();
         var publication = getPublicationWithFile(file);
@@ -713,7 +715,19 @@ class CreatePresignedDownloadUrlHandlerTest {
     private Publication getPublicationWithFile(File file) {
         var publication = PublicationGenerator.randomPublication();
         publication.setAssociatedArtifacts(new AssociatedArtifactList(file));
+        if (hasActiveEmbargo(publication)) {
+            var instanceOfDegreeMaster = PublicationInstanceBuilder.randomPublicationInstance(DegreeMaster.class);
+            publication.getEntityDescription().getReference().setPublicationInstance(instanceOfDegreeMaster);
+        }
         return publication;
+    }
+
+    private boolean hasActiveEmbargo(Publication publication) {
+        return publication
+            .getAssociatedArtifacts().stream()
+            .filter(File.class::isInstance)
+            .map(File.class::cast)
+            .anyMatch(f -> !f.fileDoesNotHaveActiveEmbargo());
     }
 
     private Publication getPublication(PublicationStatus status) {

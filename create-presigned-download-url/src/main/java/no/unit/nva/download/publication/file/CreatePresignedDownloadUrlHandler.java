@@ -102,7 +102,7 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, P
             !file.fileDoesNotHaveActiveEmbargo();
 
         if (hasActiveEmbargo) {
-            return isOwner || isThesisAndEmbargoThesisReader ;
+            return isOwner || isThesisAndEmbargoThesisReader;
         }
 
         var isPublished =
