@@ -38,7 +38,7 @@ subprojects {
     def junit5Version = '5.8.2'
     def mockitoVersion = '4.5.1'
     def nvaCommonsVersion = '1.28.4'
-    def nvaDataModelVersion = '0.20.19'
+    def nvaDataModelVersion = '0.20.20'
     def zalandoVersion = '0.27.1'
 
     gradleLint.rules = ['unused-dependency']
