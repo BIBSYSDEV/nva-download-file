@@ -57,7 +57,7 @@ Resources:
     Properties:
       CodeUri: create-presigned-download-url
       Handler: no.unit.nva.download.publication.file.CreatePresignedDownloadUrlHandler::handleRequest
-      Runtime: java11
+      Runtime: java17
       MemorySize: 1408
       Environment:
         Variables:
