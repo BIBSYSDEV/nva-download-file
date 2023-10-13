@@ -2,7 +2,6 @@ package no.unit.nva.download.publication.file;
 
 import static java.util.Collections.emptyList;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
-import static no.unit.nva.download.publication.file.CreatePresignedDownloadUrlHandler.PUBLISH_DEGREE_EMBARGO_READ;
 import static no.unit.nva.download.publication.file.RequestUtil.IDENTIFIER_IS_NOT_A_VALID_UUID;
 import static no.unit.nva.download.publication.file.RequestUtil.MISSING_FILE_IDENTIFIER;
 import static no.unit.nva.download.publication.file.RequestUtil.MISSING_RESOURCE_IDENTIFIER;
@@ -17,7 +16,7 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static no.unit.nva.testutils.TestHeaders.ACCESS_CONTROL_ALLOW_ORIGIN;
 import static nva.commons.apigateway.AccessRight.EDIT_OWN_INSTITUTION_RESOURCES;
-import static nva.commons.apigateway.AccessRight.PUBLISH_THESIS_EMBARGO_READ;
+import static nva.commons.apigateway.AccessRight.PUBLISH_DEGREE_EMBARGO_READ;
 import static nva.commons.apigateway.ApiGatewayHandler.ALLOWED_ORIGIN_ENV;
 import static org.apache.http.HttpHeaders.AUTHORIZATION;
 import static org.apache.http.HttpHeaders.CONTENT_TYPE;
@@ -212,7 +211,7 @@ class CreatePresignedDownloadUrlHandlerTest {
                                   publication.getIdentifier(),
                                   FILE_IDENTIFIER,
                                   customer,
-                                  PUBLISH_THESIS_EMBARGO_READ.name(),EDIT_OWN_INSTITUTION_RESOURCES.name()),
+                                  PUBLISH_DEGREE_EMBARGO_READ.name(),EDIT_OWN_INSTITUTION_RESOURCES.name()),
                               output,
                               context);
 
@@ -301,7 +300,7 @@ class CreatePresignedDownloadUrlHandlerTest {
                 publication.getIdentifier(),
                 file.getIdentifier(),
                 customer,
-                PUBLISH_DEGREE_EMBARGO_READ,EDIT_OWN_INSTITUTION_RESOURCES.name()),
+                PUBLISH_DEGREE_EMBARGO_READ.name(),EDIT_OWN_INSTITUTION_RESOURCES.name()),
             output,
             context);
 
