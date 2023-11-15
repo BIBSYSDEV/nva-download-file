@@ -61,6 +61,7 @@ import no.unit.nva.identifiers.SortableIdentifier;
 import no.unit.nva.model.Publication;
 import no.unit.nva.model.PublicationStatus;
 import no.unit.nva.model.associatedartifacts.AssociatedArtifactList;
+import no.unit.nva.model.associatedartifacts.NullRightsRetentionStrategy;
 import no.unit.nva.model.associatedartifacts.file.AdministrativeAgreement;
 import no.unit.nva.model.associatedartifacts.file.File;
 import no.unit.nva.model.associatedartifacts.file.License;
@@ -517,6 +518,7 @@ class CreatePresignedDownloadUrlHandlerTest {
                 new License(),
                 true,
                 true,
+                null,
                 null);
 
     }
@@ -533,6 +535,7 @@ class CreatePresignedDownloadUrlHandlerTest {
                 false,
                 true,
                 embargo,
+                new NullRightsRetentionStrategy(null),
                 publishedDate);
     }
 
@@ -547,6 +550,7 @@ class CreatePresignedDownloadUrlHandlerTest {
                 false,
                 true,
                 null,
+                new NullRightsRetentionStrategy(null),
                 publishedDate);
     }
 
@@ -559,7 +563,8 @@ class CreatePresignedDownloadUrlHandlerTest {
                 new License(),
                 false,
                 true,
-                null);
+                null,
+                new NullRightsRetentionStrategy(null));
 
     }
 
