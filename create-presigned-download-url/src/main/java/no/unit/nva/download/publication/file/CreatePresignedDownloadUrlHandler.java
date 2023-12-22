@@ -4,6 +4,7 @@ import static java.net.HttpURLConnection.HTTP_OK;
 import static no.unit.nva.download.publication.file.RequestUtil.getFileIdentifier;
 import static no.unit.nva.download.publication.file.RequestUtil.getUser;
 import static nva.commons.apigateway.AccessRight.EDIT_OWN_INSTITUTION_RESOURCES;
+import static nva.commons.apigateway.AccessRight.PUBLISH_DEGREE_EMBARGO_READ;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.time.Instant;
@@ -31,8 +32,6 @@ import nva.commons.core.SingletonCollector;
 public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, PresignedUri> {
 
     public static final int DEFAULT_EXPIRATION_SECONDS = 10;
-    public static final String PUBLISH_DEGREE_EMBARGO_READ = "PUBLISH_DEGREE_EMBARGO_READ";
-
     private final RestPublicationService publicationService;
     private final AwsS3Service awsS3Service;
 
@@ -106,7 +105,7 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, P
         }
 
         var isPublished = PublicationStatus.PUBLISHED.equals(publication.getStatus());
-        var isEditor = requestInfo.userIsAuthorized(EDIT_OWN_INSTITUTION_RESOURCES.name());
+        var isEditor = requestInfo.userIsAuthorized(EDIT_OWN_INSTITUTION_RESOURCES);
 
         return isOwner || isEditor || isPublished && file.isVisibleForNonOwner();
     }
