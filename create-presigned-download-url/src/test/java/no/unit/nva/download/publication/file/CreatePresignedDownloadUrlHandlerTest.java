@@ -71,6 +71,7 @@ import no.unit.nva.model.instancetypes.degree.DegreeMaster;
 import no.unit.nva.model.testing.PublicationGenerator;
 import no.unit.nva.model.testing.PublicationInstanceBuilder;
 import no.unit.nva.testutils.HandlerRequestBuilder;
+import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.GatewayResponse;
 import nva.commons.core.Environment;
 import org.apache.http.HttpStatus;
@@ -212,7 +213,7 @@ class CreatePresignedDownloadUrlHandlerTest {
                                   publication.getIdentifier(),
                                   FILE_IDENTIFIER,
                                   customer,
-                                  PUBLISH_DEGREE_EMBARGO_READ.name(),EDIT_OWN_INSTITUTION_RESOURCES.name()),
+                                  PUBLISH_DEGREE_EMBARGO_READ, EDIT_OWN_INSTITUTION_RESOURCES),
                               output,
                               context);
 
@@ -301,7 +302,7 @@ class CreatePresignedDownloadUrlHandlerTest {
                 publication.getIdentifier(),
                 file.getIdentifier(),
                 customer,
-                PUBLISH_DEGREE_EMBARGO_READ.name(),EDIT_OWN_INSTITUTION_RESOURCES.name()),
+                PUBLISH_DEGREE_EMBARGO_READ,EDIT_OWN_INSTITUTION_RESOURCES),
             output,
             context);
 
@@ -535,7 +536,7 @@ class CreatePresignedDownloadUrlHandlerTest {
                 false,
                 true,
                 embargo,
-                new NullRightsRetentionStrategy(null),
+                NullRightsRetentionStrategy.create(),
                 publishedDate);
     }
 
@@ -550,7 +551,7 @@ class CreatePresignedDownloadUrlHandlerTest {
                 false,
                 true,
                 null,
-                new NullRightsRetentionStrategy(null),
+                NullRightsRetentionStrategy.create(),
                 publishedDate);
     }
 
@@ -564,7 +565,8 @@ class CreatePresignedDownloadUrlHandlerTest {
                 false,
                 true,
                 null,
-                new NullRightsRetentionStrategy(null));
+                NullRightsRetentionStrategy.create()
+        );
 
     }
 
@@ -813,7 +815,7 @@ class CreatePresignedDownloadUrlHandlerTest {
                                                      SortableIdentifier identifier,
                                                      UUID fileIdentifier,
                                                      URI customer,
-                                                     String... accessRight) throws IOException {
+                                                     AccessRight... accessRight) throws IOException {
         return new HandlerRequestBuilder<Void>(dtoObjectMapper)
             .withHeaders(Map.of(AUTHORIZATION, SOME_API_KEY))
             .withCurrentCustomer(customer)
