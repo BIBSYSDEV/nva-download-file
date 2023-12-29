@@ -15,8 +15,8 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static no.unit.nva.testutils.TestHeaders.ACCESS_CONTROL_ALLOW_ORIGIN;
-import static nva.commons.apigateway.AccessRight.EDIT_OWN_INSTITUTION_RESOURCES;
-import static nva.commons.apigateway.AccessRight.PUBLISH_DEGREE_EMBARGO_READ;
+import static nva.commons.apigateway.AccessRight.MANAGE_DEGREE_EMBARGO;
+import static nva.commons.apigateway.AccessRight.MANAGE_RESOURCES_STANDARD;
 import static nva.commons.apigateway.ApiGatewayHandler.ALLOWED_ORIGIN_ENV;
 import static org.apache.http.HttpHeaders.AUTHORIZATION;
 import static org.apache.http.HttpHeaders.CONTENT_TYPE;
@@ -200,7 +200,7 @@ class CreatePresignedDownloadUrlHandlerTest {
     }
 
     @Test
-    void shouldReturnOkWhenPublicationUnpublishedAndUserHasAccessRightEditOwnInstitutionResources()
+    void shouldReturnOkWhenPublicationUnpublishedAndUserHasAccessRightManageResourcesStandard()
         throws IOException, InterruptedException {
         var s3Service = getAwsS3ServiceReturningPresignedUrl();
         var publication = getPublication(DRAFT);
@@ -213,7 +213,7 @@ class CreatePresignedDownloadUrlHandlerTest {
                                   publication.getIdentifier(),
                                   FILE_IDENTIFIER,
                                   customer,
-                                  PUBLISH_DEGREE_EMBARGO_READ, EDIT_OWN_INSTITUTION_RESOURCES),
+                                  MANAGE_DEGREE_EMBARGO, MANAGE_RESOURCES_STANDARD),
                               output,
                               context);
 
@@ -302,7 +302,7 @@ class CreatePresignedDownloadUrlHandlerTest {
                 publication.getIdentifier(),
                 file.getIdentifier(),
                 customer,
-                PUBLISH_DEGREE_EMBARGO_READ,EDIT_OWN_INSTITUTION_RESOURCES),
+                MANAGE_DEGREE_EMBARGO, MANAGE_RESOURCES_STANDARD),
             output,
             context);
 
