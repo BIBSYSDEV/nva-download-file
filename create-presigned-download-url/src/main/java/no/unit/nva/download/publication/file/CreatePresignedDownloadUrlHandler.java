@@ -3,8 +3,8 @@ package no.unit.nva.download.publication.file;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static no.unit.nva.download.publication.file.RequestUtil.getFileIdentifier;
 import static no.unit.nva.download.publication.file.RequestUtil.getUser;
-import static nva.commons.apigateway.AccessRight.EDIT_OWN_INSTITUTION_RESOURCES;
-import static nva.commons.apigateway.AccessRight.PUBLISH_DEGREE_EMBARGO_READ;
+import static nva.commons.apigateway.AccessRight.MANAGE_DEGREE_EMBARGO;
+import static nva.commons.apigateway.AccessRight.MANAGE_RESOURCES_STANDARD;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.time.Instant;
@@ -96,7 +96,7 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, P
     private boolean hasReadAccess(File file, Publication publication, RequestInfo requestInfo) {
 
         var isThesisAndEmbargoThesisReader =
-            isThesis(publication) && requestInfo.userIsAuthorized(PUBLISH_DEGREE_EMBARGO_READ);
+            isThesis(publication) && requestInfo.userIsAuthorized(MANAGE_DEGREE_EMBARGO);
         var isOwner = publication.getResourceOwner().getOwner().equals(getUser(requestInfo));
         var hasActiveEmbargo = !file.fileDoesNotHaveActiveEmbargo();
 
@@ -105,7 +105,7 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, P
         }
 
         var isPublished = PublicationStatus.PUBLISHED.equals(publication.getStatus());
-        var isEditor = requestInfo.userIsAuthorized(EDIT_OWN_INSTITUTION_RESOURCES);
+        var isEditor = requestInfo.userIsAuthorized(MANAGE_RESOURCES_STANDARD);
 
         return isOwner || isEditor || isPublished && file.isVisibleForNonOwner();
     }
