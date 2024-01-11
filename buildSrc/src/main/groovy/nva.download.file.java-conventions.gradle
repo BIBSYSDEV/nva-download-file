@@ -17,7 +17,6 @@ sourceCompatibility = JavaVersion.VERSION_17  // source-code version and must be
 targetCompatibility = JavaVersion.VERSION_17 // bytecode target version
 
 repositories {
-    mavenLocal()
     mavenCentral()
     maven { url 'https://jitpack.io' }
 }
