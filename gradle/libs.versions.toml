@@ -2,12 +2,12 @@
 awsSdkVersion = { prefer = '1.12.544' }
 awsLambdaCore = { prefer = '1.2.2' }
 hamcrestVersion = { prefer = '2.2' }
-jacksonVersion = { prefer = '2.15.2' }
+jacksonVersion = { prefer = '2.15.3' }
 junit5Version = { prefer = '5.10.0' }
 mockitoVersion = { prefer = '5.3.1' }
 zalandoVersion = { prefer = '0.27.1' }
-nvaCommonsVersion = { prefer = '1.36.9' }
-nvaDataModelVersion = { prefer = '0.20.77' }
+nvaCommonsVersion = { prefer = '1.36.13' }
+nvaDataModelVersion = { prefer = '0.20.79' }
 apiguardianVersion = { prefer = '1.1.2' }
 slf4jVersion = { prefer = '2.0.9' }
 mikaelUrlbuilderVersion = {prefer = '2.0.9'}
