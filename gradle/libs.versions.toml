@@ -7,7 +7,7 @@ junit5Version = { prefer = '5.10.0' }
 mockitoVersion = { prefer = '5.3.1' }
 zalandoVersion = { prefer = '0.27.1' }
 nvaCommonsVersion = { prefer = '1.37.3' }
-nvaDataModelVersion = { prefer = '0.21.2' }
+nvaDataModelVersion = { prefer = '0.21.4' }
 apiguardianVersion = { prefer = '1.1.2' }
 slf4jVersion = { prefer = '2.0.11' }
 mikaelUrlbuilderVersion = {prefer = '2.0.9'}
