@@ -6,10 +6,11 @@ jacksonVersion = { prefer = '2.16.1' }
 junit5Version = { prefer = '5.10.0' }
 mockitoVersion = { prefer = '5.3.1' }
 zalandoVersion = { prefer = '0.27.1' }
-nvaCommonsVersion = { prefer = '1.37.3' }
-nvaDataModelVersion = { prefer = '0.21.6' }
+nvaCommonsVersion = { prefer = '1.38.2' }
+nvaDataModelVersion = { prefer = '0.21.12' }
 apiguardianVersion = { prefer = '1.1.2' }
 slf4jVersion = { prefer = '2.0.11' }
+log4jVersion = {strictly = '2.23.0'}
 mikaelUrlbuilderVersion = {prefer = '2.0.9'}
 
 
@@ -31,6 +32,7 @@ zalando-problem = { group = 'org.zalando', name = 'problem', version.ref = 'zala
 jackson-datatype-problem = { group = 'org.zalando', name = 'jackson-datatype-problem', version.ref = 'zalandoVersion' }
 
 slf4j-api = { group = 'org.slf4j', name = 'slf4j-api', version.ref = 'slf4jVersion' }
+log4j-api = {group = 'org.apache.logging.log4j', name = 'log4j-api', version.ref = 'log4jVersion'}
 
 mikael-urlbuilder = { group = 'io.mikael', name = 'urlbuilder', version.ref = 'mikaelUrlbuilderVersion' }
 
@@ -57,5 +59,5 @@ hamcrest-core = { group = 'org.hamcrest', name = 'hamcrest-core', version.ref = 
 [bundles]
 testing = ['nva-datamodel-testutils', 'nva-testutils', 'mockito-core', 'mockito-junit-jupiter', 'junit-jupiter-engine', 'junit-jupiter-params',
     'junit-jupiter-migrationsupport', 'junit-jupiter-api', 'hamcrest', 'hamcrest-core']
-logging = ['slf4j-api']
+logging = ['slf4j-api', 'log4j-api']
 jackson = ['jackson-annotations', 'jackson-core', 'jackson-databind', 'zalando-problem', 'jackson-datatype-problem']

@@ -536,7 +536,7 @@ class CreatePresignedDownloadUrlHandlerTest {
                 false,
                 true,
                 embargo,
-                NullRightsRetentionStrategy.create(),
+                NullRightsRetentionStrategy.create(null),
                 randomString(),
                 publishedDate);
     }
@@ -552,7 +552,7 @@ class CreatePresignedDownloadUrlHandlerTest {
                 false,
                 true,
                 null,
-                NullRightsRetentionStrategy.create(),
+                NullRightsRetentionStrategy.create(null),
                 randomString(),
                 publishedDate);
     }
@@ -567,7 +567,7 @@ class CreatePresignedDownloadUrlHandlerTest {
                 false,
                 true,
                 null,
-                NullRightsRetentionStrategy.create(),
+                NullRightsRetentionStrategy.create(null),
                 randomString()
         );
 
