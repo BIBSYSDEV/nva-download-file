@@ -62,10 +62,12 @@ import no.unit.nva.model.Publication;
 import no.unit.nva.model.PublicationStatus;
 import no.unit.nva.model.associatedartifacts.AssociatedArtifactList;
 import no.unit.nva.model.associatedartifacts.NullRightsRetentionStrategy;
+import no.unit.nva.model.associatedartifacts.RightsRetentionStrategyConfiguration;
 import no.unit.nva.model.associatedartifacts.file.AdministrativeAgreement;
 import no.unit.nva.model.associatedartifacts.file.File;
 import no.unit.nva.model.associatedartifacts.file.License;
 import no.unit.nva.model.associatedartifacts.file.PublishedFile;
+import no.unit.nva.model.associatedartifacts.file.PublisherVersion;
 import no.unit.nva.model.associatedartifacts.file.UnpublishedFile;
 import no.unit.nva.model.instancetypes.degree.DegreeMaster;
 import no.unit.nva.model.testing.PublicationGenerator;
@@ -518,9 +520,9 @@ class CreatePresignedDownloadUrlHandlerTest {
                 randomInteger().longValue(),
                 new License(),
                 true,
-                true,
+                PublisherVersion.PUBLISHED_VERSION,
                 null,
-                null);
+                NullRightsRetentionStrategy.create(RightsRetentionStrategyConfiguration.UNKNOWN));
 
     }
 
@@ -534,9 +536,9 @@ class CreatePresignedDownloadUrlHandlerTest {
                 randomInteger().longValue(),
                 new License(),
                 false,
-                true,
+                PublisherVersion.PUBLISHED_VERSION,
                 embargo,
-                NullRightsRetentionStrategy.create(null),
+                NullRightsRetentionStrategy.create(RightsRetentionStrategyConfiguration.UNKNOWN),
                 randomString(),
                 publishedDate);
     }
@@ -550,9 +552,9 @@ class CreatePresignedDownloadUrlHandlerTest {
                 randomInteger().longValue(),
                 new License(),
                 false,
-                true,
+                PublisherVersion.PUBLISHED_VERSION,
                 null,
-                NullRightsRetentionStrategy.create(null),
+                NullRightsRetentionStrategy.create(RightsRetentionStrategyConfiguration.UNKNOWN),
                 randomString(),
                 publishedDate);
     }
@@ -565,9 +567,9 @@ class CreatePresignedDownloadUrlHandlerTest {
                 randomInteger().longValue(),
                 new License(),
                 false,
-                true,
+                PublisherVersion.PUBLISHED_VERSION,
                 null,
-                NullRightsRetentionStrategy.create(null),
+                NullRightsRetentionStrategy.create(RightsRetentionStrategyConfiguration.UNKNOWN),
                 randomString()
         );
 
