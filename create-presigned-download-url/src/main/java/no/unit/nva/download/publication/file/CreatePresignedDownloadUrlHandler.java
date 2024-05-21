@@ -31,7 +31,7 @@ import nva.commons.core.SingletonCollector;
 
 public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, PresignedUri> {
 
-    public static final int DEFAULT_EXPIRATION_SECONDS = 10;
+    public static final int DEFAULT_EXPIRATION_SECONDS = 15;
     private final RestPublicationService publicationService;
     private final AwsS3Service awsS3Service;
 
@@ -130,6 +130,6 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, P
     }
 
     private Date defaultExpiration() {
-        return Date.from(Instant.now().plus(DEFAULT_EXPIRATION_SECONDS, ChronoUnit.SECONDS));
+        return Date.from(Instant.now().plus(DEFAULT_EXPIRATION_SECONDS, ChronoUnit.MINUTES));
     }
 }
