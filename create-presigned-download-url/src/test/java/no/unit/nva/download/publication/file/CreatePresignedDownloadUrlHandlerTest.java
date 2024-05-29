@@ -522,7 +522,7 @@ class CreatePresignedDownloadUrlHandlerTest {
                 true,
                 PublisherVersion.PUBLISHED_VERSION,
                 null,
-                NullRightsRetentionStrategy.create(RightsRetentionStrategyConfiguration.UNKNOWN));
+                null);
 
     }
 
@@ -540,7 +540,8 @@ class CreatePresignedDownloadUrlHandlerTest {
                 embargo,
                 NullRightsRetentionStrategy.create(RightsRetentionStrategyConfiguration.UNKNOWN),
                 randomString(),
-                publishedDate);
+                publishedDate,
+                null);
     }
 
     private static File fileWithoutEmbargo(String mimeType, UUID fileIdentifier) {
@@ -556,7 +557,8 @@ class CreatePresignedDownloadUrlHandlerTest {
                 null,
                 NullRightsRetentionStrategy.create(RightsRetentionStrategyConfiguration.UNKNOWN),
                 randomString(),
-                publishedDate);
+                publishedDate,
+                null);
     }
 
     private static File fileWithTypeUnpublished(UUID fileIdentifier) {
@@ -570,7 +572,8 @@ class CreatePresignedDownloadUrlHandlerTest {
                 PublisherVersion.PUBLISHED_VERSION,
                 null,
                 NullRightsRetentionStrategy.create(RightsRetentionStrategyConfiguration.UNKNOWN),
-                randomString()
+                randomString(),
+                null
         );
 
     }
