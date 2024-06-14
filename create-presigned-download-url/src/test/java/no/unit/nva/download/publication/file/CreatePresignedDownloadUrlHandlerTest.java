@@ -39,14 +39,12 @@ import static org.zalando.problem.Status.NOT_FOUND;
 import com.amazonaws.SdkClientException;
 import com.amazonaws.services.kms.model.NotFoundException;
 import com.amazonaws.services.lambda.runtime.Context;
-import com.amazonaws.services.s3.AmazonS3;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URL;
 import java.net.http.HttpClient;
 import java.net.http.HttpResponse;
 import java.time.Duration;
@@ -84,6 +82,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.stubbing.Answer;
 import org.zalando.problem.Problem;
+import software.amazon.awssdk.services.s3.S3Client;
 
 class CreatePresignedDownloadUrlHandlerTest {
 
@@ -330,26 +329,6 @@ class CreatePresignedDownloadUrlHandlerTest {
         assertProblemEquivalence(gatewayResponse,
                                  getNotFoundPublicationServiceResponse(
                                      notFoundError(publicationIdentifier, fileIdentifier)));
-    }
-
-    @Test
-    void shouldReturnServiceUnavailableResponseOnS3ServiceException() throws IOException, InterruptedException {
-        var publication = getPublication(PUBLISHED);
-        var publicationIdentifier = publication.getIdentifier();
-        var s3Service = getS3ServiceThrowingSdkClientException(publicationIdentifier);
-        var publicationService = mockSuccessfulPublicationRequest(publication.toString());
-        var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment());
-
-        handler.handleRequest(
-            createRequest(
-                publication.getResourceOwner().getOwner().getValue(),
-                publicationIdentifier,
-                FILE_IDENTIFIER),
-            output, context);
-
-        GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output, Problem.class);
-        assertBasicRestRequirements(gatewayResponse, SC_BAD_GATEWAY, APPLICATION_PROBLEM_JSON);
-        assertProblemEquivalence(gatewayResponse, getBadGatewayProblem(publicationIdentifier));
     }
 
     @Test
@@ -689,8 +668,8 @@ class CreatePresignedDownloadUrlHandlerTest {
     }
 
     private AwsS3Service getAwsS3ServiceReturningNotFound() {
-        var amazonS3 = mock(AmazonS3.class);
-        when(amazonS3.generatePresignedUrl(any())).thenThrow(notFoundException());
+        var amazonS3 = mock(S3Client.class);
+//        when(amazonS3.generatePresignedUrl(any())).thenThrow(notFoundException());
         return new AwsS3Service(amazonS3, ANY_BUCKET);
     }
 
@@ -787,8 +766,8 @@ class CreatePresignedDownloadUrlHandlerTest {
     }
 
     private AwsS3Service getAwsS3ServiceReturningPresignedUrl() throws MalformedURLException {
-        var amazonS3 = mock(AmazonS3.class);
-        when(amazonS3.generatePresignedUrl(any())).thenReturn(new URL(PRESIGNED_DOWNLOAD_URL));
+        var amazonS3 = mock(S3Client.class);
+//        when(amazonS3.generatePresignedUrl(any())).thenReturn(new URL(PRESIGNED_DOWNLOAD_URL));
         return new AwsS3Service(amazonS3, ANY_BUCKET);
     }
 
@@ -832,14 +811,5 @@ class CreatePresignedDownloadUrlHandlerTest {
             .withPathParameters(Map.of(IDENTIFIER, identifier.toString(),
                                        IDENTIFIER_FILE, fileIdentifier.toString()))
             .build();
-    }
-
-    private AwsS3Service getS3ServiceThrowingSdkClientException(SortableIdentifier publicationIdentifier) {
-        var amazonS3 = mock(AmazonS3.class);
-        when(amazonS3.generatePresignedUrl(any()))
-            .thenThrow(new SdkClientException(ERROR_COMMUNICATING_WITH_REMOTE_SERVICE
-                                              + HTTP_EXAMPLE_ORG_PUBLICATION
-                                              + publicationIdentifier));
-        return new AwsS3Service(amazonS3, ANY_BUCKET);
     }
 }

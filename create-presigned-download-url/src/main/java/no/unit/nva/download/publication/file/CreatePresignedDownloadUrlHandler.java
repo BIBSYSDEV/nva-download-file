@@ -7,9 +7,7 @@ import static nva.commons.apigateway.AccessRight.MANAGE_DEGREE_EMBARGO;
 import static nva.commons.apigateway.AccessRight.MANAGE_RESOURCES_STANDARD;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.Date;
+import java.time.Duration;
 import java.util.Optional;
 import java.util.UUID;
 import no.unit.nva.download.publication.file.aws.s3.AwsS3Service;
@@ -32,6 +30,7 @@ import nva.commons.core.SingletonCollector;
 public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, PresignedUri> {
 
     public static final int DEFAULT_EXPIRATION_SECONDS = 10;
+    public static final Duration DEFAULT_DURATION = Duration.ofSeconds(DEFAULT_EXPIRATION_SECONDS);
     private final RestPublicationService publicationService;
     private final AwsS3Service awsS3Service;
 
@@ -62,8 +61,7 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, P
 
         var publication = publicationService.getPublication(RequestUtil.getIdentifier(requestInfo));
         var file = getFileInformation(publication, requestInfo);
-        var expiration = defaultExpiration();
-        return new PresignedUri(getPresignedDownloadUrl(file, expiration), expiration);
+        return getPresignedDownloadUrl(file);
     }
 
     @Override
@@ -125,11 +123,7 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, P
                                     || kind.get() instanceof DegreePhd);
     }
 
-    private String getPresignedDownloadUrl(File file, Date expiration) throws ApiGatewayException {
-        return awsS3Service.createPresignedDownloadUrl(file.getIdentifier().toString(), file.getMimeType(), expiration);
-    }
-
-    private Date defaultExpiration() {
-        return Date.from(Instant.now().plus(DEFAULT_EXPIRATION_SECONDS, ChronoUnit.SECONDS));
+    private PresignedUri getPresignedDownloadUrl(File file) throws ApiGatewayException {
+        return awsS3Service.createPresignedDownloadUrl(file.getIdentifier().toString(), DEFAULT_DURATION);
     }
 }

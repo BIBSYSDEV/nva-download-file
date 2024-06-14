@@ -1,5 +1,6 @@
 [versions]
 awsSdkVersion = { prefer = '1.12.544' }
+awsSdk2 = {prefer = '2.26.1'}
 awsLambdaCore = { prefer = '1.2.3' }
 hamcrestVersion = { prefer = '2.2' }
 jacksonVersion = { prefer = '2.16.1' }
@@ -41,6 +42,7 @@ aws-sdk-lambda = { group = 'com.amazonaws', name = 'aws-java-sdk-lambda', versio
 aws-sdk-s3 = { group = 'com.amazonaws', name = 'aws-java-sdk-s3', version.ref = 'awsSdkVersion' }
 aws-sdk-core = { group = 'com.amazonaws', name = 'aws-java-sdk-core', version.ref = 'awsSdkVersion' }
 aws-sdk-kms = { group = 'com.amazonaws', name = 'aws-java-sdk-kms', version.ref = 'awsSdkVersion' }
+aws-sdk2-s3 = {group = 'software.amazon.awssdk', name = 's3', version.ref = 'awsSdk2'}
 
 apiguardian = { group = 'org.apiguardian', name = 'apiguardian-api', version.ref = 'apiguardianVersion' }
 
