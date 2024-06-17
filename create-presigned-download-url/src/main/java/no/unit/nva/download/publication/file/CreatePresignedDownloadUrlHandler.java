@@ -29,8 +29,8 @@ import nva.commons.core.SingletonCollector;
 
 public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, PresignedUri> {
 
-    public static final int DEFAULT_EXPIRATION_SECONDS = 10;
-    public static final Duration DEFAULT_DURATION = Duration.ofSeconds(DEFAULT_EXPIRATION_SECONDS);
+    public static final int DEFAULT_EXPIRATION_SECONDS = 3;
+    public static final Duration DEFAULT_DURATION = Duration.ofHours(DEFAULT_EXPIRATION_SECONDS);
     private final RestPublicationService publicationService;
     private final AwsS3Service awsS3Service;
 
