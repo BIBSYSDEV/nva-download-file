@@ -2,11 +2,13 @@ package no.unit.nva.download.publication.file;
 
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 import java.net.URI;
 import java.time.Instant;
 import java.util.Date;
+import nva.commons.core.JacocoGenerated;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 public class PresignedUri {
@@ -15,14 +17,20 @@ public class PresignedUri {
     public static final String EXPIRES = "expires";
     public static final String ID = "id";
     public static final String CONTEXT = "@context";
+    public static final String SHORTENED_VERSION = "shortenedVersion";
     @JsonProperty(ID)
     private final String id;
     @JsonProperty(EXPIRES)
     private final Date expires;
 
-    public PresignedUri(@JsonProperty(ID) String id, @JsonProperty(EXPIRES) Date expires) {
+    @JsonProperty(SHORTENED_VERSION)
+    private final String shortenedVersion;
+
+    public PresignedUri(@JsonProperty(ID) String id, @JsonProperty(EXPIRES) Date expires,
+                        @JsonProperty(SHORTENED_VERSION) String shortenedVersion) {
         this.id = id;
         this.expires = expires;
+        this.shortenedVersion = shortenedVersion;
     }
 
     /**
@@ -39,6 +47,12 @@ public class PresignedUri {
     @JsonGetter
     public String getId() {
         return id;
+    }
+
+    @JacocoGenerated
+    @JsonSetter
+    public String getShortenedVersion() {
+        return shortenedVersion;
     }
 
     @JsonGetter

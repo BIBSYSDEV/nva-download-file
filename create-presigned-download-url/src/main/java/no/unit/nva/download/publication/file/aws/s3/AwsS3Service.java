@@ -54,7 +54,8 @@ public class AwsS3Service {
     public PresignedUri createPresignedDownloadUrl(String key, Duration duration) throws ApiGatewayException {
         try (var s3Presigner = S3Presigner.builder().region(Region.EU_WEST_1).s3Client(s3Client).build()) {
             var presignGetObject = s3Presigner.presignGetObject(createPresignObjectRequest(key, duration));
-            return new PresignedUri(presignGetObject.url().toExternalForm(), Date.from(presignGetObject.expiration()));
+            return new PresignedUri(presignGetObject.url().toExternalForm(), Date.from(presignGetObject.expiration())
+                , null);
         } catch (Exception e) {
             e.printStackTrace();
             throw new S3ServiceException(e.getMessage(), e);

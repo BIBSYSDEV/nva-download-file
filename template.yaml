@@ -115,6 +115,35 @@ Resources:
                   - !Sub 'arn:aws:s3:::${S3Bucket}'
                   - !Sub 'arn:aws:s3:::${S3Bucket}/*'
 
+  #============================ URL shortener =========================================================================#
+  # This solves the problem described here:
+  # https://answers.microsoft.com/en-us/msoffice/forum/all/office-web-viewer-has-stopped-supporting-long-urls/232fdff6-adbf-44f9-be53-f475fde4ad3f
+  #====================================================================================================================#
+
+  UrlShorteningMappings:
+    Type: AWS::DynamoDB::Table
+    UpdateReplacePolicy: Replace
+    DeletionPolicy: Delete
+    Properties:
+      TableName: !Sub nva-url-shorterner-${AWS::StackName}
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: shortenedUri
+          AttributeType: S
+        - AttributeName: ExpiresDate
+          AttributeType: N
+      KeySchema:
+        - AttributeName: shortenedUri
+          KeyType: HASH
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: false
+      TimeToLiveSpecification:
+        AttributeName: ExpiresDate
+        Enabled: true
+
+
   #============================ Deploy API ============================================================================#
   # This solves the problem described here:
   # https://stackoverflow.com/questions/41423439/cloudformation-doesnt-deploy-to-api-gateway-stages-on-update
