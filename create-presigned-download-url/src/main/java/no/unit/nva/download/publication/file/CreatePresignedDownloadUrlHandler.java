@@ -1,4 +1,5 @@
 package no.unit.nva.download.publication.file;
+
 import static java.net.HttpURLConnection.HTTP_OK;
 import static no.unit.nva.download.publication.file.RequestUtil.getFileIdentifier;
 import static no.unit.nva.download.publication.file.RequestUtil.getUser;
@@ -72,6 +73,7 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, P
 
     private File getFileInformation(Publication publication, RequestInfo requestInfo)
         throws NotFoundException, InputException {
+
         var fileIdentifier = getFileIdentifier(requestInfo);
         if (publication.getAssociatedArtifacts().isEmpty()) {
             throw new NotFoundException(publication.getIdentifier(), fileIdentifier);
@@ -92,15 +94,19 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, P
     }
 
     private boolean hasReadAccess(File file, Publication publication, RequestInfo requestInfo) {
+
         var isThesisAndEmbargoThesisReader =
             isThesis(publication) && requestInfo.userIsAuthorized(MANAGE_DEGREE_EMBARGO);
         var isOwner = publication.getResourceOwner().getOwner().equals(getUser(requestInfo));
         var hasActiveEmbargo = !file.fileDoesNotHaveActiveEmbargo();
+
         if (hasActiveEmbargo) {
             return isOwner || isThesisAndEmbargoThesisReader;
         }
+
         var isPublished = PublicationStatus.PUBLISHED.equals(publication.getStatus());
         var isEditor = requestInfo.userIsAuthorized(MANAGE_RESOURCES_STANDARD);
+
         return isOwner || isEditor || isPublished && file.isVisibleForNonOwner();
     }
 
