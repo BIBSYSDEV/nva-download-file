@@ -131,8 +131,6 @@ Resources:
       AttributeDefinitions:
         - AttributeName: shortenedUri
           AttributeType: S
-        - AttributeName: ExpiresDate
-          AttributeType: N
       KeySchema:
         - AttributeName: shortenedUri
           KeyType: HASH
