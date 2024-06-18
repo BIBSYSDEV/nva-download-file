@@ -6,12 +6,15 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import no.unit.nva.identifiers.SortableIdentifier;
+import nva.commons.core.paths.UriWrapper;
 import org.junit.jupiter.api.Test;
 
 public class UriMapTest {
 
     private static final String DOMAIN = "https://api.sandbox.nva.aws.unit.no";
-    private static final String ID_NAMESPACE = "https://api.sandbox.nva.aws.unit.no/download/short";
+    private static final String ID_NAMESPACE = "https://api.sandbox.nva.aws.unit.no/download/short/";
 
     @Test
     void shouldConvertUrlWithCorrectNamespace() {
@@ -20,5 +23,7 @@ public class UriMapTest {
 
         assertThat(uriMap.longUri(), is(equalTo(longUri)));
         assertThat(uriMap.shortenedUri().toString(), containsString(ID_NAMESPACE));
+        var theRestOfTheShortUri = uriMap.shortenedUri().toString().replace(ID_NAMESPACE, "");
+        assertDoesNotThrow(()-> SortableIdentifier.fromUri(UriWrapper.fromUri(theRestOfTheShortUri).getUri()));
     }
 }
