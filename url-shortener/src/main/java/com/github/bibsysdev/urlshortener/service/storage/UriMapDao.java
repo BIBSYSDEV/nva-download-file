@@ -7,10 +7,8 @@ import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.github.bibsysdev.urlshortener.service.model.UriMap;
 import java.util.Map;
 import no.unit.nva.commons.json.JsonUtils;
-import nva.commons.core.JacocoGenerated;
 
-//TODO: will be used in future or remove method
-@JacocoGenerated
+
 public class UriMapDao {
 
 
@@ -18,12 +16,6 @@ public class UriMapDao {
 
     public UriMapDao(UriMap uriMap) {
         this.uriMap = uriMap;
-    }
-
-    //TODO: will be used in future or remove method
-    @JacocoGenerated
-    public UriMapDao(Map<String, AttributeValue> valuesMap) {
-        this.uriMap = fromDynamoFormat(valuesMap);
     }
 
     public UriMap getUriMap() {
@@ -34,15 +26,6 @@ public class UriMapDao {
         var item = attempt(() -> Item.fromJSON(
             JsonUtils.dynamoObjectMapper.writeValueAsString(this.getUriMap()))).orElseThrow();
         return ItemUtils.toAttributeValues(item);
-    }
-
-    //TODO: will be used in future or remove method
-    @JacocoGenerated
-    private static UriMap fromDynamoFormat(Map<String, AttributeValue> valuesMap) {
-        var item = ItemUtils.toItem(valuesMap);
-        return attempt(() -> JsonUtils.dynamoObjectMapper
-                                 .readValue(item.toJSON(), UriMap.class))
-                   .orElseThrow();
     }
 
 }

@@ -7,6 +7,4 @@ public interface UriShortener {
 
     URI shorten(URI longUri, Instant expirationDate);
 
-    URI resolve(URI uri);
-
 }

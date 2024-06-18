@@ -35,7 +35,7 @@ public class UriShortenerServiceImplTest extends UriShortenerLocalDynamoDb {
         var expiration = randomInstant();
         var mockUriShortenerWriteClient = mock(UriShortenerWriteClient.class);
         uriShortener = new UriShortenerImpl(DOMAIN, mockUriShortenerWriteClient);
-        doThrow(new TransactionFailedException(null)).when(mockUriShortenerWriteClient).insertUriMap(any());
+        doThrow(new TransactionFailedException("Transaction failed")).when(mockUriShortenerWriteClient).insertUriMap(any());
         assertThrows(TransactionFailedException.class, () -> uriShortener.shorten(longUri, expiration));
     }
 

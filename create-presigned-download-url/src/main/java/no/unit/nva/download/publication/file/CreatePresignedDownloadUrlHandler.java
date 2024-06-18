@@ -7,7 +7,10 @@ import static nva.commons.apigateway.AccessRight.MANAGE_DEGREE_EMBARGO;
 import static nva.commons.apigateway.AccessRight.MANAGE_RESOURCES_STANDARD;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
+import com.github.bibsysdev.urlshortener.service.UriShortener;
+import com.github.bibsysdev.urlshortener.service.UriShortenerImpl;
 import java.time.Duration;
+import java.util.Date;
 import java.util.Optional;
 import java.util.UUID;
 import no.unit.nva.download.publication.file.aws.s3.AwsS3Service;
@@ -26,6 +29,7 @@ import nva.commons.apigateway.exceptions.ApiGatewayException;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.SingletonCollector;
+import nva.commons.core.paths.UriWrapper;
 
 public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, PresignedUri> {
 
@@ -33,6 +37,7 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, P
     public static final Duration DEFAULT_DURATION = Duration.ofHours(DEFAULT_EXPIRATION_SECONDS);
     private final RestPublicationService publicationService;
     private final AwsS3Service awsS3Service;
+    private final UriShortener uriShortener;
 
     /**
      * Constructor for CreatePresignedDownloadUrlHandler.
@@ -41,10 +46,11 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, P
      * @param environment        environment
      */
     public CreatePresignedDownloadUrlHandler(RestPublicationService publicationService, AwsS3Service awsS3Service,
-                                             Environment environment) {
+                                             Environment environment, UriShortener uriShortener) {
         super(Void.class, environment);
         this.publicationService = publicationService;
         this.awsS3Service = awsS3Service;
+        this.uriShortener = uriShortener;
     }
 
     /**
@@ -52,7 +58,8 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, P
      */
     @JacocoGenerated
     public CreatePresignedDownloadUrlHandler() {
-        this(new RestPublicationService(new Environment()), new AwsS3Service(new Environment()), new Environment());
+        this(new RestPublicationService(new Environment()), new AwsS3Service(new Environment()), new Environment(),
+             UriShortenerImpl.createDefault());
     }
 
     @Override
@@ -124,6 +131,8 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, P
     }
 
     private PresignedUri getPresignedDownloadUrl(File file) throws ApiGatewayException {
-        return awsS3Service.createPresignedDownloadUrl(file.getIdentifier().toString(), DEFAULT_DURATION);
+        var awsUri = awsS3Service.createPresignedDownloadUrl(file.getIdentifier().toString(), DEFAULT_DURATION);
+        var shortenedUri = uriShortener.shorten(UriWrapper.fromUri(awsUri.getId()).getUri(), awsUri.getExpires());
+        return new PresignedUri(awsUri.getId(), Date.from(awsUri.getExpires()), shortenedUri.toString());
     }
 }

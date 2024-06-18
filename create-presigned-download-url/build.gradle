@@ -1,4 +1,5 @@
 dependencies{
+    implementation project(":url-shortener")
     implementation libs.nva.datamodel
     implementation libs.nva.apigateway
     implementation libs.nva.core
