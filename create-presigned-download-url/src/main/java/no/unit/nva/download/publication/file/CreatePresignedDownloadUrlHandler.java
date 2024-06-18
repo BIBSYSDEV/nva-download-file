@@ -1,5 +1,4 @@
 package no.unit.nva.download.publication.file;
-
 import static java.net.HttpURLConnection.HTTP_OK;
 import static no.unit.nva.download.publication.file.RequestUtil.getFileIdentifier;
 import static no.unit.nva.download.publication.file.RequestUtil.getUser;
@@ -7,9 +6,8 @@ import static nva.commons.apigateway.AccessRight.MANAGE_DEGREE_EMBARGO;
 import static nva.commons.apigateway.AccessRight.MANAGE_RESOURCES_STANDARD;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
-import com.github.bibsysdev.urlshortener.service.UriShortener;
-import com.github.bibsysdev.urlshortener.service.UriShortenerImpl;
-import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.Optional;
 import java.util.UUID;
@@ -29,15 +27,12 @@ import nva.commons.apigateway.exceptions.ApiGatewayException;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.SingletonCollector;
-import nva.commons.core.paths.UriWrapper;
 
 public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, PresignedUri> {
 
-    public static final int DEFAULT_EXPIRATION_SECONDS = 3;
-    public static final Duration DEFAULT_DURATION = Duration.ofHours(DEFAULT_EXPIRATION_SECONDS);
+    public static final int DEFAULT_EXPIRATION_SECONDS = 10;
     private final RestPublicationService publicationService;
     private final AwsS3Service awsS3Service;
-    private final UriShortener uriShortener;
 
     /**
      * Constructor for CreatePresignedDownloadUrlHandler.
@@ -46,11 +41,10 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, P
      * @param environment        environment
      */
     public CreatePresignedDownloadUrlHandler(RestPublicationService publicationService, AwsS3Service awsS3Service,
-                                             Environment environment, UriShortener uriShortener) {
+                                             Environment environment) {
         super(Void.class, environment);
         this.publicationService = publicationService;
         this.awsS3Service = awsS3Service;
-        this.uriShortener = uriShortener;
     }
 
     /**
@@ -58,8 +52,7 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, P
      */
     @JacocoGenerated
     public CreatePresignedDownloadUrlHandler() {
-        this(new RestPublicationService(new Environment()), new AwsS3Service(new Environment()), new Environment(),
-             UriShortenerImpl.createDefault());
+        this(new RestPublicationService(new Environment()), new AwsS3Service(new Environment()), new Environment());
     }
 
     @Override
@@ -68,7 +61,8 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, P
 
         var publication = publicationService.getPublication(RequestUtil.getIdentifier(requestInfo));
         var file = getFileInformation(publication, requestInfo);
-        return getPresignedDownloadUrl(file);
+        var expiration = defaultExpiration();
+        return new PresignedUri(getPresignedDownloadUrl(file, expiration), expiration, null);
     }
 
     @Override
@@ -78,7 +72,6 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, P
 
     private File getFileInformation(Publication publication, RequestInfo requestInfo)
         throws NotFoundException, InputException {
-
         var fileIdentifier = getFileIdentifier(requestInfo);
         if (publication.getAssociatedArtifacts().isEmpty()) {
             throw new NotFoundException(publication.getIdentifier(), fileIdentifier);
@@ -99,19 +92,15 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, P
     }
 
     private boolean hasReadAccess(File file, Publication publication, RequestInfo requestInfo) {
-
         var isThesisAndEmbargoThesisReader =
             isThesis(publication) && requestInfo.userIsAuthorized(MANAGE_DEGREE_EMBARGO);
         var isOwner = publication.getResourceOwner().getOwner().equals(getUser(requestInfo));
         var hasActiveEmbargo = !file.fileDoesNotHaveActiveEmbargo();
-
         if (hasActiveEmbargo) {
             return isOwner || isThesisAndEmbargoThesisReader;
         }
-
         var isPublished = PublicationStatus.PUBLISHED.equals(publication.getStatus());
         var isEditor = requestInfo.userIsAuthorized(MANAGE_RESOURCES_STANDARD);
-
         return isOwner || isEditor || isPublished && file.isVisibleForNonOwner();
     }
 
@@ -130,9 +119,11 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, P
                                     || kind.get() instanceof DegreePhd);
     }
 
-    private PresignedUri getPresignedDownloadUrl(File file) throws ApiGatewayException {
-        var awsUri = awsS3Service.createPresignedDownloadUrl(file.getIdentifier().toString(), DEFAULT_DURATION);
-        var shortenedUri = uriShortener.shorten(UriWrapper.fromUri(awsUri.getId()).getUri(), awsUri.getExpires());
-        return new PresignedUri(awsUri.getId(), Date.from(awsUri.getExpires()), shortenedUri.toString());
+    private String getPresignedDownloadUrl(File file, Date expiration) throws ApiGatewayException {
+        return awsS3Service.createPresignedDownloadUrl(file.getIdentifier().toString(), file.getMimeType(), expiration);
+    }
+
+    private Date defaultExpiration() {
+        return Date.from(Instant.now().plus(DEFAULT_EXPIRATION_SECONDS, ChronoUnit.SECONDS));
     }
 }
