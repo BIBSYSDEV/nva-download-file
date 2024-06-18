@@ -139,7 +139,7 @@ Resources:
       PointInTimeRecoverySpecification:
         PointInTimeRecoveryEnabled: false
       TimeToLiveSpecification:
-        AttributeName: ExpiresDate
+        AttributeName: expiresDate
         Enabled: true
 
 

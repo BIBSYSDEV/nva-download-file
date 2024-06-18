@@ -7,15 +7,14 @@ import no.unit.nva.identifiers.SortableIdentifier;
 import nva.commons.core.StringUtils;
 import nva.commons.core.paths.UriWrapper;
 
-public record UriMap (URI shortenedUri, URI longUri, Instant createdDate, Instant expiresDate) {
+public record UriMap(URI shortenedUri, URI longUri, Instant createdDate, Long expirationDateInEpoch) {
 
     private final static String PATH = "download";
     private final static String SHORTENED_PATH = "short";
 
-
     public static UriMap create(URI longVersion, Instant expiresDate, String domain) {
         validateRequest(longVersion, expiresDate);
-        return new UriMap(createNewShortVersion(domain), longVersion, Instant.now(), expiresDate);
+        return new UriMap(createNewShortVersion(domain), longVersion, Instant.now(), expiresDate.getEpochSecond());
     }
 
     private static void validateRequest(URI longVersion, Instant expiresDate) {

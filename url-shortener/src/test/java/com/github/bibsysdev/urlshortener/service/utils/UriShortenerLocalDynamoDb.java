@@ -8,6 +8,8 @@ import com.amazonaws.services.dynamodbv2.model.CreateTableRequest;
 import com.amazonaws.services.dynamodbv2.model.KeySchemaElement;
 import com.amazonaws.services.dynamodbv2.model.KeyType;
 import com.amazonaws.services.dynamodbv2.model.ScalarAttributeType;
+import com.amazonaws.services.dynamodbv2.model.TimeToLiveSpecification;
+import com.amazonaws.services.dynamodbv2.model.UpdateTimeToLiveRequest;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -31,6 +33,19 @@ public class UriShortenerLocalDynamoDb {
         client = DynamoDBEmbedded.create().amazonDynamoDB();
         CreateTableRequest request = createTableRequest();
         client.createTable(request);
+        updateWithTimeToLive();
+    }
+
+    private void updateWithTimeToLive() {
+        var timeToLiveSpecification = new TimeToLiveSpecification();
+        timeToLiveSpecification.withAttributeName("expiresDate");
+        timeToLiveSpecification.withEnabled(true);
+
+        var updateTimeToliveRequest = new UpdateTimeToLiveRequest();
+        updateTimeToliveRequest.setTableName(uriMapTableName);
+        updateTimeToliveRequest.setTimeToLiveSpecification(timeToLiveSpecification);
+
+        client.updateTimeToLive(updateTimeToliveRequest);
     }
 
     @AfterEach

@@ -25,8 +25,8 @@ public class UriShortenerWriteClientTest extends UriShortenerLocalDynamoDb {
     @Test
     void shouldPreventSeveralIdenticalShortUriBeingPersisted() {
         var shortUri = randomUri();
-        var uriMap = new UriMap(shortUri, randomUri(), randomInstant(), randomInstant());
-        var uriMap2 = new UriMap(shortUri, randomUri(), randomInstant(), randomInstant());
+        var uriMap = new UriMap(shortUri, randomUri(), randomInstant(), randomInstant().getEpochSecond());
+        var uriMap2 = new UriMap(shortUri, randomUri(), randomInstant(), randomInstant().getEpochSecond());
         uriShortenerWriteClient.insertUriMap(uriMap2);
         assertThrows(TransactionFailedException.class, () -> uriShortenerWriteClient.insertUriMap(uriMap));
     }
@@ -34,8 +34,8 @@ public class UriShortenerWriteClientTest extends UriShortenerLocalDynamoDb {
     @Test
     void shouldAllowSeveralIdenticalLongUriBeingPersisted() {
         var longUri = randomUri();
-        var uriMap = new UriMap(randomUri(), longUri, randomInstant(), randomInstant());
-        var uriMap2 = new UriMap(randomUri(), longUri, randomInstant(), randomInstant());
+        var uriMap = new UriMap(randomUri(), longUri, randomInstant(), randomInstant().getEpochSecond());
+        var uriMap2 = new UriMap(randomUri(), longUri, randomInstant(), randomInstant().getEpochSecond());
         uriShortenerWriteClient.insertUriMap(uriMap);
         assertDoesNotThrow(() -> uriShortenerWriteClient.insertUriMap(uriMap2));
     }
