@@ -64,6 +64,7 @@ Resources:
           ALLOWED_ORIGIN: '*'
           API_SCHEME: https
           API_HOST: !Sub api.${CustomDomain}
+          SHORTENED_URI_TABLE_NAME: !Sub nva-url-shorterner-${AWS::StackName}
           BUCKET_NAME: !Ref S3Bucket
           ID_NAMESPACE: !Sub 'https://api.${CustomDomain}/${CustomDomainBasePath}'
           COGNITO_HOST: !Ref CognitoAuthorizationUri
@@ -122,7 +123,7 @@ Resources:
 
   UrlShorteningMappings:
     Type: AWS::DynamoDB::Table
-    UpdateReplacePolicy: Replace
+    UpdateReplacePolicy: Retain
     DeletionPolicy: Delete
     Properties:
       TableName: !Sub nva-url-shorterner-${AWS::StackName}
