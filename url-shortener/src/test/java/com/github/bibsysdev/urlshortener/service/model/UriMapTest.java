@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 public class UriMapTest {
 
     private static final String DOMAIN = "https://api.sandbox.nva.aws.unit.no";
-    private static final String ID_NAMESPACE = "https://api.sandbox.nva.aws.unit.no/download";
+    private static final String ID_NAMESPACE = "https://api.sandbox.nva.aws.unit.no/download/short";
 
     @Test
     void shouldConvertUrlWithCorrectNamespace() {

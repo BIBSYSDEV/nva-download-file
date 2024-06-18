@@ -10,6 +10,7 @@ import nva.commons.core.paths.UriWrapper;
 public record UriMap (URI shortenedUri, URI longUri, Instant createdDate, Instant expiresDate) {
 
     private final static String PATH = "download";
+    private final static String SHORTENED_PATH = "short";
 
 
     public static UriMap create(URI longVersion, Instant expiresDate, String domain) {
@@ -26,6 +27,7 @@ public record UriMap (URI shortenedUri, URI longUri, Instant createdDate, Instan
     private static URI createNewShortVersion(String domain) {
         return UriWrapper.fromUri(domain)
                    .addChild(PATH)
+                   .addChild(SHORTENED_PATH)
                    .addChild(SortableIdentifier.next().toString())
                    .getUri();
     }
