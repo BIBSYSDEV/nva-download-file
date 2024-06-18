@@ -63,7 +63,7 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, P
         var publication = publicationService.getPublication(RequestUtil.getIdentifier(requestInfo));
         var file = getFileInformation(publication, requestInfo);
         var expiration = defaultExpiration();
-        return new PresignedUri(getPresignedDownloadUrl(file, expiration), expiration, null);
+        return new PresignedUri(getPresignedDownloadUrl(file, expiration), expiration.toInstant(), null);
     }
 
     @Override

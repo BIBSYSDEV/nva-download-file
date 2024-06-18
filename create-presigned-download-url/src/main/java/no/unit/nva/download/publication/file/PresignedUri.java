@@ -1,13 +1,13 @@
 package no.unit.nva.download.publication.file;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 import java.net.URI;
 import java.time.Instant;
-import java.util.Date;
+import java.util.Objects;
 import nva.commons.core.JacocoGenerated;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
@@ -21,12 +21,13 @@ public class PresignedUri {
     @JsonProperty(ID)
     private final String id;
     @JsonProperty(EXPIRES)
-    private final Date expires;
+    private final Instant expires;
 
     @JsonProperty(SHORTENED_VERSION)
     private final String shortenedVersion;
 
-    public PresignedUri(@JsonProperty(ID) String id, @JsonProperty(EXPIRES) Date expires,
+    @JsonCreator
+    public PresignedUri(@JsonProperty(ID) String id, @JsonProperty(EXPIRES) Instant expires,
                         @JsonProperty(SHORTENED_VERSION) String shortenedVersion) {
         this.id = id;
         this.expires = expires;
@@ -50,18 +51,38 @@ public class PresignedUri {
     }
 
     @JacocoGenerated
-    @JsonSetter
+    @JsonGetter
     public String getShortenedVersion() {
         return shortenedVersion;
     }
 
     @JsonGetter
     public Instant getExpires() {
-        return expires.toInstant();
+        return expires;
     }
 
     @JsonGetter(CONTEXT)
     public URI getContext() {
         return context;
+    }
+
+    @JacocoGenerated
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof PresignedUri that)) {
+            return false;
+        }
+        return Objects.equals(id, that.id)
+               && Objects.equals(expires, that.expires)
+               && Objects.equals(shortenedVersion, that.shortenedVersion);
+    }
+
+    @JacocoGenerated
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, expires, shortenedVersion);
     }
 }
