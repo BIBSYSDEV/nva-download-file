@@ -1,8 +1,8 @@
 package no.unit.nva.download.publication.file;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 import java.net.URI;
@@ -18,17 +18,21 @@ public class PresignedUri {
     public static final String ID = "id";
     public static final String CONTEXT = "@context";
     public static final String SHORTENED_VERSION = "shortenedVersion";
+
     @JsonProperty(ID)
-    private final String id;
+    private String id;
     @JsonProperty(EXPIRES)
-    private final Instant expires;
+    private Instant expires;
 
     @JsonProperty(SHORTENED_VERSION)
-    private final String shortenedVersion;
+    private String shortenedVersion;
 
-    @JsonCreator
-    public PresignedUri(@JsonProperty(ID) String id, @JsonProperty(EXPIRES) Instant expires,
-                        @JsonProperty(SHORTENED_VERSION) String shortenedVersion) {
+    @JacocoGenerated
+    public PresignedUri() {
+
+    }
+
+    public PresignedUri(String id, Instant expires, String shortenedVersion) {
         this.id = id;
         this.expires = expires;
         this.shortenedVersion = shortenedVersion;
@@ -64,6 +68,24 @@ public class PresignedUri {
     @JsonGetter(CONTEXT)
     public URI getContext() {
         return context;
+    }
+
+    @JacocoGenerated
+    @JsonSetter(ID)
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    @JacocoGenerated
+    @JsonSetter(EXPIRES)
+    public void setExpires(Instant expires) {
+        this.expires = expires;
+    }
+
+    @JacocoGenerated
+    @JsonSetter(SHORTENED_VERSION)
+    public void setShortenedVersion(String shortenedVersion) {
+        this.shortenedVersion = shortenedVersion;
     }
 
     @JacocoGenerated
