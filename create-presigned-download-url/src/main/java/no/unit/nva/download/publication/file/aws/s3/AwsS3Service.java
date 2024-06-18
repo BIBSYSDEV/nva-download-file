@@ -50,7 +50,6 @@ public class AwsS3Service {
      * @return A presigned download URL
      * @throws ApiGatewayException exception thrown if value is missing
      */
-    @JacocoGenerated
     public PresignedUri createPresignedDownloadUrl(String key, Duration duration) throws ApiGatewayException {
         try (var s3Presigner = S3Presigner.builder().region(Region.EU_WEST_1).s3Client(s3Client).build()) {
             var presignGetObject = s3Presigner.presignGetObject(createPresignObjectRequest(key, duration));
