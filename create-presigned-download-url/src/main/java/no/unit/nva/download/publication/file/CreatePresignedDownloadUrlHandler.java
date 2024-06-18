@@ -34,7 +34,7 @@ import nva.commons.core.paths.UriWrapper;
 
 public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, PresignedUri> {
 
-    public static final int DEFAULT_EXPIRATION_SECONDS = 10;
+    public static final int DEFAULT_EXPIRATION_SECONDS = 20;
     private final RestPublicationService publicationService;
     private final AwsS3Service awsS3Service;
     private final UriShortener uriShortener;
