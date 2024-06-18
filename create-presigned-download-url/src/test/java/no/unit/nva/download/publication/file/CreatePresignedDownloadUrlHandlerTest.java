@@ -22,6 +22,7 @@ import static org.apache.http.HttpHeaders.AUTHORIZATION;
 import static org.apache.http.HttpHeaders.CONTENT_TYPE;
 import static org.apache.http.HttpStatus.SC_BAD_GATEWAY;
 import static org.apache.http.HttpStatus.SC_BAD_REQUEST;
+import static org.apache.http.HttpStatus.SC_INTERNAL_SERVER_ERROR;
 import static org.apache.http.HttpStatus.SC_NOT_FOUND;
 import static org.apache.http.HttpStatus.SC_OK;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -57,6 +58,8 @@ import java.util.UUID;
 import java.util.stream.Stream;
 import no.unit.nva.download.publication.file.aws.s3.AwsS3Service;
 import no.unit.nva.download.publication.file.publication.RestPublicationService;
+import no.unit.nva.download.publication.file.utils.FakeUriShortener;
+import no.unit.nva.download.publication.file.utils.FakeUriShortenerThrowingException;
 import no.unit.nva.identifiers.SortableIdentifier;
 import no.unit.nva.model.Publication;
 import no.unit.nva.model.PublicationStatus;
@@ -122,7 +125,7 @@ class CreatePresignedDownloadUrlHandlerTest {
         var publication = getPublicationWithFile(file);
         publication.setStatus(DRAFT);
         var publicationService = mockSuccessfulPublicationRequest(publication.toString());
-        var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment());
+        var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment(), new FakeUriShortener());
         handler.handleRequest(
             createRequest(NON_OWNER, publication.getIdentifier(), file.getIdentifier()), output, context);
 
@@ -140,7 +143,7 @@ class CreatePresignedDownloadUrlHandlerTest {
         AwsS3Service s3Service = getAwsS3ServiceReturningPresignedUrl();
         var publication = getPublication(PUBLISHED, file);
         var publicationService = mockSuccessfulPublicationRequest(publication.toString());
-        var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment());
+        var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment(), new FakeUriShortener());
         handler.handleRequest(
             createRequest(NON_OWNER, publication.getIdentifier(), file.getIdentifier()), output, context);
 
@@ -171,7 +174,7 @@ class CreatePresignedDownloadUrlHandlerTest {
         var publication = getPublication(PUBLISHED);
         var publicationService = mockSuccessfulPublicationRequest(
             publication.toString());
-        var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment());
+        var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment(), new FakeUriShortener());
 
         handler.handleRequest(createRequest(user, publication.getIdentifier(), FILE_IDENTIFIER), output, context);
 
@@ -186,7 +189,7 @@ class CreatePresignedDownloadUrlHandlerTest {
         AwsS3Service s3Service = getAwsS3ServiceReturningPresignedUrl();
         var publication = getPublication(DRAFT);
         var publicationService = mockSuccessfulPublicationRequest(publication.toString());
-        var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment());
+        var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment(), new FakeUriShortener());
 
         handler.handleRequest(
             createRequest(
@@ -208,7 +211,7 @@ class CreatePresignedDownloadUrlHandlerTest {
         var publication = getPublication(DRAFT);
         var publicationService = mockSuccessfulPublicationRequest(
             publication.toString());
-        var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment());
+        var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment(), new FakeUriShortener());
         var customer = randomUri();
         handler.handleRequest(createRequestWithAccessRight(
                                   NON_OWNER,
@@ -229,7 +232,7 @@ class CreatePresignedDownloadUrlHandlerTest {
     void shouldReturnBadGatewayWhenPublicationCanNotBeParsed() throws IOException, InterruptedException {
         var s3Service = getAwsS3ServiceReturningPresignedUrl();
         var publicationService = mockSuccessfulPublicationRequest("<</>");
-        var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment());
+        var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment(), new FakeUriShortener());
 
         handler.handleRequest(createRequest(OWNER_USER_ID, SortableIdentifier.next(), FILE_IDENTIFIER),
                               output, context);
@@ -246,7 +249,7 @@ class CreatePresignedDownloadUrlHandlerTest {
         AwsS3Service s3Service = getAwsS3ServiceReturningPresignedUrl();
         var publication = getPublication(DRAFT, mimeType);
         var publicationService = mockSuccessfulPublicationRequest(publication.toString());
-        var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment());
+        var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment(), new FakeUriShortener());
 
         handler.handleRequest(createRequest(publication.getResourceOwner().getOwner().getValue(),
                                             publication.getIdentifier(), FILE_IDENTIFIER), output, context);
@@ -263,7 +266,7 @@ class CreatePresignedDownloadUrlHandlerTest {
         var publicationIdentifier = SortableIdentifier.next();
         var publicationService = mockNotFoundPublicationService(publicationIdentifier);
         var handler = new CreatePresignedDownloadUrlHandler(publicationService,
-                                                            getAwsS3ServiceReturningPresignedUrl(), mockEnvironment());
+                                                            getAwsS3ServiceReturningPresignedUrl(), mockEnvironment(), new FakeUriShortener());
         handler.handleRequest(createRequest(OWNER_USER_ID, publicationIdentifier, FILE_IDENTIFIER), output, context);
 
         GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output, Problem.class);
@@ -279,7 +282,7 @@ class CreatePresignedDownloadUrlHandlerTest {
         throws IOException, InterruptedException {
         var publicationService = mockUnresponsivePublicationService();
         var handler = new CreatePresignedDownloadUrlHandler(publicationService,
-                                                            getAwsS3ServiceReturningPresignedUrl(), mockEnvironment());
+                                                            getAwsS3ServiceReturningPresignedUrl(), mockEnvironment(), new FakeUriShortener());
 
         handler.handleRequest(createRequest(OWNER_USER_ID, SOME_RANDOM_IDENTIFIER, FILE_IDENTIFIER), output, context);
 
@@ -296,7 +299,7 @@ class CreatePresignedDownloadUrlHandlerTest {
         AwsS3Service s3Service = getAwsS3ServiceReturningPresignedUrl();
         var publication = getPublicationWithFile(file);
         var publicationService = mockSuccessfulPublicationRequest(publication.toString());
-        var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment());
+        var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment(), new FakeUriShortener());
         var customer = randomUri();
         handler.handleRequest(
             createRequestWithAccessRight(
@@ -319,7 +322,7 @@ class CreatePresignedDownloadUrlHandlerTest {
         var publication = createPublishedPublicationWithoutFileSetFile();
         var publicationService = mockSuccessfulPublicationRequest(publication.toString());
         var handler = new CreatePresignedDownloadUrlHandler(publicationService, getAwsS3ServiceReturningNotFound(),
-                                                            mockEnvironment());
+                                                            mockEnvironment(), new FakeUriShortener());
         var fileIdentifier = UUID.randomUUID();
         var publicationIdentifier = publication.getIdentifier();
         handler.handleRequest(createRequest(OWNER_USER_ID, publicationIdentifier, fileIdentifier),
@@ -338,7 +341,7 @@ class CreatePresignedDownloadUrlHandlerTest {
         var publicationIdentifier = publication.getIdentifier();
         var s3Service = getS3ServiceThrowingSdkClientException(publicationIdentifier);
         var publicationService = mockSuccessfulPublicationRequest(publication.toString());
-        var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment());
+        var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment(), new FakeUriShortener());
 
         handler.handleRequest(
             createRequest(
@@ -359,7 +362,7 @@ class CreatePresignedDownloadUrlHandlerTest {
         var publicationService = mockSuccessfulPublicationRequest(publication.toString());
         AwsS3Service s3Service = getAwsS3ServiceReturningPresignedUrl();
 
-        var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment());
+        var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment(), new FakeUriShortener());
 
         handler.handleRequest(createAnonymousRequest(publication.getIdentifier()), output, context);
 
@@ -376,7 +379,7 @@ class CreatePresignedDownloadUrlHandlerTest {
         var publicationService = mockSuccessfulPublicationRequest(getPublication(DRAFT).toString());
         AwsS3Service s3Service = getAwsS3ServiceReturningPresignedUrl();
 
-        var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment());
+        var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment(), new FakeUriShortener());
 
         handler.handleRequest(request, output, context);
 
@@ -390,7 +393,7 @@ class CreatePresignedDownloadUrlHandlerTest {
         var publicationService = mockPublicationServiceReturningStrangeResponse();
         AwsS3Service s3Service = getAwsS3ServiceReturningPresignedUrl();
 
-        var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment());
+        var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment(), new FakeUriShortener());
         var publicationIdentifier = SortableIdentifier.next();
         handler.handleRequest(createAnonymousRequest(publicationIdentifier), output, context);
 
@@ -408,7 +411,7 @@ class CreatePresignedDownloadUrlHandlerTest {
         var publicationService = mockNotFoundPublicationService(publicationIdentifier);
         AwsS3Service s3Service = getAwsS3ServiceReturningPresignedUrl();
 
-        var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment());
+        var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment(), new FakeUriShortener());
 
         handler.handleRequest(createAnonymousRequest(publicationIdentifier), output, context);
 
@@ -427,7 +430,7 @@ class CreatePresignedDownloadUrlHandlerTest {
         var publication = PublicationGenerator.randomPublication();
         var publicationService = mockPublicationServiceReturningEmbargoedFile(publication);
         AwsS3Service s3Service = getAwsS3ServiceReturningPresignedUrl();
-        var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment());
+        var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment(), new FakeUriShortener());
         handler.handleRequest(request, output, context);
         GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output, Problem.class);
         assertBasicRestRequirements(gatewayResponse, SC_NOT_FOUND, APPLICATION_PROBLEM_JSON);
@@ -442,12 +445,33 @@ class CreatePresignedDownloadUrlHandlerTest {
         var publication = PublicationGenerator.randomPublication();
         var publicationService = mockPublicationServiceReturningAdministrativeAgreement(publication);
         AwsS3Service s3Service = getAwsS3ServiceReturningPresignedUrl();
-        var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment());
+        var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment(), new FakeUriShortener());
         handler.handleRequest(request, output, context);
         GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output, Problem.class);
         assertBasicRestRequirements(gatewayResponse, SC_NOT_FOUND, APPLICATION_PROBLEM_JSON);
         assertProblemEquivalence(gatewayResponse, getNotFoundPublicationServiceResponse(
             notFoundError(publication.getIdentifier(), FILE_IDENTIFIER)));
+    }
+
+    @Test
+    void shouldThrowInternalServerExceptionIfSUriShortenerFails() throws IOException, InterruptedException {
+        var s3Service = getAwsS3ServiceReturningPresignedUrl();
+        var publication = getPublication(DRAFT);
+        var publicationService = mockSuccessfulPublicationRequest(
+            publication.toString());
+        var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment(), new FakeUriShortenerThrowingException());
+        var customer = randomUri();
+        handler.handleRequest(createRequestWithAccessRight(
+                                  NON_OWNER,
+                                  publication.getIdentifier(),
+                                  FILE_IDENTIFIER,
+                                  customer,
+                                  MANAGE_DEGREE_EMBARGO, MANAGE_RESOURCES_STANDARD),
+                              output,
+                              context);
+
+        GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output, Problem.class);
+        assertBasicRestRequirements(gatewayResponse, SC_INTERNAL_SERVER_ERROR, APPLICATION_PROBLEM_JSON);
     }
 
     private static Stream<String> userSupplier() {
