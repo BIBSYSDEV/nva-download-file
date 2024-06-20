@@ -172,6 +172,9 @@ components:
         id:
           type: string
           description: URI to time constrained downloadable link
+        shortenedVersion:
+          type: string
+          description: Shortened version of the id, will return a redirect to id.
         expires:
           type: string
           description: DateTime that link expires
