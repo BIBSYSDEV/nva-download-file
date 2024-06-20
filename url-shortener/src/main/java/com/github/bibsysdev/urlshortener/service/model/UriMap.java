@@ -7,7 +7,7 @@ import no.unit.nva.identifiers.SortableIdentifier;
 import nva.commons.core.StringUtils;
 import nva.commons.core.paths.UriWrapper;
 
-public record UriMap(URI shortenedUri, URI longUri, Instant createdDate, Long expirationDate) {
+public record UriMap(URI shortenedUri, URI longUri, Instant createdDate, Long expiresDate) {
 
     private final static String PATH = "download";
     private final static String SHORTENED_PATH = "short";

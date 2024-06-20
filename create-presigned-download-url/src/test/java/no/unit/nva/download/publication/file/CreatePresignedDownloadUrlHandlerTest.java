@@ -147,7 +147,7 @@ class CreatePresignedDownloadUrlHandlerTest {
         handler.handleRequest(
             createRequest(NON_OWNER, publication.getIdentifier(), file.getIdentifier()), output, context);
 
-        GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromString(output.toString(), Problem.class);
+        var gatewayResponse = GatewayResponse.fromString(output.toString(), Problem.class);
         assertBasicRestRequirements(gatewayResponse, SC_NOT_FOUND, APPLICATION_PROBLEM_JSON);
         assertProblemEquivalence(gatewayResponse, getNotFoundPublicationServiceResponse(
             notFoundError(publication.getIdentifier(), file.getIdentifier())));
@@ -269,7 +269,7 @@ class CreatePresignedDownloadUrlHandlerTest {
                                                             getAwsS3ServiceReturningPresignedUrl(), mockEnvironment(), new FakeUriShortener());
         handler.handleRequest(createRequest(OWNER_USER_ID, publicationIdentifier, FILE_IDENTIFIER), output, context);
 
-        GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output, Problem.class);
+        var gatewayResponse = GatewayResponse.fromOutputStream(output, Problem.class);
         assertBasicRestRequirements(gatewayResponse, SC_NOT_FOUND, APPLICATION_PROBLEM_JSON);
         assertProblemEquivalence(gatewayResponse,
                                  getNotFoundPublicationServiceResponse(
@@ -286,7 +286,7 @@ class CreatePresignedDownloadUrlHandlerTest {
 
         handler.handleRequest(createRequest(OWNER_USER_ID, SOME_RANDOM_IDENTIFIER, FILE_IDENTIFIER), output, context);
 
-        GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output, Problem.class);
+        var gatewayResponse = GatewayResponse.fromOutputStream(output, Problem.class);
         assertBasicRestRequirements(gatewayResponse, SC_BAD_GATEWAY, APPLICATION_PROBLEM_JSON);
         assertProblemEquivalence(gatewayResponse, getBadGatewayProblem(SOME_RANDOM_IDENTIFIER));
     }
@@ -328,7 +328,7 @@ class CreatePresignedDownloadUrlHandlerTest {
         handler.handleRequest(createRequest(OWNER_USER_ID, publicationIdentifier, fileIdentifier),
                               output, context);
 
-        GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output, Problem.class);
+        var gatewayResponse = GatewayResponse.fromOutputStream(output, Problem.class);
         assertBasicRestRequirements(gatewayResponse, SC_NOT_FOUND, APPLICATION_PROBLEM_JSON);
         assertProblemEquivalence(gatewayResponse,
                                  getNotFoundPublicationServiceResponse(
@@ -350,7 +350,7 @@ class CreatePresignedDownloadUrlHandlerTest {
                 FILE_IDENTIFIER),
             output, context);
 
-        GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output, Problem.class);
+        var gatewayResponse = GatewayResponse.fromOutputStream(output, Problem.class);
         assertBasicRestRequirements(gatewayResponse, SC_BAD_GATEWAY, APPLICATION_PROBLEM_JSON);
         assertProblemEquivalence(gatewayResponse, getBadGatewayProblem(publicationIdentifier));
     }
@@ -366,7 +366,7 @@ class CreatePresignedDownloadUrlHandlerTest {
 
         handler.handleRequest(createAnonymousRequest(publication.getIdentifier()), output, context);
 
-        GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output, Problem.class);
+        var gatewayResponse = GatewayResponse.fromOutputStream(output, Problem.class);
         assertBasicRestRequirements(gatewayResponse, SC_NOT_FOUND, APPLICATION_PROBLEM_JSON);
         assertProblemEquivalence(gatewayResponse, getNotFoundPublicationServiceResponse(
             notFoundError(publication.getIdentifier(), FILE_IDENTIFIER)));
@@ -383,7 +383,7 @@ class CreatePresignedDownloadUrlHandlerTest {
 
         handler.handleRequest(request, output, context);
 
-        GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output, Problem.class);
+        var gatewayResponse = GatewayResponse.fromOutputStream(output, Problem.class);
         assertBasicRestRequirements(gatewayResponse, SC_BAD_REQUEST, APPLICATION_PROBLEM_JSON);
         assertProblemEquivalence(gatewayResponse, getBadRequestPublicationServiceResponse(detail));
     }
@@ -397,7 +397,7 @@ class CreatePresignedDownloadUrlHandlerTest {
         var publicationIdentifier = SortableIdentifier.next();
         handler.handleRequest(createAnonymousRequest(publicationIdentifier), output, context);
 
-        GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output, Problem.class);
+        var gatewayResponse = GatewayResponse.fromOutputStream(output, Problem.class);
         assertBasicRestRequirements(gatewayResponse, SC_NOT_FOUND, APPLICATION_PROBLEM_JSON);
         assertProblemEquivalence(gatewayResponse,
                                  getNotFoundPublicationServiceResponse(
@@ -415,7 +415,7 @@ class CreatePresignedDownloadUrlHandlerTest {
 
         handler.handleRequest(createAnonymousRequest(publicationIdentifier), output, context);
 
-        GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output, Problem.class);
+        var gatewayResponse = GatewayResponse.fromOutputStream(output, Problem.class);
         assertBasicRestRequirements(gatewayResponse, SC_NOT_FOUND, APPLICATION_PROBLEM_JSON);
         assertProblemEquivalence(gatewayResponse,
                                  getNotFoundPublicationServiceResponse(
@@ -432,7 +432,7 @@ class CreatePresignedDownloadUrlHandlerTest {
         AwsS3Service s3Service = getAwsS3ServiceReturningPresignedUrl();
         var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment(), new FakeUriShortener());
         handler.handleRequest(request, output, context);
-        GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output, Problem.class);
+        var gatewayResponse = GatewayResponse.fromOutputStream(output, Problem.class);
         assertBasicRestRequirements(gatewayResponse, SC_NOT_FOUND, APPLICATION_PROBLEM_JSON);
         assertProblemEquivalence(gatewayResponse, getNotFoundPublicationServiceResponse(
             notFoundError(publication.getIdentifier(), FILE_IDENTIFIER)));
@@ -447,7 +447,7 @@ class CreatePresignedDownloadUrlHandlerTest {
         AwsS3Service s3Service = getAwsS3ServiceReturningPresignedUrl();
         var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment(), new FakeUriShortener());
         handler.handleRequest(request, output, context);
-        GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output, Problem.class);
+        var gatewayResponse = GatewayResponse.fromOutputStream(output, Problem.class);
         assertBasicRestRequirements(gatewayResponse, SC_NOT_FOUND, APPLICATION_PROBLEM_JSON);
         assertProblemEquivalence(gatewayResponse, getNotFoundPublicationServiceResponse(
             notFoundError(publication.getIdentifier(), FILE_IDENTIFIER)));
@@ -470,7 +470,7 @@ class CreatePresignedDownloadUrlHandlerTest {
                               output,
                               context);
 
-        GatewayResponse<Problem> gatewayResponse = GatewayResponse.fromOutputStream(output, Problem.class);
+        var gatewayResponse = GatewayResponse.fromOutputStream(output, Problem.class);
         assertBasicRestRequirements(gatewayResponse, SC_INTERNAL_SERVER_ERROR, APPLICATION_PROBLEM_JSON);
     }
 
