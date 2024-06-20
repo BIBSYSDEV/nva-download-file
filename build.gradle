@@ -5,6 +5,7 @@ plugins {
 //workaround for jacoco-merge to work
 allprojects {
     apply plugin: 'nva.download.file.java-conventions'
+    apply plugin: 'nva.download.file.dynamo-db'
 }
 
 wrapper {

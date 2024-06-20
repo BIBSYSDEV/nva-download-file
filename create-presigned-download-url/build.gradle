@@ -1,4 +1,5 @@
 dependencies{
+    implementation project(":url-shortener")
     implementation libs.nva.datamodel
     implementation libs.nva.apigateway
     implementation libs.nva.core
@@ -9,6 +10,7 @@ dependencies{
 
     implementation libs.aws.lambda.core
     implementation libs.aws.sdk.s3
+    implementation libs.aws.sdk2.s3
 
     implementation libs.bundles.jackson
     implementation libs.bundles.logging

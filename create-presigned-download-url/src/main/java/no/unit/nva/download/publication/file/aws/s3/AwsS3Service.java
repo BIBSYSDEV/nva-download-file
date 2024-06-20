@@ -34,7 +34,6 @@ public class AwsS3Service {
         this.s3Client = s3Client;
         this.bucketName = bucketName;
     }
-
     /**
      * Constructor for AwsS3Service.
      *
@@ -43,7 +42,7 @@ public class AwsS3Service {
     @JacocoGenerated
     public AwsS3Service(Environment environment) {
         this(AmazonS3ClientBuilder.standard().withRegion(environment.readEnv(AWS_REGION_ENV)).build(),
-                environment.readEnv(BUCKET_NAME_ENV));
+             environment.readEnv(BUCKET_NAME_ENV));
     }
 
     /**
@@ -57,7 +56,7 @@ public class AwsS3Service {
     public String createPresignedDownloadUrl(String key, String mimeType, Date expiration) throws ApiGatewayException {
         try {
             GeneratePresignedUrlRequest generatePresignedUrlRequest =
-                    createGeneratePresignedUrlRequest(key, mimeType, expiration);
+                createGeneratePresignedUrlRequest(key, mimeType, expiration);
 
             return s3Client.generatePresignedUrl(generatePresignedUrlRequest).toExternalForm();
         } catch (Exception e) {
@@ -70,7 +69,7 @@ public class AwsS3Service {
                                                                           String mimeType,
                                                                           Date expiration) {
         GeneratePresignedUrlRequest generatePresignedUrlRequest = new GeneratePresignedUrlRequest(bucketName, key,
-                HttpMethod.GET);
+                                                                                                  HttpMethod.GET);
         generatePresignedUrlRequest.setExpiration(expiration);
 
         if (nonNull(mimeType)) {
