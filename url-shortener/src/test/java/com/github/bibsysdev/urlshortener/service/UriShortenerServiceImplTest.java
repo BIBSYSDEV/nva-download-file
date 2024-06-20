@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test;
 public class UriShortenerServiceImplTest extends UriShortenerLocalDynamoDb {
 
     private final String TABLE_NAME = "url_shortener";
-    private final String DOMAIN = "https://example.com";
+    private final URI DOMAIN = UriWrapper.fromUri("https://example.com").getUri();
 
     private UriShortenerImpl uriShortener;
 
@@ -65,7 +65,7 @@ public class UriShortenerServiceImplTest extends UriShortenerLocalDynamoDb {
         var longUri = randomUri();
         var expiration = randomInstant();
         var shortUri = uriShortener.shorten(longUri, expiration);
-        assertThat(shortUri.toString(), containsString(DOMAIN));
+        assertThat(shortUri.toString(), containsString(DOMAIN.toString()));
     }
 
 }

@@ -12,7 +12,7 @@ public record UriMap(URI shortenedUri, URI longUri, Instant createdDate, Long ex
     private final static String PATH = "download";
     private final static String SHORTENED_PATH = "short";
 
-    public static UriMap create(URI longVersion, Instant expiresDate, String domain) {
+    public static UriMap create(URI longVersion, Instant expiresDate, URI domain) {
         validateRequest(longVersion, expiresDate);
         return new UriMap(createNewShortVersion(domain), longVersion, Instant.now(), expiresDate.getEpochSecond());
     }
@@ -23,7 +23,7 @@ public record UriMap(URI shortenedUri, URI longUri, Instant createdDate, Long ex
         }
     }
 
-    private static URI createNewShortVersion(String domain) {
+    private static URI createNewShortVersion(URI domain) {
         return UriWrapper.fromUri(domain)
                    .addChild(PATH)
                    .addChild(SHORTENED_PATH)
