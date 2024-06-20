@@ -125,7 +125,7 @@ Resources:
                 Action:
                   - dynamodb:PutItem
                 Resource:
-                  - !Ref UrlShorteningMappings
+                  - !GetAtt UrlShorteningMappings.StreamArn
 
   #============================ URL shortener =========================================================================#
   # This solves the problem described here:
