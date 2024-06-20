@@ -125,7 +125,7 @@ Resources:
                 Action:
                   - dynamodb:PutItem
                 Resource:
-                  - !GetAtt UrlShorteningMappings.StreamArn
+                  - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/nva-url-shorterner-${AWS::StackName}
 
   #============================ URL shortener =========================================================================#
   # This solves the problem described here:
