@@ -7,13 +7,14 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import java.net.URI;
 import no.unit.nva.identifiers.SortableIdentifier;
 import nva.commons.core.paths.UriWrapper;
 import org.junit.jupiter.api.Test;
 
 public class UriMapTest {
 
-    private static final String DOMAIN = "https://api.sandbox.nva.aws.unit.no";
+    private static final URI DOMAIN = UriWrapper.fromUri("https://api.sandbox.nva.aws.unit.no").getUri();
     private static final String ID_NAMESPACE = "https://api.sandbox.nva.aws.unit.no/download/short/";
 
     @Test
