@@ -138,9 +138,6 @@ Resources:
         StreamViewType: NEW_AND_OLD_IMAGES
       PointInTimeRecoverySpecification:
         PointInTimeRecoveryEnabled: false
-      TimeToLiveSpecification:
-        AttributeName: expiresDate
-        Enabled: true
 
 
   #============================ Deploy API ============================================================================#
