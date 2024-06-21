@@ -1,10 +1,10 @@
 package com.github.bibsysdev.urlshortener.service;
 
+import static java.util.Objects.isNull;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.GetItemRequest;
 import com.amazonaws.services.dynamodbv2.model.GetItemResult;
-import com.amazonaws.services.dynamodbv2.model.ResourceNotFoundException;
 import com.github.bibsysdev.urlshortener.service.model.UriMap;
 import com.github.bibsysdev.urlshortener.service.storage.UriMapDao;
 import java.net.URI;
@@ -32,8 +32,8 @@ public class UriResolverImpl implements UriResolver {
 
     @Override
     public URI resolve(URI shortenedUri) throws ApiGatewayException {
-        var UriMap = findUriMapById(shortenedUri);
-        return UriMap.longUri();
+        var uriMap = findUriMapById(shortenedUri);
+        return uriMap.longUri();
     }
 
     private static UriMap parseResultToUriMap(GetItemResult getItemResult) throws GatewayResponseSerializingException {
@@ -46,14 +46,15 @@ public class UriResolverImpl implements UriResolver {
 
     private UriMap findUriMapById(URI shortenedUri) throws ApiGatewayException {
         var getItemResult = queryDatabase(shortenedUri);
+        if (isNull(getItemResult.getItem())) {
+            throw new NotFoundException(String.format(COULD_NOT_RESOLVE_MESSAGE, shortenedUri.toString()));
+        }
         return parseResultToUriMap(getItemResult);
     }
 
     private GetItemResult queryDatabase(URI shortenedUri) throws ApiGatewayException {
         try {
             return client.getItem(createGetItemRequest(shortenedUri));
-        } catch (ResourceNotFoundException e) {
-            throw new NotFoundException(e, String.format(COULD_NOT_RESOLVE_MESSAGE, shortenedUri.toString()));
         } catch (Exception e) {
             LOGGER.error("DynamoDb exception: ", e);
             throw new BadGatewayException(String.format(COULD_NOT_RESOLVE_MESSAGE, shortenedUri));
@@ -61,7 +62,7 @@ public class UriResolverImpl implements UriResolver {
     }
 
     private GetItemRequest createGetItemRequest(URI shortenedUri) {
-        return new GetItemRequest(tableName, createAttributeMap(shortenedUri));
+        return new GetItemRequest().withTableName(tableName).withKey(createAttributeMap(shortenedUri));
     }
 
     private Map<String, AttributeValue> createAttributeMap(URI shortenedUri) {
