@@ -2,14 +2,11 @@ package com.github.bibsysdev.urlshortener.service;
 
 import static java.util.Objects.isNull;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
-import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.GetItemRequest;
 import com.amazonaws.services.dynamodbv2.model.GetItemResult;
 import com.github.bibsysdev.urlshortener.service.model.UriMap;
 import com.github.bibsysdev.urlshortener.service.storage.UriMapDao;
 import java.net.URI;
-import java.util.HashMap;
-import java.util.Map;
 import nva.commons.apigateway.exceptions.GatewayResponseSerializingException;
 import org.slf4j.Logger;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
@@ -62,12 +59,6 @@ public class UriResolverImpl implements UriResolver {
     }
 
     private GetItemRequest createGetItemRequest(URI shortenedUri) {
-        return new GetItemRequest().withTableName(tableName).withKey(createAttributeMap(shortenedUri));
-    }
-
-    private Map<String, AttributeValue> createAttributeMap(URI shortenedUri) {
-        var map = new HashMap<String, AttributeValue>();
-        map.put("shortenedUri", new AttributeValue().withS(shortenedUri.toString()));
-        return map;
+        return new GetItemRequest().withTableName(tableName).withKey(UriMapDao.createKey(shortenedUri));
     }
 }

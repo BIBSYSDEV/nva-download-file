@@ -1,5 +1,6 @@
 package com.github.bibsysdev.urlshortener.service;
 
+import static com.github.bibsysdev.urlshortener.service.storage.UriMapDao.URI_MAP_PRIMARY_PARTITION_KEY;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.model.Put;
@@ -16,7 +17,7 @@ import nva.commons.core.attempt.Failure;
 
 public class UriShortenerWriteClient {
 
-    public static final String URI_MAP_PRIMARY_PARTITION_KEY = "shortenedUri";
+
     public static final String PARTITION_KEY_NAME_PLACEHOLDER = "#partitionKey";
     public static final String KEY_NOT_EXISTS_CONDITION = keyNotExistsCondition();
     public static final Map<String, String> PRIMARY_KEY_EQUALITY_CONDITION_ATTRIBUTE_NAMES =
