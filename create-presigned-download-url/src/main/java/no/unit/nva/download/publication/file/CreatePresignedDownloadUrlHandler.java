@@ -7,6 +7,8 @@ import static nva.commons.apigateway.AccessRight.MANAGE_DEGREE_EMBARGO;
 import static nva.commons.apigateway.AccessRight.MANAGE_RESOURCES_STANDARD;
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
+import com.github.bibsysdev.urlshortener.service.UriShortener;
+import com.github.bibsysdev.urlshortener.service.UriShortenerImpl;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
@@ -28,12 +30,14 @@ import nva.commons.apigateway.exceptions.ApiGatewayException;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.SingletonCollector;
+import nva.commons.core.paths.UriWrapper;
 
 public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, PresignedUri> {
 
-    public static final int DEFAULT_EXPIRATION_SECONDS = 10;
+    public static final int DEFAULT_EXPIRATION_SECONDS = 180;
     private final RestPublicationService publicationService;
     private final AwsS3Service awsS3Service;
+    private final UriShortener uriShortener;
 
     /**
      * Constructor for CreatePresignedDownloadUrlHandler.
@@ -42,10 +46,11 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, P
      * @param environment        environment
      */
     public CreatePresignedDownloadUrlHandler(RestPublicationService publicationService, AwsS3Service awsS3Service,
-                                             Environment environment) {
+                                             Environment environment, UriShortener uriShortener) {
         super(Void.class, environment);
         this.publicationService = publicationService;
         this.awsS3Service = awsS3Service;
+        this.uriShortener = uriShortener;
     }
 
     /**
@@ -53,17 +58,29 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, P
      */
     @JacocoGenerated
     public CreatePresignedDownloadUrlHandler() {
-        this(new RestPublicationService(new Environment()), new AwsS3Service(new Environment()), new Environment());
+        this(new RestPublicationService(new Environment()),
+             new AwsS3Service(new Environment()),
+             new Environment(),
+             UriShortenerImpl.createDefault());
     }
 
     @Override
     protected PresignedUri processInput(Void input, RequestInfo requestInfo, Context context)
         throws ApiGatewayException {
 
+
         var publication = publicationService.getPublication(RequestUtil.getIdentifier(requestInfo));
         var file = getFileInformation(publication, requestInfo);
         var expiration = defaultExpiration();
-        return new PresignedUri(getPresignedDownloadUrl(file, expiration), expiration.toInstant(), null);
+        var presignUriLong = getPresignedDownloadUrl(file, expiration);
+        var shortenedPresignUri = getShortenedVersion(presignUriLong, expiration);
+        return new PresignedUri(presignUriLong, expiration.toInstant(),
+                                shortenedPresignUri);
+    }
+
+    private String getShortenedVersion(String presignUriLong, Date expiration) {
+        var shortenedUri = uriShortener.shorten(UriWrapper.fromUri(presignUriLong).getUri(), expiration.toInstant());
+        return shortenedUri.toString();
     }
 
     @Override
