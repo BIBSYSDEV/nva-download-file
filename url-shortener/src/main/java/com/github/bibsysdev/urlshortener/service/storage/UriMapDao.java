@@ -8,14 +8,16 @@ import com.github.bibsysdev.urlshortener.service.model.UriMap;
 import java.util.Map;
 import no.unit.nva.commons.json.JsonUtils;
 
-
 public class UriMapDao {
-
 
     private final UriMap uriMap;
 
     public UriMapDao(UriMap uriMap) {
         this.uriMap = uriMap;
+    }
+
+    public UriMapDao(Map<String, AttributeValue> valuesMap) {
+        this.uriMap = fromDynamoFormat(valuesMap);
     }
 
     public UriMap getUriMap() {
@@ -28,4 +30,10 @@ public class UriMapDao {
         return ItemUtils.toAttributeValues(item);
     }
 
+    private static UriMap fromDynamoFormat(Map<String, AttributeValue> valuesMap) {
+        var item = ItemUtils.toItem(valuesMap);
+        return attempt(() -> JsonUtils.dynamoObjectMapper
+                                 .readValue(item.toJSON(), UriMap.class))
+                   .orElseThrow();
+    }
 }
