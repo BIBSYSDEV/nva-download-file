@@ -21,7 +21,7 @@ paths:
     get:
       summary: Resolves shortened URI to original presigned URI
       description: Returns 301 if successful with location header set to the original presigned URI
-      operationId: resolveShortenedUri
+      operationId: resolveDownloadUriFromIdentifier
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ResolveShortenedUrlFunction.Arn}/invocations
@@ -42,6 +42,7 @@ paths:
             Location:
               schema:
                 type: string
+                format: uri
               description: The URI that this redirects to
         400:
           $ref: '#/components/responses/400'

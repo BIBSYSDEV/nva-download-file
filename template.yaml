@@ -168,7 +168,7 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
       Policies:
-        - PolicyName: add-item-to-dynamo-db
+        - PolicyName: get-item-from-dynamo-db
           PolicyDocument:
             Version: 2012-10-17
             Statement:
