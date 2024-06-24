@@ -21,6 +21,7 @@ paths:
     get:
       summary: Resolves shortened URI to original presigned URI
       description: Returns 301 if successful with location header set to the original presigned URI
+      operationId: resolveShortenedUri
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ResolveShortenedUrlFunction.Arn}/invocations
@@ -54,6 +55,7 @@ paths:
     get:
       summary: Private pre signed download link for publication file
       description: Returns an S3 pre signed and temporal download URL to a publication file
+      operationId: privateGetPreSignDownloadUri
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${NvaDownloadPublicationFileFunction.Arn}/invocations
@@ -100,6 +102,7 @@ paths:
     get:
       summary: Public pre signed download link for publication file
       description: Returns an S3 pre signed and temporal download URL to a publication file
+      operationId: publicGetPresignDownloadUri
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${NvaDownloadPublicationFileFunction.Arn}/invocations
