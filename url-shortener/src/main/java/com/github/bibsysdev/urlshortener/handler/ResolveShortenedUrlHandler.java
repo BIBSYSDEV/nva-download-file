@@ -1,8 +1,6 @@
 package com.github.bibsysdev.urlshortener.handler;
 
 import com.amazonaws.services.lambda.runtime.Context;
-import java.util.HashMap;
-import java.util.Map;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
@@ -28,16 +26,10 @@ public class ResolveShortenedUrlHandler extends ApiGatewayHandler<Void, Void> {
     protected Void processInput(Void unused, RequestInfo requestInfo, Context context) throws ApiGatewayException {
         LOGGER.info(requestInfo.getPathParameter("identifier"));
         LOGGER.info(requestInfo.getRequestUri().toString());
-        addAdditionalHeaders(this::createAdditionalHeader);
         return null;
     }
 
-    private Map<String, String> createAdditionalHeader() {
-        final Map<String, String> headers = new HashMap<>();
-        headers.put("Location", "www.example.com");
-        return headers;
-    }
-
+    @JacocoGenerated
     @Override
     protected Integer getSuccessStatusCode(Void unused, Void o) {
         return 301;
