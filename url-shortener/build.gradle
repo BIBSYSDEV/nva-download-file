@@ -8,6 +8,7 @@ dependencies {
     implementation libs.nva.json
     implementation libs.nva.apigateway
     implementation libs.bundles.logging
+    implementation libs.bundles.jackson
 
     testImplementation(libs.dynamodDbLocal) {
         exclude group: 'com.amazonaws', module: 'aws-java-sdk-dynamodb'
