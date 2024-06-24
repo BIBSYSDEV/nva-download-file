@@ -23,7 +23,7 @@ paths:
       description: : Returns 301 with the long version of the presigned URL
       x-amazon-apigateway-integration:
         uri:
-          Fn:Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ResolveShortenedUrlFunction.Arn}/invocations
+          Fn:Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${NvaDownloadPublicationFileFunction.Arn}/invocations
         httpMethod: POST
         type: AWS_PROXY
       parameters:
