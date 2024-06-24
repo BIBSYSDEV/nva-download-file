@@ -2,12 +2,15 @@ package com.github.bibsysdev.urlshortener.service;
 
 import static java.util.Objects.isNull;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.amazonaws.services.dynamodbv2.model.GetItemRequest;
 import com.amazonaws.services.dynamodbv2.model.GetItemResult;
 import com.github.bibsysdev.urlshortener.service.model.UriMap;
 import com.github.bibsysdev.urlshortener.service.storage.UriMapDao;
 import java.net.URI;
 import nva.commons.apigateway.exceptions.GatewayResponseSerializingException;
+import nva.commons.core.Environment;
+import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
 import nva.commons.apigateway.exceptions.BadGatewayException;
@@ -18,14 +21,22 @@ public class UriResolverImpl implements UriResolver {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(UriResolverImpl.class);
     public static final String COULD_NOT_RESOLVE_MESSAGE = "could not resolve %s";
+    private static final String TABLE_NAME_ENVIRONMENT_VARIABLE = "SHORTENED_URI_TABLE_NAME";
 
     private final AmazonDynamoDB client;
     private final String tableName;
+
+    @JacocoGenerated
+    public static UriResolverImpl createDefault() {
+        return new UriResolverImpl(
+            AmazonDynamoDBClientBuilder.defaultClient(), new Environment().readEnv(TABLE_NAME_ENVIRONMENT_VARIABLE));
+    }
 
     public UriResolverImpl(AmazonDynamoDB client, String tableName) {
         this.client = client;
         this.tableName = tableName;
     }
+
 
     @Override
     public URI resolve(URI shortenedUri) throws ApiGatewayException {
