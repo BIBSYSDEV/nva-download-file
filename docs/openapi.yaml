@@ -17,34 +17,6 @@ externalDocs:
   url: https://nva.unit.no
 
 paths:
-  /short/{identifier}:
-    get:
-      summary: public endpoint for resolving shortened URL
-      description: : Returns 301 with the long version of the presigned URL
-      x-amazon-apigateway-integration:
-        uri:
-          Fn:Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${NvaDownloadPublicationFileFunction.Arn}/invocations
-        httpMethod: POST
-        type: AWS_PROXY
-      parameters:
-        - in: path
-          name: identifier
-          description: UUID identifier of the Publication.
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        301:
-          description: redirect
-        400:
-          $ref: '#/components/responses/400'
-        404:
-          $ref: '#/components/responses/404'
-        500:
-          $ref: '#/components/responses/500'
-        503:
-          $ref: '#/components/responses/503'
   /{identifier}/files/{fileIdentifier}:
     get:
       summary: Private pre signed download link for publication file
