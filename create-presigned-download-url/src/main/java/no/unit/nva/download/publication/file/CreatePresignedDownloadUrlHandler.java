@@ -18,18 +18,14 @@ import no.unit.nva.download.publication.file.aws.s3.AwsS3Service;
 import no.unit.nva.download.publication.file.exception.NotFoundException;
 import no.unit.nva.download.publication.file.publication.RestPublicationService;
 import no.unit.nva.download.publication.file.publication.exception.InputException;
-import no.unit.nva.model.Publication;
-import no.unit.nva.model.PublicationStatus;
-import no.unit.nva.model.associatedartifacts.file.File;
-import no.unit.nva.model.instancetypes.degree.DegreeBachelor;
-import no.unit.nva.model.instancetypes.degree.DegreeMaster;
-import no.unit.nva.model.instancetypes.degree.DegreePhd;
+import no.unit.nva.download.publication.file.publication.model.File;
+import no.unit.nva.download.publication.file.publication.model.Publication;
+import no.unit.nva.download.publication.file.publication.model.PublicationStatus;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
-import nva.commons.core.SingletonCollector;
 import nva.commons.core.paths.UriWrapper;
 
 public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, PresignedUri> {
@@ -68,7 +64,6 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, P
     protected PresignedUri processInput(Void input, RequestInfo requestInfo, Context context)
         throws ApiGatewayException {
 
-
         var publication = publicationService.getPublication(RequestUtil.getIdentifier(requestInfo));
         var file = getFileInformation(publication, requestInfo);
         var expiration = defaultExpiration();
@@ -92,18 +87,29 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, P
         throws NotFoundException, InputException {
 
         var fileIdentifier = getFileIdentifier(requestInfo);
-        if (publication.getAssociatedArtifacts().isEmpty()) {
-            throw new NotFoundException(publication.getIdentifier(), fileIdentifier);
+        if (publication.associatedArtifacts().isEmpty()) {
+            throw new NotFoundException(publication.identifier(), fileIdentifier);
         }
-        return publication
-                   .getAssociatedArtifacts()
-                   .stream()
-                   .filter(File.class::isInstance)
-                   .map(File.class::cast)
-                   .filter(element -> findByIdentifier(fileIdentifier, element))
-                   .map(element -> getFile(element, publication, requestInfo))
-                   .collect(SingletonCollector.collect())
-                   .orElseThrow(() -> new NotFoundException(publication.getIdentifier(), fileIdentifier));
+        var files = publication
+                        .associatedArtifacts()
+                        .stream()
+                        .filter(File.class::isInstance)
+                        .map(File.class::cast)
+                        .filter(element -> findByIdentifier(fileIdentifier, element))
+                        .map(element -> getFile(element, publication, requestInfo))
+                        .toList();
+
+        if (files.isEmpty()) {
+            throw new NotFoundException(publication.identifier(), fileIdentifier);
+        }
+
+        var file = files.get(0);
+        if (file.isPresent()) {
+            return file.get();
+        }
+        else {
+            throw new NotFoundException(publication.identifier(), fileIdentifier);
+        }
     }
 
     private boolean findByIdentifier(UUID fileIdentifier, File element) {
@@ -114,14 +120,14 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, P
 
         var isThesisAndEmbargoThesisReader =
             isThesis(publication) && requestInfo.userIsAuthorized(MANAGE_DEGREE_EMBARGO);
-        var isOwner = publication.getResourceOwner().getOwner().equals(getUser(requestInfo));
-        var hasActiveEmbargo = !file.fileDoesNotHaveActiveEmbargo();
+        var isOwner = publication.resourceOwner().owner().equals(getUser(requestInfo));
+        var hasActiveEmbargo = file.hasActiveEmbargo();
 
         if (hasActiveEmbargo) {
             return isOwner || isThesisAndEmbargoThesisReader;
         }
 
-        var isPublished = PublicationStatus.PUBLISHED.equals(publication.getStatus());
+        var isPublished = PublicationStatus.PUBLISHED.equals(publication.status());
         var isEditor = requestInfo.userIsAuthorized(MANAGE_RESOURCES_STANDARD);
 
         return isOwner || isEditor || isPublished && file.isVisibleForNonOwner();
@@ -135,11 +141,14 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, P
 
     private boolean isThesis(Publication publication) {
         var kind = attempt(() -> publication
-                                     .getEntityDescription()
-                                     .getReference()
-                                     .getPublicationInstance()).toOptional();
-        return kind.isPresent() && (kind.get() instanceof DegreeBachelor || kind.get() instanceof DegreeMaster
-                                    || kind.get() instanceof DegreePhd);
+                                     .entityDescription()
+                                     .reference()
+                                     .publicationInstance()).toOptional();
+        return kind.isPresent() && ("DegreeBachelor".equals(kind.get().type())
+                                    ||
+                                    "DegreeMaster".equals(kind.get().type())
+                                    ||
+                                    "DegreePhd".equals(kind.get().type()));
     }
 
     private String getPresignedDownloadUrl(File file, Date expiration) throws ApiGatewayException {

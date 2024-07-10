@@ -13,11 +13,12 @@ import java.util.Optional;
 
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.download.publication.file.publication.exception.NotFoundException;
-import no.unit.nva.model.Publication;
+import no.unit.nva.download.publication.file.publication.model.Publication;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
 import nva.commons.apigateway.exceptions.BadGatewayException;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
+import nva.commons.core.attempt.Failure;
 import org.apache.http.HttpHeaders;
 import org.zalando.problem.Problem;
 
@@ -123,10 +124,11 @@ public class RestPublicationService {
     private Publication parseJsonObjectToPublication(HttpResponse<String> httpResponse)
             throws BadGatewayException {
         return attempt(() -> objectMapper.readValue(httpResponse.body(), Publication.class))
-                .orElseThrow(fail -> handleParsingError(httpResponse.body()));
+                .orElseThrow(fail -> handleParsingError(fail, httpResponse.body()));
     }
 
-    private BadGatewayException handleParsingError(String body) {
+    private BadGatewayException handleParsingError(Failure<Publication> fail, String body) {
+        fail.getException().printStackTrace();
         return new BadGatewayException(RESPONSE_PARSING_ERROR + body);
     }
 
