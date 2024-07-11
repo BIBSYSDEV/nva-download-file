@@ -28,7 +28,7 @@ public class UriMapDao {
         return uriMap;
     }
 
-    public static Map<String, AttributeValue> createKey(URI shortenedUri){
+    public static Map<String, AttributeValue> createKey(URI shortenedUri) {
         var map = new HashMap<String, AttributeValue>();
         map.put(URI_MAP_PRIMARY_PARTITION_KEY, new AttributeValue().withS(shortenedUri.toString()));
         return map;

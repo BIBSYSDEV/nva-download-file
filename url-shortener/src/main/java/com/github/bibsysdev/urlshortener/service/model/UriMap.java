@@ -9,8 +9,8 @@ import nva.commons.core.paths.UriWrapper;
 
 public record UriMap(URI shortenedUri, URI longUri, Instant createdDate, Long expiresDate) {
 
-    private final static String PATH = "download";
-    private final static String SHORTENED_PATH = "short";
+    private static final String PATH = "download";
+    private static final String SHORTENED_PATH = "short";
 
     public static UriMap create(URI longVersion, Instant expiresDate, URI domain) {
         validateRequest(longVersion, expiresDate);

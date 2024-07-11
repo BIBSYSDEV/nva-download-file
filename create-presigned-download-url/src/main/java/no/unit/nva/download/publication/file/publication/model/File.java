@@ -17,6 +17,7 @@ import java.util.UUID;
     @JsonSubTypes.Type(name = UnpublishableFile.TYPE, value = UnpublishableFile.class)
 })
 public abstract class File implements AssociatedArtifact {
+
     private final UUID identifier;
     private final String mimeType;
     private final Instant embargoDate;
@@ -62,11 +63,11 @@ public abstract class File implements AssociatedArtifact {
 
     @Override
     public String toString() {
-        return "File{" +
-               "identifier=" + identifier +
-               ", mimeType='" + mimeType + '\'' +
-               ", embargoDate=" + embargoDate +
-               ", administrativeAgreement=" + administrativeAgreement +
-               '}';
+        return "File{"
+               + "identifier=" + identifier
+               + ", mimeType='" + mimeType + '\''
+               + ", embargoDate=" + embargoDate
+               + ", administrativeAgreement=" + administrativeAgreement
+               + '}';
     }
 }

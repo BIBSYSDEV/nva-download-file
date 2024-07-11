@@ -8,7 +8,7 @@ import no.unit.nva.identifiers.SortableIdentifier;
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonTypeName("Publication")
 public record Publication(SortableIdentifier identifier,
-                          PublicationStatus status,
+                          String status,
                           ResourceOwner resourceOwner,
                           EntityDescription entityDescription,
                           List<AssociatedArtifact> associatedArtifacts) {

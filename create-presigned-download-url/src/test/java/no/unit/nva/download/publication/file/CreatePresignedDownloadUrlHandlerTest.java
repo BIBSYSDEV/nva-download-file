@@ -8,8 +8,8 @@ import static no.unit.nva.download.publication.file.exception.NotFoundException.
 import static no.unit.nva.download.publication.file.publication.RestPublicationService.ERROR_COMMUNICATING_WITH_REMOTE_SERVICE;
 import static no.unit.nva.download.publication.file.publication.RestPublicationService.ERROR_PUBLICATION_NOT_FOUND_FOR_IDENTIFIER;
 import static no.unit.nva.download.publication.file.publication.RestPublicationService.EXTERNAL_ERROR_MESSAGE_DECORATION;
-import static no.unit.nva.download.publication.file.publication.model.PublicationStatus.DRAFT;
-import static no.unit.nva.download.publication.file.publication.model.PublicationStatus.PUBLISHED;
+import static no.unit.nva.download.publication.file.publication.model.PublicationStatusConstants.DRAFT;
+import static no.unit.nva.download.publication.file.publication.model.PublicationStatusConstants.PUBLISHED;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static no.unit.nva.testutils.TestHeaders.ACCESS_CONTROL_ALLOW_ORIGIN;
 import static nva.commons.apigateway.AccessRight.MANAGE_DEGREE_EMBARGO;
@@ -62,7 +62,6 @@ import no.unit.nva.download.publication.file.publication.model.File;
 import no.unit.nva.download.publication.file.publication.model.NullAssociatedArtifact;
 import no.unit.nva.download.publication.file.publication.model.Publication;
 import no.unit.nva.download.publication.file.publication.model.PublicationInstance;
-import no.unit.nva.download.publication.file.publication.model.PublicationStatus;
 import no.unit.nva.download.publication.file.publication.model.PublishedFile;
 import no.unit.nva.download.publication.file.publication.model.Reference;
 import no.unit.nva.download.publication.file.publication.model.ResourceOwner;
@@ -470,7 +469,7 @@ class CreatePresignedDownloadUrlHandlerTest {
         var publication = buildPublication(DRAFT, fileWithoutEmbargo(APPLICATION_PDF, FILE_IDENTIFIER));
         var publicationService = mockSuccessfulPublicationRequest(dtoObjectMapper.writeValueAsString(publication));
         var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment(),
-        new FakeUriShortenerThrowingException());
+                                                            new FakeUriShortenerThrowingException());
         var customer = randomUri();
         handler.handleRequest(createRequestWithAccessRight(
                                   NON_OWNER,
@@ -714,7 +713,7 @@ class CreatePresignedDownloadUrlHandlerTest {
                    .build();
     }
 
-    private Publication buildPublication(PublicationStatus status, File file) {
+    private Publication buildPublication(String status, File file) {
         var publicationInstanceType = file.hasActiveEmbargo() ? "DegreeMaster" : "AcademicMonograph";
         var entityDescription = new EntityDescription(new Reference(new PublicationInstance(publicationInstanceType)));
         return new Publication(SOME_RANDOM_IDENTIFIER,

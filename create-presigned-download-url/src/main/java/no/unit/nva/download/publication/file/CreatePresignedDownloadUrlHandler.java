@@ -20,7 +20,7 @@ import no.unit.nva.download.publication.file.publication.RestPublicationService;
 import no.unit.nva.download.publication.file.publication.exception.InputException;
 import no.unit.nva.download.publication.file.publication.model.File;
 import no.unit.nva.download.publication.file.publication.model.Publication;
-import no.unit.nva.download.publication.file.publication.model.PublicationStatus;
+import no.unit.nva.download.publication.file.publication.model.PublicationStatusConstants;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
@@ -117,7 +117,7 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, P
             return isOwner || isThesisAndEmbargoThesisReader;
         }
 
-        var isPublished = PublicationStatus.PUBLISHED.equals(publication.status());
+        var isPublished = PublicationStatusConstants.PUBLISHED.equals(publication.status());
         var isEditor = requestInfo.userIsAuthorized(MANAGE_RESOURCES_STANDARD);
 
         return isOwner || isEditor || isPublished && file.isVisibleForNonOwner();
