@@ -90,26 +90,16 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, P
         if (publication.associatedArtifacts().isEmpty()) {
             throw new NotFoundException(publication.identifier(), fileIdentifier);
         }
-        var files = publication
-                        .associatedArtifacts()
-                        .stream()
-                        .filter(File.class::isInstance)
-                        .map(File.class::cast)
-                        .filter(element -> findByIdentifier(fileIdentifier, element))
-                        .map(element -> getFile(element, publication, requestInfo))
-                        .toList();
 
-        if (files.isEmpty()) {
-            throw new NotFoundException(publication.identifier(), fileIdentifier);
-        }
-
-        var file = files.get(0);
-        if (file.isPresent()) {
-            return file.get();
-        }
-        else {
-            throw new NotFoundException(publication.identifier(), fileIdentifier);
-        }
+        return publication.associatedArtifacts().stream()
+                   .filter(File.class::isInstance)
+                   .map(File.class::cast)
+                   .filter(element -> findByIdentifier(fileIdentifier, element))
+                   .map(element -> getFile(element, publication, requestInfo))
+                   .filter(Optional::isPresent)
+                   .map(Optional::get)
+                   .findFirst()
+                   .orElseThrow(() -> new NotFoundException(publication.identifier(), fileIdentifier));
     }
 
     private boolean findByIdentifier(UUID fileIdentifier, File element) {
