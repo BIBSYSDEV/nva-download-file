@@ -59,4 +59,14 @@ public abstract class File implements AssociatedArtifact {
     }
 
     public abstract boolean isVisibleForNonOwner();
+
+    @Override
+    public String toString() {
+        return "File{" +
+               "identifier=" + identifier +
+               ", mimeType='" + mimeType + '\'' +
+               ", embargoDate=" + embargoDate +
+               ", administrativeAgreement=" + administrativeAgreement +
+               '}';
+    }
 }
