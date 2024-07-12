@@ -4,12 +4,10 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
-import com.fasterxml.jackson.annotation.JsonTypeName;
 import java.time.Instant;
 import java.util.UUID;
 
 @JsonTypeInfo(use = Id.NAME, property = "type")
-@JsonTypeName(UnpublishableFile.TYPE)
 public class UnpublishableFile extends File {
     public static final String TYPE = "UnpublishableFile";
 

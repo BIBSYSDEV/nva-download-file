@@ -4,17 +4,14 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
-@JsonTypeInfo(use = Id.NAME, property = "type")
 @JsonSubTypes({
-    @JsonSubTypes.Type(name = PublishedFile.TYPE, value = PublishedFile.class),
-    @JsonSubTypes.Type(names = UnpublishedFile.TYPE, value = UnpublishedFile.class),
-    @JsonSubTypes.Type(name = UnpublishableFile.TYPE, value = UnpublishableFile.class)
+    @JsonSubTypes.Type(name = "PublishedFile", value = PublishedFile.class),
+    @JsonSubTypes.Type(names = "UnpublishedFile", value = UnpublishedFile.class),
+    @JsonSubTypes.Type(name = "UnpublishableFile", value = UnpublishableFile.class)
 })
 public abstract class File implements AssociatedArtifact {
 
