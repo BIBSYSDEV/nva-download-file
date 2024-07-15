@@ -8,7 +8,6 @@ junit5Version = { prefer = '5.10.0' }
 mockitoVersion = { prefer = '5.3.1' }
 zalandoVersion = { prefer = '0.27.1' }
 nvaCommonsVersion = { prefer = '1.39.3' }
-nvaDataModelVersion = { prefer = '0.23.0' }
 apiguardianVersion = { prefer = '1.1.2' }
 slf4jVersion = { prefer = '2.0.11' }
 log4jVersion = {strictly = '2.23.0'}
@@ -19,8 +18,6 @@ dynamoDbLocal = { strictly = '2.0.0' }
 
 [libraries]
 
-nva-datamodel = { group = 'com.github.bibsysdev', name = 'nva-datamodel-java', version.ref = 'nvaDataModelVersion' }
-nva-datamodel-testutils = { group = 'com.github.bibsysdev', name = 'nva-datamodel-testutils', version.ref = 'nvaDataModelVersion' }
 nva-core = { group = 'com.github.bibsysdev', name = 'core', version.ref = 'nvaCommonsVersion' }
 nva-testutils = { group = 'com.github.bibsysdev', name = 'nvatestutils', version.ref = 'nvaCommonsVersion' }
 nva-apigateway = { group = 'com.github.bibsysdev', name = 'apigateway', version.ref = 'nvaCommonsVersion' }
@@ -61,7 +58,7 @@ aws-sdk-dynamodb = { group = 'com.amazonaws', name = 'aws-java-sdk-dynamodb', ve
 dynamodDbLocal = { group = 'com.amazonaws', name = 'DynamoDBLocal', version.ref = 'dynamoDbLocal' }
 
 [bundles]
-testing = ['nva-datamodel-testutils', 'nva-testutils', 'mockito-core', 'mockito-junit-jupiter', 'junit-jupiter-engine', 'junit-jupiter-params',
+testing = ['nva-testutils', 'mockito-core', 'mockito-junit-jupiter', 'junit-jupiter-engine', 'junit-jupiter-params',
     'junit-jupiter-migrationsupport', 'junit-jupiter-api', 'hamcrest', 'hamcrest-core']
 logging = ['slf4j-api', 'log4j-api']
 jackson = ['jackson-annotations', 'jackson-core', 'jackson-databind', 'zalando-problem', 'jackson-datatype-problem']

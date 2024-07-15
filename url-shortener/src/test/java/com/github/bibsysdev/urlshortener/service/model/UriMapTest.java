@@ -25,6 +25,6 @@ public class UriMapTest {
         assertThat(uriMap.longUri(), is(equalTo(longUri)));
         assertThat(uriMap.shortenedUri().toString(), containsString(ID_NAMESPACE));
         var theRestOfTheShortUri = uriMap.shortenedUri().toString().replace(ID_NAMESPACE, "");
-        assertDoesNotThrow(()-> SortableIdentifier.fromUri(UriWrapper.fromUri(theRestOfTheShortUri).getUri()));
+        assertDoesNotThrow(() -> SortableIdentifier.fromUri(UriWrapper.fromUri(theRestOfTheShortUri).getUri()));
     }
 }

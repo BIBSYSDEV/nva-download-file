@@ -24,9 +24,10 @@ import org.junit.jupiter.api.Test;
 
 public class UriShortenerResolverTest extends UriShortenerLocalDynamoDb {
 
-    public static final String SHORTENED_URI_KEY = "shortenedUri";
-    private final String UNPARSABLE_URI = "https://doi.org/10.1577/1548-8667(1998)010<0056:EOOAFI>2.0.CO;2";
-    private final String TABLE_NAME = "url_shortener";
+    private static final String UNPARSABLE_URI = "https://doi.org/10.1577/1548-8667(1998)010<0056:EOOAFI>2.0.CO;2";
+    private static final String TABLE_NAME = "url_shortener";
+    private static final String SHORTENED_URI_KEY = "shortenedUri";
+
     private UriResolver uriResolver;
     private UriShortener uriShortener;
 

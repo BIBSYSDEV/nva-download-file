@@ -32,7 +32,7 @@ import org.zalando.problem.Problem;
 
 public class ResolveShortenedUrlHandlerTest {
 
-    private final Context CONTEXT = mock(Context.class);
+    private static final Context CONTEXT = mock(Context.class);
     private ResolveShortenedUrlHandler handler;
     private ByteArrayOutputStream output;
     private static final String ANY_ORIGIN = "*";

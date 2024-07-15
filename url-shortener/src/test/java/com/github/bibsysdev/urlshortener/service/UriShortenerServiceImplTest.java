@@ -18,8 +18,8 @@ import org.junit.jupiter.api.Test;
 
 public class UriShortenerServiceImplTest extends UriShortenerLocalDynamoDb {
 
-    private final String TABLE_NAME = "url_shortener";
-    private final URI DOMAIN = UriWrapper.fromUri("https://example.com").getUri();
+    private static final String TABLE_NAME = "url_shortener";
+    private static final URI DOMAIN = UriWrapper.fromUri("https://example.com").getUri();
 
     private UriShortenerImpl uriShortener;
 
@@ -35,37 +35,37 @@ public class UriShortenerServiceImplTest extends UriShortenerLocalDynamoDb {
         var expiration = randomInstant();
         var mockUriShortenerWriteClient = mock(UriShortenerWriteClient.class);
         uriShortener = new UriShortenerImpl(DOMAIN, mockUriShortenerWriteClient);
-        doThrow(new TransactionFailedException("Transaction failed")).when(mockUriShortenerWriteClient).insertUriMap(any());
+        doThrow(new TransactionFailedException("Transaction failed")).when(mockUriShortenerWriteClient)
+            .insertUriMap(any());
         assertThrows(TransactionFailedException.class, () -> uriShortener.shorten(longUri, expiration));
     }
 
     @Test
-    void shouldThrowExceptionIfLongUriIsEmpty(){
+    void shouldThrowExceptionIfLongUriIsEmpty() {
         var longUri = UriWrapper.fromUri("").getUri();
         var expiration = randomInstant();
         assertThrows(IllegalArgumentException.class, () -> uriShortener.shorten(longUri, expiration));
     }
 
     @Test
-    void shouldThrowExceptionIfLongUriIsNull(){
+    void shouldThrowExceptionIfLongUriIsNull() {
         URI longUri = null;
         var expiration = randomInstant();
         assertThrows(IllegalArgumentException.class, () -> uriShortener.shorten(longUri, expiration));
     }
 
     @Test
-    void shouldThrowExceptionIfExpirationIsNull(){
+    void shouldThrowExceptionIfExpirationIsNull() {
         URI longUri = randomUri();
         Instant expiration = null;
         assertThrows(IllegalArgumentException.class, () -> uriShortener.shorten(longUri, expiration));
     }
 
     @Test
-    void shouldReturnUriWhenNothingFails(){
+    void shouldReturnUriWhenNothingFails() {
         var longUri = randomUri();
         var expiration = randomInstant();
         var shortUri = uriShortener.shorten(longUri, expiration);
         assertThat(shortUri.toString(), containsString(DOMAIN.toString()));
     }
-
 }

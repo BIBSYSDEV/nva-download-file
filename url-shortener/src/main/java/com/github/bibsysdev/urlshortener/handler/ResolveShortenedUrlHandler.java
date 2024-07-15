@@ -17,7 +17,7 @@ import org.slf4j.Logger;
 
 public class ResolveShortenedUrlHandler extends ApiGatewayHandler<Void, Void> {
 
-    private final Logger LOGGER = LoggerFactory.getLogger(ResolveShortenedUrlHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ResolveShortenedUrlHandler.class);
     private final UriResolver uriResolver;
 
     @JacocoGenerated

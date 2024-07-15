@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 
 public class UriShortenerWriteClientTest extends UriShortenerLocalDynamoDb {
 
-    private final String TABLE_NAME = "url_shortener";
+    private static final String TABLE_NAME = "url_shortener";
 
     private UriShortenerWriteClient uriShortenerWriteClient;
 

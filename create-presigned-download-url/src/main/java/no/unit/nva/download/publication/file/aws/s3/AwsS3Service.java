@@ -16,7 +16,6 @@ import static java.util.Objects.nonNull;
 
 
 public class AwsS3Service {
-
     public static final String AWS_REGION_ENV = "AWS_REGION";
     public static final String BUCKET_NAME_ENV = "BUCKET_NAME";
 
@@ -34,6 +33,7 @@ public class AwsS3Service {
         this.s3Client = s3Client;
         this.bucketName = bucketName;
     }
+
     /**
      * Constructor for AwsS3Service.
      *
