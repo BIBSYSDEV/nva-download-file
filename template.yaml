@@ -35,6 +35,10 @@ Parameters:
   CognitoAuthorizationUri:
     Type: 'AWS::SSM::Parameter::Value<String>'
     Default: /NVA/CognitoUri
+  AllowedOrigins:
+    Type: String
+    Description: comma separated list of external clients that are allowed to contact the HTTP APIs, "*" indicates that all origins are allowed
+    Default: '*'
 
 Resources:
   ApiAccessLogGroup:
@@ -61,7 +65,7 @@ Resources:
       MemorySize: 1408
       Environment:
         Variables:
-          ALLOWED_ORIGIN: '*'
+          ALLOWED_ORIGIN: !Ref AllowedOrigins
           API_SCHEME: https
           API_HOST: !Sub api.${CustomDomain}
           SHORTENED_URI_TABLE_NAME: !Sub nva-url-shorterner-${AWS::StackName}
@@ -187,7 +191,7 @@ Resources:
       MemorySize: 1408
       Environment:
         Variables:
-          ALLOWED_ORIGIN: '*'
+          ALLOWED_ORIGIN: !Ref AllowedOrigins
           API_SCHEME: https
           API_HOST: !Sub api.${CustomDomain}
           SHORTENED_URI_TABLE_NAME: !Sub nva-url-shorterner-${AWS::StackName}
