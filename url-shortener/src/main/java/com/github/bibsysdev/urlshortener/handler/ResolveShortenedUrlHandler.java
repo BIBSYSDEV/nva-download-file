@@ -31,6 +31,11 @@ public class ResolveShortenedUrlHandler extends ApiGatewayHandler<Void, Void> {
     }
 
     @Override
+    protected void validateRequest(Void unused, RequestInfo requestInfo, Context context) throws ApiGatewayException {
+        //Do nothing
+    }
+
+    @Override
     protected Void processInput(Void unused, RequestInfo requestInfo, Context context) throws ApiGatewayException {
         LOGGER.info(requestInfo.getRequestUri().toString());
         var shortenedUri = requestInfo.getRequestUri();
