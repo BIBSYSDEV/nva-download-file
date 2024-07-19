@@ -7,8 +7,7 @@ jacksonVersion = { prefer = '2.16.1' }
 junit5Version = { prefer = '5.10.0' }
 mockitoVersion = { prefer = '5.3.1' }
 zalandoVersion = { prefer = '0.27.1' }
-nvaCommonsVersion = { prefer = '1.39.3' }
-apiguardianVersion = { prefer = '1.1.2' }
+nvaCommonsVersion = { prefer = '1.40.6' }
 slf4jVersion = { prefer = '2.0.11' }
 log4jVersion = {strictly = '2.23.0'}
 mikaelUrlbuilderVersion = {prefer = '2.0.9'}
@@ -36,13 +35,10 @@ log4j-api = {group = 'org.apache.logging.log4j', name = 'log4j-api', version.ref
 mikael-urlbuilder = { group = 'io.mikael', name = 'urlbuilder', version.ref = 'mikaelUrlbuilderVersion' }
 
 aws-lambda-core = { group = 'com.amazonaws', name = 'aws-lambda-java-core', version.ref = 'awsLambdaCore' }
-aws-sdk-lambda = { group = 'com.amazonaws', name = 'aws-java-sdk-lambda', version.ref = 'awsSdkVersion' }
 aws-sdk-s3 = { group = 'com.amazonaws', name = 'aws-java-sdk-s3', version.ref = 'awsSdkVersion' }
 aws-sdk-core = { group = 'com.amazonaws', name = 'aws-java-sdk-core', version.ref = 'awsSdkVersion' }
-aws-sdk-kms = { group = 'com.amazonaws', name = 'aws-java-sdk-kms', version.ref = 'awsSdkVersion' }
 aws-sdk2-s3 = {group = 'software.amazon.awssdk', name = 's3', version.ref = 'awsSdk2'}
 
-apiguardian = { group = 'org.apiguardian', name = 'apiguardian-api', version.ref = 'apiguardianVersion' }
 
 mockito-core = { group = 'org.mockito', name = 'mockito-core', version.ref = 'mockitoVersion' }
 mockito-junit-jupiter = { group = 'org.mockito', name = 'mockito-junit-jupiter', version.ref = 'mockitoVersion' }

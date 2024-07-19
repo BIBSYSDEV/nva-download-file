@@ -61,6 +61,11 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, P
     }
 
     @Override
+    protected void validateRequest(Void unused, RequestInfo requestInfo, Context context) throws ApiGatewayException {
+        //Do nothing
+    }
+
+    @Override
     protected PresignedUri processInput(Void input, RequestInfo requestInfo, Context context)
         throws ApiGatewayException {
 
