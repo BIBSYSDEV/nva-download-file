@@ -62,7 +62,7 @@ public class CreatePresignedDownloadUrlHandler extends ApiGatewayHandler<Void, P
         var publication = publicationService.getPublication(RequestUtil.getIdentifier(requestInfo));
         var fileIdentifier = getFileIdentifier(requestInfo);
 
-        FileValidationUtil.create(fileIdentifier, publication).validateAccess(requestInfo);
+        FileAccessValidationUtil.create(fileIdentifier, publication).validateAccess(requestInfo);
 
         return createPresignedUrl(publication, fileIdentifier);
     }

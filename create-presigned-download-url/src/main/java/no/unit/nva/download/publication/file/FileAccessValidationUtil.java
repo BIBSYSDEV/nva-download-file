@@ -13,18 +13,18 @@ import no.unit.nva.download.publication.file.publication.model.PublicationStatus
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ForbiddenException;
 
-public class FileValidationUtil {
+public class FileAccessValidationUtil {
 
     private final UUID fileIdentifier;
     private final Publication publication;
 
-    public FileValidationUtil(UUID fileIdentifier, Publication publication) {
+    public FileAccessValidationUtil(UUID fileIdentifier, Publication publication) {
         this.fileIdentifier = fileIdentifier;
         this.publication = publication;
     }
 
-    public static FileValidationUtil create(UUID fileIdentifier, Publication publication) {
-        return new FileValidationUtil(fileIdentifier, publication);
+    public static FileAccessValidationUtil create(UUID fileIdentifier, Publication publication) {
+        return new FileAccessValidationUtil(fileIdentifier, publication);
     }
 
     public void validateAccess(RequestInfo requestInfo) throws NotFoundException, ForbiddenException {
