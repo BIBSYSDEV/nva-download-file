@@ -1,5 +1,6 @@
 package no.unit.nva.download.publication.file;
 
+import java.net.URI;
 import no.unit.nva.download.publication.file.publication.exception.InputException;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.core.StringUtils;
@@ -71,5 +72,9 @@ public final class RequestUtil {
 
     public static String getUser(RequestInfo requestInfo) {
         return attempt(requestInfo::getUserName).orElse(user -> ANONYMOUS);
+    }
+
+    public static Optional<URI> getPersonCristinId(RequestInfo requestInfo) {
+        return attempt(requestInfo::getPersonCristinId).toOptional();
     }
 }
