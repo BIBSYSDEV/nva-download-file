@@ -513,7 +513,8 @@ class CreatePresignedDownloadUrlHandlerTest {
         var s3Service = getAwsS3ServiceReturningPresignedUrl();
         var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment(),
                                                             new FakeUriShortener());
-        var request = userWithCristinIdRequestsFile(randomUri(), publication.identifier(), file.getIdentifier());
+        var notContributorCristinId = randomUri();
+        var request = userWithCristinIdRequestsFile(notContributorCristinId, publication.identifier(), file.getIdentifier());
         handler.handleRequest(request, output, context);
         var gatewayResponse = GatewayResponse.fromString(output.toString(), Problem.class);
 

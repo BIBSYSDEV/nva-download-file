@@ -9,7 +9,7 @@ import java.util.UUID;
 
 public class NotFoundException extends ApiGatewayException {
 
-    public static final String ERROR_TEMPLATE = "Requested resource \"%s/files/%s\" was not found";
+    public static final String ERROR_TEMPLATE = "The requested resource \"%s/files/%s\" was not found";
 
     public NotFoundException(SortableIdentifier resource, UUID file)  {
         super(String.format(ERROR_TEMPLATE, resource, file));
