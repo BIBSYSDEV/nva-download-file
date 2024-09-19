@@ -82,6 +82,6 @@ public class FileAccessValidationUtil {
                    .map(File.class::cast)
                    .filter(file -> file.getIdentifier().equals(this.fileIdentifier))
                    .findFirst()
-                   .orElseThrow(() -> new NotFoundException(publication.identifier(), fileIdentifier));
+                   .orElseThrow(NotFoundException::new);
     }
 }
