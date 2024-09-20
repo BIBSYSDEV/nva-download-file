@@ -15,4 +15,11 @@ dependencies{
     implementation libs.bundles.logging
 
     testImplementation libs.bundles.testing
+    testImplementation libs.nva.logutils
+    testImplementation libs.log4j.core
+}
+
+test {
+    environment "API_HOST", "api.dev.nva.aws.unit.no"
+    environment "COGNITO_HOST", "api.dev.nva.aws.unit.no"
 }

@@ -5,6 +5,7 @@ import static no.unit.nva.download.publication.file.RequestUtil.getUser;
 import static nva.commons.apigateway.AccessRight.MANAGE_DEGREE_EMBARGO;
 import static nva.commons.apigateway.AccessRight.MANAGE_RESOURCES_STANDARD;
 import java.util.UUID;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 import no.unit.nva.download.publication.file.exception.NotFoundException;
 import no.unit.nva.download.publication.file.publication.model.File;
@@ -41,11 +42,16 @@ public class FileAccessValidationUtil {
     }
 
     private boolean hasAccessToFile(File file, RequestInfo requestInfo) {
-        return Stream.of(isOwner(publication, requestInfo),
-                         isContributor(publication, requestInfo),
-                         isEditor(requestInfo),
-                         fileIsVisibleForNonOwner(file, publication))
-                   .anyMatch(Boolean::booleanValue);
+        return accessCheckSuppliers(file, requestInfo).anyMatch(Supplier::get);
+    }
+
+    private Stream<Supplier<Boolean>> accessCheckSuppliers(File file, RequestInfo requestInfo) {
+        return Stream.of(
+            () -> fileIsVisibleForNonOwner(file, publication),
+            () -> isOwner(publication, requestInfo),
+            () -> isContributor(publication, requestInfo),
+            () -> isEditor(requestInfo)
+        );
     }
 
     private boolean isContributor(Publication publication, RequestInfo requestInfo) {

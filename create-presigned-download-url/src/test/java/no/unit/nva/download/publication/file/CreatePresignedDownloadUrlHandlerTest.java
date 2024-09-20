@@ -25,8 +25,10 @@ import static org.apache.http.HttpStatus.SC_INTERNAL_SERVER_ERROR;
 import static org.apache.http.HttpStatus.SC_NOT_FOUND;
 import static org.apache.http.HttpStatus.SC_OK;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -81,6 +83,7 @@ import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.GatewayResponse;
 import nva.commons.core.Environment;
+import nva.commons.logutils.LogUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -520,6 +523,22 @@ class CreatePresignedDownloadUrlHandlerTest {
 
         assertBasicRestRequirements(gatewayResponse, SC_FORBIDDEN, APPLICATION_PROBLEM_JSON);
         assertProblemEquivalence(gatewayResponse, getForbiddenProblem());
+    }
+
+    @Test
+    void shouldNotLogMissingAuthorizationMessageWhenUserRequestPublicFileWithoutAuthorization() throws IOException,
+                                                                                                       InterruptedException {
+        var s3Service = getAwsS3ServiceReturningPresignedUrl();
+        var publication = buildPublication(PUBLISHED, fileWithoutEmbargo(APPLICATION_PDF, FILE_IDENTIFIER));
+        var publicationService = mockSuccessfulPublicationRequest(
+            dtoObjectMapper.writeValueAsString(publication));
+        var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment(),
+                                                            new FakeUriShortener());
+
+        var logAppender = LogUtils.getTestingAppenderForRootLogger();
+        handler.handleRequest(createRequest(randomString(), publication.identifier(), FILE_IDENTIFIER), output, context);
+
+        assertThat(logAppender.getMessages(), not(containsString("Could not authorize user")));
     }
 
     private static Stream<String> userSupplier() {
