@@ -22,6 +22,7 @@ nva-testutils = { group = 'com.github.bibsysdev', name = 'nvatestutils', version
 nva-apigateway = { group = 'com.github.bibsysdev', name = 'apigateway', version.ref = 'nvaCommonsVersion' }
 nva-identifiers = { group = 'com.github.bibsysdev', name = 'identifiers', version.ref = 'nvaCommonsVersion' }
 nva-json = { group = 'com.github.bibsysdev', name = 'json', version.ref = 'nvaCommonsVersion' }
+nva-logutils = { group = "com.github.bibsysdev", name = "logutils", version.ref = "nvaCommonsVersion" }
 
 jackson-annotations = { group = 'com.fasterxml.jackson.core', name = 'jackson-annotations', version.ref = 'jacksonVersion' }
 jackson-core = { group = 'com.fasterxml.jackson.core', name = 'jackson-core', version.ref = 'jacksonVersion' }
@@ -31,6 +32,7 @@ jackson-datatype-problem = { group = 'org.zalando', name = 'jackson-datatype-pro
 
 slf4j-api = { group = 'org.slf4j', name = 'slf4j-api', version.ref = 'slf4jVersion' }
 log4j-api = {group = 'org.apache.logging.log4j', name = 'log4j-api', version.ref = 'log4jVersion'}
+log4j-core = { group = 'org.apache.logging.log4j', name = 'log4j-core', version.ref = 'log4jVersion' }
 
 mikael-urlbuilder = { group = 'io.mikael', name = 'urlbuilder', version.ref = 'mikaelUrlbuilderVersion' }
 

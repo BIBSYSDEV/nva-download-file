@@ -23,8 +23,10 @@ import static org.apache.http.HttpStatus.SC_INTERNAL_SERVER_ERROR;
 import static org.apache.http.HttpStatus.SC_NOT_FOUND;
 import static org.apache.http.HttpStatus.SC_OK;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -74,6 +76,7 @@ import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.GatewayResponse;
 import nva.commons.core.Environment;
+import nva.commons.logutils.LogUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -484,6 +487,61 @@ class CreatePresignedDownloadUrlHandlerTest {
         assertBasicRestRequirements(gatewayResponse, SC_INTERNAL_SERVER_ERROR, APPLICATION_PROBLEM_JSON);
     }
 
+<<<<<<< Updated upstream
+=======
+    @ParameterizedTest()
+    @MethodSource("fileTypeSupplier")
+    void handlerReturnsOkResponseWhenContributorWithCristinIdRequestsFile(File file) throws IOException,
+                                                                                      InterruptedException {
+        var publication = buildPublication(PUBLISHED, file);
+        var publicationService = mockSuccessfulPublicationRequest(dtoObjectMapper.writeValueAsString(publication));
+        var s3Service = getAwsS3ServiceReturningPresignedUrl();
+        var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment(),
+                                                            new FakeUriShortener());
+        var contributorCristinId = publication.entityDescription().contributors().get(0).identity().id();
+        var request = userWithCristinIdRequestsFile(contributorCristinId, publication.identifier(), file.getIdentifier());
+        handler.handleRequest(request, output, context);
+        var gatewayResponse = GatewayResponse.fromString(output.toString(), PresignedUri.class);
+
+        assertBasicRestRequirements(gatewayResponse, SC_OK, APPLICATION_JSON);
+        assertExpectedResponseBody(gatewayResponse);
+    }
+
+    @ParameterizedTest()
+    @MethodSource("fileTypeSupplierRequiringElevatedRights")
+    void handlerReturnsForbiddenResponseWhenContributorWithoutCristinIdRequestsFile(File file) throws IOException,
+                                                                                            InterruptedException {
+        var publication = buildPublication(PUBLISHED, file);
+        var publicationService = mockSuccessfulPublicationRequest(dtoObjectMapper.writeValueAsString(publication));
+        var s3Service = getAwsS3ServiceReturningPresignedUrl();
+        var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment(),
+                                                            new FakeUriShortener());
+        var notContributorCristinId = randomUri();
+        var request = userWithCristinIdRequestsFile(notContributorCristinId, publication.identifier(), file.getIdentifier());
+        handler.handleRequest(request, output, context);
+        var gatewayResponse = GatewayResponse.fromString(output.toString(), Problem.class);
+
+        assertBasicRestRequirements(gatewayResponse, SC_FORBIDDEN, APPLICATION_PROBLEM_JSON);
+        assertProblemEquivalence(gatewayResponse, getForbiddenProblem());
+    }
+
+    @Test
+    void shouldNotLogMissingAuthorizationMessageWhenUserRequestPublicFileWithoutAuthorization() throws IOException,
+                                                                                      InterruptedException {
+        var s3Service = getAwsS3ServiceReturningPresignedUrl();
+        var publication = buildPublication(PUBLISHED, fileWithoutEmbargo(APPLICATION_PDF, FILE_IDENTIFIER));
+        var publicationService = mockSuccessfulPublicationRequest(
+            dtoObjectMapper.writeValueAsString(publication));
+        var handler = new CreatePresignedDownloadUrlHandler(publicationService, s3Service, mockEnvironment(),
+                                                            new FakeUriShortener());
+
+        var logAppender = LogUtils.getTestingAppenderForRootLogger();
+        handler.handleRequest(createRequest(randomString(), publication.identifier(), FILE_IDENTIFIER), output, context);
+
+        assertThat(logAppender.getMessages(), not(containsString("Could not authorize user")));
+    }
+
+>>>>>>> Stashed changes
     private static Stream<String> userSupplier() {
         return Stream.of(
             OWNER_USER_ID,
