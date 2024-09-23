@@ -1,16 +1,16 @@
 [versions]
-awsSdkVersion = { prefer = '1.12.544' }
-awsSdk2 = {prefer = '2.26.1'}
+awsSdkVersion = { prefer = '1.12.772' }
+awsSdk2 = { prefer = '2.27.24' }
 awsLambdaCore = { prefer = '1.2.3' }
-hamcrestVersion = { prefer = '2.2' }
-jacksonVersion = { prefer = '2.16.1' }
-junit5Version = { prefer = '5.10.0' }
-mockitoVersion = { prefer = '5.3.1' }
+hamcrestVersion = { prefer = '3.0' }
+jacksonVersion = { prefer = '2.17.2' }
+junit5Version = { prefer = '5.11.0' }
+mockitoVersion = { prefer = '5.13.0' }
 zalandoVersion = { prefer = '0.27.1' }
-nvaCommonsVersion = { prefer = '1.40.8' }
-slf4jVersion = { prefer = '2.0.11' }
-log4jVersion = {strictly = '2.23.0'}
-mikaelUrlbuilderVersion = {prefer = '2.0.9'}
+nvaCommonsVersion = { prefer = '1.40.20' }
+slf4jVersion = { prefer = '2.0.16' }
+log4jVersion = { strictly = '2.24.0' }
+mikaelUrlbuilderVersion = { prefer = '2.0.9' }
 dynamoDbLocal = { strictly = '2.0.0' }
 
 
@@ -31,7 +31,7 @@ zalando-problem = { group = 'org.zalando', name = 'problem', version.ref = 'zala
 jackson-datatype-problem = { group = 'org.zalando', name = 'jackson-datatype-problem', version.ref = 'zalandoVersion' }
 
 slf4j-api = { group = 'org.slf4j', name = 'slf4j-api', version.ref = 'slf4jVersion' }
-log4j-api = {group = 'org.apache.logging.log4j', name = 'log4j-api', version.ref = 'log4jVersion'}
+log4j-api = { group = 'org.apache.logging.log4j', name = 'log4j-api', version.ref = 'log4jVersion' }
 log4j-core = { group = 'org.apache.logging.log4j', name = 'log4j-core', version.ref = 'log4jVersion' }
 
 mikael-urlbuilder = { group = 'io.mikael', name = 'urlbuilder', version.ref = 'mikaelUrlbuilderVersion' }
@@ -39,7 +39,7 @@ mikael-urlbuilder = { group = 'io.mikael', name = 'urlbuilder', version.ref = 'm
 aws-lambda-core = { group = 'com.amazonaws', name = 'aws-lambda-java-core', version.ref = 'awsLambdaCore' }
 aws-sdk-s3 = { group = 'com.amazonaws', name = 'aws-java-sdk-s3', version.ref = 'awsSdkVersion' }
 aws-sdk-core = { group = 'com.amazonaws', name = 'aws-java-sdk-core', version.ref = 'awsSdkVersion' }
-aws-sdk2-s3 = {group = 'software.amazon.awssdk', name = 's3', version.ref = 'awsSdk2'}
+aws-sdk2-s3 = { group = 'software.amazon.awssdk', name = 's3', version.ref = 'awsSdk2' }
 
 
 mockito-core = { group = 'org.mockito', name = 'mockito-core', version.ref = 'mockitoVersion' }
