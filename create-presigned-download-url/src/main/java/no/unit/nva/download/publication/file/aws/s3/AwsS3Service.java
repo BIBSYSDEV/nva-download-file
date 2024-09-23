@@ -16,7 +16,6 @@ import static java.util.Objects.nonNull;
 
 
 public class AwsS3Service {
-
     public static final String AWS_REGION_ENV = "AWS_REGION";
     public static final String BUCKET_NAME_ENV = "BUCKET_NAME";
 
@@ -43,7 +42,7 @@ public class AwsS3Service {
     @JacocoGenerated
     public AwsS3Service(Environment environment) {
         this(AmazonS3ClientBuilder.standard().withRegion(environment.readEnv(AWS_REGION_ENV)).build(),
-                environment.readEnv(BUCKET_NAME_ENV));
+             environment.readEnv(BUCKET_NAME_ENV));
     }
 
     /**
@@ -57,7 +56,7 @@ public class AwsS3Service {
     public String createPresignedDownloadUrl(String key, String mimeType, Date expiration) throws ApiGatewayException {
         try {
             GeneratePresignedUrlRequest generatePresignedUrlRequest =
-                    createGeneratePresignedUrlRequest(key, mimeType, expiration);
+                createGeneratePresignedUrlRequest(key, mimeType, expiration);
 
             return s3Client.generatePresignedUrl(generatePresignedUrlRequest).toExternalForm();
         } catch (Exception e) {
@@ -70,7 +69,7 @@ public class AwsS3Service {
                                                                           String mimeType,
                                                                           Date expiration) {
         GeneratePresignedUrlRequest generatePresignedUrlRequest = new GeneratePresignedUrlRequest(bucketName, key,
-                HttpMethod.GET);
+                                                                                                  HttpMethod.GET);
         generatePresignedUrlRequest.setExpiration(expiration);
 
         if (nonNull(mimeType)) {

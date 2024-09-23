@@ -1,28 +1,28 @@
 [versions]
 awsSdkVersion = { prefer = '1.12.544' }
-awsLambdaCore = { prefer = '1.2.2' }
+awsSdk2 = {prefer = '2.26.1'}
+awsLambdaCore = { prefer = '1.2.3' }
 hamcrestVersion = { prefer = '2.2' }
-jacksonVersion = { prefer = '2.15.2' }
+jacksonVersion = { prefer = '2.16.1' }
 junit5Version = { prefer = '5.10.0' }
 mockitoVersion = { prefer = '5.3.1' }
 zalandoVersion = { prefer = '0.27.1' }
-nvaCommonsVersion = { prefer = '1.34.0' }
-nvaDataModelVersion = { prefer = '0.20.62' }
-apiguardianVersion = { prefer = '1.1.2' }
-slf4jVersion = { prefer = '2.0.9' }
+nvaCommonsVersion = { prefer = '1.40.8' }
+slf4jVersion = { prefer = '2.0.11' }
+log4jVersion = {strictly = '2.23.0'}
 mikaelUrlbuilderVersion = {prefer = '2.0.9'}
+dynamoDbLocal = { strictly = '2.0.0' }
 
 
 
 [libraries]
 
-nva-datamodel = { group = 'com.github.bibsysdev', name = 'nva-datamodel-java', version.ref = 'nvaDataModelVersion' }
-nva-datamodel-testutils = { group = 'com.github.bibsysdev', name = 'nva-datamodel-testutils', version.ref = 'nvaDataModelVersion' }
 nva-core = { group = 'com.github.bibsysdev', name = 'core', version.ref = 'nvaCommonsVersion' }
 nva-testutils = { group = 'com.github.bibsysdev', name = 'nvatestutils', version.ref = 'nvaCommonsVersion' }
 nva-apigateway = { group = 'com.github.bibsysdev', name = 'apigateway', version.ref = 'nvaCommonsVersion' }
 nva-identifiers = { group = 'com.github.bibsysdev', name = 'identifiers', version.ref = 'nvaCommonsVersion' }
 nva-json = { group = 'com.github.bibsysdev', name = 'json', version.ref = 'nvaCommonsVersion' }
+nva-logutils = { group = "com.github.bibsysdev", name = "logutils", version.ref = "nvaCommonsVersion" }
 
 jackson-annotations = { group = 'com.fasterxml.jackson.core', name = 'jackson-annotations', version.ref = 'jacksonVersion' }
 jackson-core = { group = 'com.fasterxml.jackson.core', name = 'jackson-core', version.ref = 'jacksonVersion' }
@@ -31,16 +31,16 @@ zalando-problem = { group = 'org.zalando', name = 'problem', version.ref = 'zala
 jackson-datatype-problem = { group = 'org.zalando', name = 'jackson-datatype-problem', version.ref = 'zalandoVersion' }
 
 slf4j-api = { group = 'org.slf4j', name = 'slf4j-api', version.ref = 'slf4jVersion' }
+log4j-api = {group = 'org.apache.logging.log4j', name = 'log4j-api', version.ref = 'log4jVersion'}
+log4j-core = { group = 'org.apache.logging.log4j', name = 'log4j-core', version.ref = 'log4jVersion' }
 
 mikael-urlbuilder = { group = 'io.mikael', name = 'urlbuilder', version.ref = 'mikaelUrlbuilderVersion' }
 
 aws-lambda-core = { group = 'com.amazonaws', name = 'aws-lambda-java-core', version.ref = 'awsLambdaCore' }
-aws-sdk-lambda = { group = 'com.amazonaws', name = 'aws-java-sdk-lambda', version.ref = 'awsSdkVersion' }
 aws-sdk-s3 = { group = 'com.amazonaws', name = 'aws-java-sdk-s3', version.ref = 'awsSdkVersion' }
 aws-sdk-core = { group = 'com.amazonaws', name = 'aws-java-sdk-core', version.ref = 'awsSdkVersion' }
-aws-sdk-kms = { group = 'com.amazonaws', name = 'aws-java-sdk-kms', version.ref = 'awsSdkVersion' }
+aws-sdk2-s3 = {group = 'software.amazon.awssdk', name = 's3', version.ref = 'awsSdk2'}
 
-apiguardian = { group = 'org.apiguardian', name = 'apiguardian-api', version.ref = 'apiguardianVersion' }
 
 mockito-core = { group = 'org.mockito', name = 'mockito-core', version.ref = 'mockitoVersion' }
 mockito-junit-jupiter = { group = 'org.mockito', name = 'mockito-junit-jupiter', version.ref = 'mockitoVersion' }
@@ -52,10 +52,11 @@ junit-jupiter-api = { group = 'org.junit.jupiter', name = 'junit-jupiter-api', v
 hamcrest = { group = 'org.hamcrest', name = 'hamcrest', version.ref = 'hamcrestVersion' }
 hamcrest-core = { group = 'org.hamcrest', name = 'hamcrest-core', version.ref = 'hamcrestVersion' }
 
-
+aws-sdk-dynamodb = { group = 'com.amazonaws', name = 'aws-java-sdk-dynamodb', version.ref = 'awsSdkVersion' }
+dynamodDbLocal = { group = 'com.amazonaws', name = 'DynamoDBLocal', version.ref = 'dynamoDbLocal' }
 
 [bundles]
-testing = ['nva-datamodel-testutils', 'nva-testutils', 'mockito-core', 'mockito-junit-jupiter', 'junit-jupiter-engine', 'junit-jupiter-params',
+testing = ['nva-testutils', 'mockito-core', 'mockito-junit-jupiter', 'junit-jupiter-engine', 'junit-jupiter-params',
     'junit-jupiter-migrationsupport', 'junit-jupiter-api', 'hamcrest', 'hamcrest-core']
-logging = ['slf4j-api']
+logging = ['slf4j-api', 'log4j-api']
 jackson = ['jackson-annotations', 'jackson-core', 'jackson-databind', 'zalando-problem', 'jackson-datatype-problem']

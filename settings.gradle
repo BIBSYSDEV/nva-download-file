@@ -1,3 +1,4 @@
 rootProject.name = 'nva-download-file'
 include 'create-presigned-download-url'
+include 'url-shortener'
 

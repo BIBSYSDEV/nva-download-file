@@ -5,9 +5,10 @@ plugins {
 //workaround for jacoco-merge to work
 allprojects {
     apply plugin: 'nva.download.file.java-conventions'
+    apply plugin: 'nva.download.file.dynamo-db'
 }
 
 wrapper {
     distributionType = Wrapper.DistributionType.ALL
-    gradleVersion = '8.2.1'
+    gradleVersion = '8.5'
 }

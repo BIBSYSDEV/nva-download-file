@@ -1,0 +1,19 @@
+dependencies {
+    implementation libs.nva.core
+    implementation libs.nva.identifiers
+
+    implementation libs.aws.sdk.dynamodb
+
+    implementation libs.aws.sdk.core
+    implementation libs.nva.json
+    implementation libs.nva.apigateway
+    implementation libs.bundles.logging
+    implementation libs.bundles.jackson
+
+    testImplementation(libs.dynamodDbLocal) {
+        exclude group: 'com.amazonaws', module: 'aws-java-sdk-dynamodb'
+        exclude group: 'com.amazonaws', module: 'aws-java-sdk-core'
+    }
+
+    testImplementation libs.bundles.testing
+}

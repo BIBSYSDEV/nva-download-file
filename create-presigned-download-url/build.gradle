@@ -1,5 +1,5 @@
 dependencies{
-    implementation libs.nva.datamodel
+    implementation project(":url-shortener")
     implementation libs.nva.apigateway
     implementation libs.nva.core
     implementation libs.nva.identifiers
@@ -9,9 +9,17 @@ dependencies{
 
     implementation libs.aws.lambda.core
     implementation libs.aws.sdk.s3
+    implementation libs.aws.sdk2.s3
 
     implementation libs.bundles.jackson
     implementation libs.bundles.logging
 
     testImplementation libs.bundles.testing
+    testImplementation libs.nva.logutils
+    testImplementation libs.log4j.core
+}
+
+test {
+    environment "API_HOST", "api.dev.nva.aws.unit.no"
+    environment "COGNITO_HOST", "api.dev.nva.aws.unit.no"
 }
